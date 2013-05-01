@@ -12,3 +12,5 @@ logs
 results
 
 npm-debug.log
+workspace
+node_modules

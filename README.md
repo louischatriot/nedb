@@ -1,4 +1,4 @@
 node-embedded-db
 ================
 
-Embedded datastore for node.js
+Couldn't find a good embedded datastore for node.js. I'm making one.
