@@ -228,6 +228,58 @@ describe('Database', function () {
       ], done);
     });
 
+    it("Can update multiple documents matching the query", function (done) {
+      var d = new Datastore(testDb)
+        , id1, id2, id3;
+
+      async.waterfall([
+      function (cb) {
+        d.loadDatabase(function (err) {
+          d.insert({ somedata: 'ok' }, function (err, doc1) {
+            id1 = doc1._id;
+            d.insert({ somedata: 'again', plus: 'additional data' }, function (err, doc2) {
+              id2 = doc2._id;
+              d.insert({ somedata: 'again' }, function (err, doc3) {
+                id3 = doc3._id;
+                return cb(err);
+              });
+            });
+          });
+        });
+      }
+      , function (cb) {   // Test with query that doesn't match anything
+        d.update({ somedata: 'again' }, { newDoc: 'yes' }, { multi: true }, function (err, n) {
+          assert.isNull(err);
+          n.should.equal(2);
+
+          d.find({}, function (err, docs) {
+            var doc1 = _.find(docs, function (d) { return d._id === id1; })
+              , doc2 = _.find(docs, function (d) { return d._id === id2; })
+              , doc3 = _.find(docs, function (d) { return d._id === id3; })
+              ;
+
+            docs.length.should.equal(3);
+
+            Object.keys(doc1).length.should.equal(2);
+            doc1.somedata.should.equal('ok');
+            doc1._id.should.equal(id1);
+
+            Object.keys(doc2).length.should.equal(2);
+            doc2.newDoc.should.equal('yes');
+            doc2._id.should.equal(id2);
+
+            Object.keys(doc3).length.should.equal(2);
+            doc3.newDoc.should.equal('yes');
+            doc3._id.should.equal(id3);
+
+            return cb();
+          });
+        });
+      }
+      ], done);
+    });
+
+
 
   });   // ==== End of 'Update' ==== //
 
