@@ -34,18 +34,20 @@ async.waterfall([
 
     console.log("Inserting " + n + " documents");
 
-    async.whilst( function () { return i < n; }
-    , function (_cb) {
+    function insertOne(i) {
+      if (i === n) {   // Finished
+        var timeTaken = (new Date()).getTime() - beg.getTime();   // In ms
+        console.log("Time taken: " + (timeTaken / 1000) + "s");
+        return cb();
+      }
+
       d.insert({ docNumber: i }, function (err) {
-        i += 1;
-        return _cb(err);
+        process.nextTick(function () {
+          insertOne(i + 1);
+        });
       });
-    }, function (err) {
-      var timeTaken = (new Date()).getTime() - beg.getTime();   // In ms
-      if (err) { return cb(err); }
-      console.log("Time taken: " + (timeTaken / 1000) + "s");
-      return cb();
-    });
+    }
+    insertOne(0);
   }
 ], function (err) {
   console.log("Benchmark finished");
