@@ -177,8 +177,60 @@ describe('Database', function () {
       ], done);
     });
 
-
   });   // ==== End of 'Find' ==== //
+
+
+  describe('Update', function () {
+
+    it("If the query doesn't match anything, database is not modified", function (done) {
+      var d = new Datastore(testDb);
+
+      async.waterfall([
+      function (cb) {
+        d.loadDatabase(function (err) {
+          d.insert({ somedata: 'ok' }, function (err) {
+            d.insert({ somedata: 'again', plus: 'additional data' }, function (err) {
+              d.insert({ somedata: 'another' }, function (err) { return cb(err); });
+            });
+          });
+        });
+      }
+      , function (cb) {   // Test with query that doesn't match anything
+        d.update({ somedata: 'nope' }, { newDoc: 'yes' }, { multi: true }, function (err, n) {
+          assert.isNull(err);
+          n.should.equal(0);
+
+          d.find({}, function (err, docs) {
+            var doc1 = _.find(docs, function (d) { return d.somedata === 'ok'; })
+              , doc2 = _.find(docs, function (d) { return d.somedata === 'again'; })
+              , doc3 = _.find(docs, function (d) { return d.somedata === 'another'; })
+              ;
+
+            docs.length.should.equal(3);
+            assert.isUndefined(_.find(docs, function (d) { return d.newDoc === 'yes'; }));
+
+            Object.keys(doc1).length.should.equal(2);
+            doc1.somedata.should.equal('ok');
+            assert.isDefined(doc1._id);
+
+            Object.keys(doc2).length.should.equal(3);
+            doc2.somedata.should.equal('again');
+            doc2.plus.should.equal('additional data');
+            assert.isDefined(doc2._id);
+
+            Object.keys(doc3).length.should.equal(2);
+            doc3.somedata.should.equal('another');
+            assert.isDefined(doc3._id);
+            return cb();
+          });
+        });
+      }
+      ], done);
+    });
+
+
+  });   // ==== End of 'Update' ==== //
+
 
 
 
