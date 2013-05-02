@@ -65,7 +65,7 @@ async.waterfall([
       }
 
       d.find({ docNumber: order[i] }, function (err, docs) {
-        if (docs.length !== 1) { return cb('One find didnt work'); }
+        if (docs.length !== 1 || docs[0].docNumber !== order[i]) { return cb('One find didnt work'); }
         process.nextTick(function () {
           find(i + 1);
         });
@@ -73,26 +73,6 @@ async.waterfall([
     }
     find(0);
   }
-//, function (cb) {
-    //var beg = new Date()
-      //, i = 0;
-
-    //console.log("Finding " + n + " documents");
-
-    //async.whilst( function () { return i < n; }
-    //, function (_cb) {
-      //d.find({ docNumber: order[i] }, function (err, docs) {
-        //i += 1;
-        //if (docs.length !== 1) { return _cb(docs); }
-        //return _cb(err);
-      //});
-    //}, function (err) {
-      //var timeTaken = (new Date()).getTime() - beg.getTime();   // In ms
-      //if (err) { return cb(err); }
-      //console.log("Time taken: " + (timeTaken / 1000) + "s");
-      //return cb();
-    //});
-  //}
 ], function (err) {
   console.log("Benchmark finished");
 
