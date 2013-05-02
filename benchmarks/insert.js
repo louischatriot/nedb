@@ -4,10 +4,13 @@ var Datastore = require('../lib/datastore')
   , path = require('path')
   , async = require('async')
   , customUtils = require('../lib/customUtils')
+  , n = 10000
   , d
   ;
 
-console.log("Benchmarking inserts");
+if (process.argv[2]) { console.log(process.argv);}
+
+console.log("Benchmarking insert");
 
 async.waterfall([
   function (cb) {
@@ -39,10 +42,9 @@ async.waterfall([
       });
     }, function (err) {
       var timeTaken = (new Date()).getTime() - beg.getTime();   // In ms
-
       if (err) { return cb(err); }
-
       console.log("Time taken: " + (timeTaken / 1000) + "s");
+      return cb();
     });
   }
 ], function (err) {
