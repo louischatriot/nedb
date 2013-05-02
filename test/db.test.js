@@ -145,6 +145,37 @@ describe('Database', function () {
       ], done);
     });
 
+    it('Can find one document matching a basic query and return null if none is found', function (done) {
+      var d = new Datastore(testDb);
+
+      async.waterfall([
+      function (cb) {
+        d.loadDatabase(function (err) {
+          d.insert({ somedata: 'ok' }, function (err) {
+            d.insert({ somedata: 'again', plus: 'additional data' }, function (err) {
+              d.insert({ somedata: 'again' }, function (err) { return cb(err); });
+            });
+          });
+        });
+      }
+      , function (cb) {   // Test with query that will return docs
+        d.findOne({ somedata: 'ok' }, function (err, doc) {
+          assert.isNull(err);
+          Object.keys(doc).length.should.equal(2);
+          doc.somedata.should.equal('ok');
+          assert.isDefined(doc._id);
+          return cb();
+        });
+      }
+      , function (cb) {   // Test with query that doesn't match anything
+        d.findOne({ somedata: 'nope' }, function (err, doc) {
+          assert.isNull(err);
+          assert.isNull(doc);
+          return cb();
+        });
+      }
+      ], done);
+    });
 
 
   });   // ==== End of 'Find' ==== //
