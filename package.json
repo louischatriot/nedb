@@ -1,31 +1,37 @@
 {
-  "name": "nedb"
-, "version": "0.0.1"
-, "author": { "name": "tldr.io", "email": "hello@tldr.io"}
-, "contributors": [
+  "name": "nedb",
+  "version": "0.0.1",
+  "author": {
+    "name": "tldr.io",
+    "email": "hello@tldr.io"
+  },
+  "contributors": [
     "Louis Chatriot"
-  ]
-, "description": "File-based embedded data store for node.js"
-, "keywords": [
-    "database"
-  , "datastore"
-  , "embedded"
-  ]
-, "homepage": "https://github.com/louischatriot/node-embedded-db"
-, "repository": { "type": "git"
-                , "url": "git@github.com:louischatriot/node-embedded-db.git"
-                }
-, "dependencies": {
-  }
-, "devDependencies": {
-    "chai": "1.0.x"
-  , "mocha": "1.4.x"
-  , "request": "2.9.x"
-  , "sinon": "1.3.x"
-  }
-, "scripts": {
+  ],
+  "description": "File-based embedded data store for node.js",
+  "keywords": [
+    "database",
+    "datastore",
+    "embedded"
+  ],
+  "homepage": "https://github.com/louischatriot/node-embedded-db",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:louischatriot/node-embedded-db.git"
+  },
+  "dependencies": {
+    "async": "~0.2.8",
+    "underscore": "~1.4.4"
+  },
+  "devDependencies": {
+    "chai": "1.0.x",
+    "mocha": "1.4.x",
+    "request": "2.9.x",
+    "sinon": "1.3.x"
+  },
+  "scripts": {
     "test": "make test"
-  }
-, "main": "server"
-, "licence": "MIT"
+  },
+  "main": "server",
+  "licence": "MIT"
 }
