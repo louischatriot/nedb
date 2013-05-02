@@ -5,8 +5,12 @@ var Datastore = require('../lib/datastore')
   , async = require('async')
   , customUtils = require('../lib/customUtils')
   , d
-  , order = customUtils.getRandomArray(10000)
+  , n = 10000
+  , order
   ;
+
+if (process.argv[2]) { n = parseInt(process.argv[2], 10); }
+order = customUtils.getRandomArray(n)
 
 console.log("Benchmarking find");
 
@@ -30,12 +34,12 @@ async.waterfall([
     var beg = new Date()
       , i = 0;
 
-    console.log("Inserting 10,000 documents");
+    console.log("Inserting " + n + " documents");
 
-    async.whilst( function () { return i < 10000; }
+    async.whilst( function () { return i < n; }
     , function (_cb) {
-      i += 1;
       d.insert({ docNumber: i }, function (err) {
+        i += 1;
         return _cb(err);
       });
     }, function (err) {
@@ -49,13 +53,13 @@ async.waterfall([
     var beg = new Date()
       , i = 0;
 
-    console.log("Finding 10,000 documents");
+    console.log("Finding " + n + " documents");
 
-    async.whilst( function () { return i < 10000; }
+    async.whilst( function () { return i < n; }
     , function (_cb) {
-      i += 1;
       d.find({ docNumber: order[i] }, function (err, docs) {
-        if (docs.length !== 1) { return _cb('Strangely, the doc was not found'); }
+        i += 1;
+        if (docs.length !== 1) { return _cb(docs); }
         return _cb(err);
       });
     }, function (err) {

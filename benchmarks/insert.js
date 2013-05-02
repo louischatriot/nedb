@@ -36,8 +36,8 @@ async.waterfall([
 
     async.whilst( function () { return i < n; }
     , function (_cb) {
-      i += 1;
       d.insert({ docNumber: i }, function (err) {
+        i += 1;
         return _cb(err);
       });
     }, function (err) {
