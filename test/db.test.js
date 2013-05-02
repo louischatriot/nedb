@@ -360,6 +360,20 @@ describe('Database', function () {
       var d = new Datastore(testDb)
         , id1, id2, id3;
 
+      // Test DB status
+      function testPostUpdateState (cb) {
+        d.find({}, function (err, docs) {
+          docs.length.should.equal(1);
+
+          Object.keys(docs[0]).length.should.equal(2);
+          docs[0]._id.should.equal(id1);
+          docs[0].somedata.should.equal('ok');
+
+          return cb();
+        });
+      }
+
+      // Actually launch the test
       async.waterfall([
       function (cb) {
         d.loadDatabase(function (err) {
@@ -379,18 +393,14 @@ describe('Database', function () {
         d.remove({ somedata: 'again' }, { multi: true }, function (err, n) {
           assert.isNull(err);
           n.should.equal(2);
-
-          d.find({}, function (err, docs) {
-            docs.length.should.equal(1);
-
-            Object.keys(docs[0]).length.should.equal(2);
-            docs[0]._id.should.equal(id1);
-            docs[0].somedata.should.equal('ok');
-
-            return cb();
-          });
+          return cb();
         });
       }
+      , async.apply(testPostUpdateState)
+      , function (cb) {
+        d.loadDatabase(function (err) { return cb(err); });
+      }
+      , async.apply(testPostUpdateState)
       ], done);
     });
 
