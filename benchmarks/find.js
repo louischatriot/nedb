@@ -61,6 +61,7 @@ async.waterfall([
       if (i === n) {   // Finished
         var timeTaken = (new Date()).getTime() - beg.getTime();   // In ms
         console.log("Time taken: " + (timeTaken / 1000) + "s");
+        console.log("Average time to find docs in a collection of " + n + " documents: " +  (timeTaken / n) + "ms");
         return cb();
       }
 

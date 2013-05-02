@@ -38,6 +38,7 @@ async.waterfall([
       if (i === n) {   // Finished
         var timeTaken = (new Date()).getTime() - beg.getTime();   // In ms
         console.log("Time taken: " + (timeTaken / 1000) + "s");
+        console.log("Average time for one insert: " + (timeTaken / n) + "ms");
         return cb();
       }
 
