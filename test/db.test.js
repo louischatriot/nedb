@@ -404,7 +404,6 @@ describe('Database', function () {
       ], done);
     });
 
-
   });   // ==== End of 'Remove' ==== //
 
 
