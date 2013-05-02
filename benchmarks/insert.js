@@ -8,7 +8,7 @@ var Datastore = require('../lib/datastore')
   , d
   ;
 
-if (process.argv[2]) { console.log(process.argv);}
+if (process.argv[2]) { n = parseInt(process.argv[2], 10); }
 
 console.log("Benchmarking insert");
 
@@ -32,9 +32,9 @@ async.waterfall([
     var beg = new Date()
       , i = 0;
 
-    console.log("Inserting 10,000 documents");
+    console.log("Inserting " + n + " documents");
 
-    async.whilst( function () { return i < 10000; }
+    async.whilst( function () { return i < n; }
     , function (_cb) {
       i += 1;
       d.insert({ docNumber: i }, function (err) {
