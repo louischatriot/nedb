@@ -127,11 +127,18 @@ describe('Database', function () {
           });
         });
       }
-      , function (cb) {   // Test with empty object
+      , function (cb) {   // Test with query that will return docs
         d.find({ somedata: 'again' }, function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(2);
           _.pluck(docs, 'somedata').should.not.contain('ok');
+          return cb();
+        });
+      }
+      , function (cb) {   // Test with query that doesn't match anything
+        d.find({ somedata: 'nope' }, function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(0);
           return cb();
         });
       }
