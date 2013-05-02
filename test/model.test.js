@@ -40,7 +40,6 @@ describe('Model', function () {
       c = model.deserialize(b);
       b.indexOf('\n').should.equal(-1);
       c.test.should.equal(true);
-      c.test.should.not.equal('true');
 
       done();
     });
@@ -53,7 +52,6 @@ describe('Model', function () {
       c = model.deserialize(b);
       b.indexOf('\n').should.equal(-1);
       c.test.should.equal(5);
-      c.test.should.not.equal('5');
 
       done();
     });
@@ -84,6 +82,35 @@ describe('Model', function () {
       done();
     });
 
+    it('Can serialize and deserialize sub objects', function (done) {
+      var a, b, c
+        , d = new Date();
+
+      a = { test: { something: 39, also: d, yes: { again: 'yes' } } };
+      b = model.serialize(a);
+      c = model.deserialize(b);
+      b.indexOf('\n').should.equal(-1);
+      c.test.something.should.equal(39);
+      c.test.also.getTime().should.equal(d.getTime());
+      c.test.yes.again.should.equal('yes');
+
+      done();
+    });
+
+    it('Can serialize and deserialize sub arrays', function (done) {
+      var a, b, c
+        , d = new Date();
+
+      a = { test: [ 39, d, { again: 'yes' } ] };
+      b = model.serialize(a);
+      c = model.deserialize(b);
+      b.indexOf('\n').should.equal(-1);
+      c.test[0].should.equal(39);
+      c.test[1].getTime().should.equal(d.getTime());
+      c.test[2].again.should.equal('yes');
+
+      done();
+    });
 
   });   // ==== End of 'Serialization, deserialization' ==== //
 
