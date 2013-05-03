@@ -10,18 +10,18 @@ It will be published as an npm module once it is finished. To launch tests: `npm
 
 ## Performance
 ### Speed
-Performance is pretty good on the kind of datasets it is designed for (10,000 documents or less). On my machine (3 years old, no SSD), with a collection with 10,000 documents:  
+It is pretty fast on the kind of datasets it was designed for (10,000 documents or less). On my machine (3 years old, no SSD), with a collection with 10,000 documents:  
 * An insert takes 0.1ms
 * A read takes 5.7ms
 * An update takes 62ms
 * A deletion takes 61ms
 Read, update and deletion times are pretty much non impacted by the number of concerned documents. Inserts, updates and deletions are non-blocking. Read will be soon, too (but they are so fast it is not so important anyway).
 
-Memory
-
+### Memory footprint
+For now, a copy of the whole database is kept in memory. For the kind of datasets expected this should be too much (max 20MB) but I am planning on stopping using that method to free RAM and make it completely asynchronous.
 
 ## API
-
+It's a subset of MongoDB's API.
 
 
 ## License 
