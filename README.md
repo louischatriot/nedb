@@ -3,7 +3,7 @@
 Embedded persistent database for Node.js, with no dependency (except npm modules of course). The API is the same as MongoDB.
 
 ## Why?
-I needed to store data from another project ([Braindead CI](https://github.com/louischatriot/braindead-ci)). I needed the datastore to be standalone (i.e. no dependency except other Node modules) so that people can install the software using a simple `npm install`. I couldn't find one without bugs and a clean API so I made this one.
+I needed to store data from another project (<a href="https://github.com/louischatriot/braindead-ci" target="_blank">Braindead CI</a>). I needed the datastore to be standalone (i.e. no dependency except other Node modules) so that people can install the software using a simple `npm install`. I couldn't find one without bugs and a clean API so I made this one.
 
 ## Installation, tests
 It will be published as an npm module once it is finished. To launch tests: `npm test`.
