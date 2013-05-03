@@ -43,17 +43,14 @@ module.exports.getRandomArray = getRandomArray;
 
 /**
  * Insert a certain number of documents for testing
- * @param {Datastore} d
- * @param {Number} n
- * @param {Profiler} profiler
  */
 module.exports.insertDocs = function (d, n, profiler, cb) {
   var beg = new Date()
-    , i = 0;
+    ;
 
   profiler.step('Begin inserting ' + n + ' docs');
 
-  function insertOne(i) {
+  function runFrom(i) {
     if (i === n) {   // Finished
       console.log("Average time for one insert: " + (profiler.elapsedSinceLastStep() / n) + "ms");
       profiler.step('Finished inserting ' + n + ' docs');
@@ -62,28 +59,25 @@ module.exports.insertDocs = function (d, n, profiler, cb) {
 
     d.insert({ docNumber: i }, function (err) {
       process.nextTick(function () {
-        insertOne(i + 1);
+        runFrom(i + 1);
       });
     });
   }
-  insertOne(0);
+  runFrom(0);
 };
 
 
 /**
- * Insert a certain number of documents for testing
- * @param {Datastore} d
- * @param {Number} n
- * @param {Profiler} profiler
+ * Find documents with find
  */
 module.exports.findDocs = function (d, n, profiler, cb) {
   var beg = new Date()
     , order = getRandomArray(n)
-    , i = 0;
+    ;
 
   profiler.step("Finding " + n + " documents");
 
-  function find(i) {
+  function runFrom(i) {
     if (i === n) {   // Finished
       console.log("Average time for one find in a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
       profiler.step('Finished finding ' + n + ' docs');
@@ -93,11 +87,38 @@ module.exports.findDocs = function (d, n, profiler, cb) {
     d.find({ docNumber: order[i] }, function (err, docs) {
       if (docs.length !== 1 || docs[0].docNumber !== order[i]) { return cb('One find didnt work'); }
       process.nextTick(function () {
-        find(i + 1);
+        runFrom(i + 1);
       });
     });
   }
-  find(0);
+  runFrom(0);
 };
 
+
+/**
+ * Find documents with findOne
+ */
+module.exports.findOneDocs = function (d, n, profiler, cb) {
+  var beg = new Date()
+    , order = getRandomArray(n)
+    ;
+
+  profiler.step("FindingOne " + n + " documents");
+
+  function runFrom(i) {
+    if (i === n) {   // Finished
+      console.log("Average time for one findOne in a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      profiler.step('Finished finding ' + n + ' docs');
+      return cb();
+    }
+
+    d.findOne({ docNumber: order[i] }, function (err, doc) {
+      if (!doc || doc.docNumber !== order[i]) { return cb('One find didnt work'); }
+      process.nextTick(function () {
+        runFrom(i + 1);
+      });
+    });
+  }
+  runFrom(0);
+};
 
