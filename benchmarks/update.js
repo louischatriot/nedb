@@ -14,13 +14,20 @@ if (process.argv[2]) { n = parseInt(process.argv[2], 10); }
 
 async.waterfall([
   async.apply(commonUtilities.prepareDb, benchDb)
-, function (cb) {
-    d.loadDatabase(cb);
-  }
+, function (cb) { d.loadDatabase(cb); }
 , function (cb) { profiler.beginProfiling(); return cb(); }
 , async.apply(commonUtilities.insertDocs, d, n, profiler)
+
+// Test with update only one document
 , function (cb) { profiler.step('MULTI: FALSE'); return cb(); }
 , async.apply(commonUtilities.updateDocs, { multi: false }, d, n, profiler)
+
+// Test with multiple documents
+, async.apply(commonUtilities.prepareDb, benchDb)
+, function (cb) { d.loadDatabase(cb); }
+, async.apply(commonUtilities.insertDocs, d, n, profiler)
+, function (cb) { profiler.step('MULTI: TRUE'); return cb(); }
+, async.apply(commonUtilities.updateDocs, { multi: true }, d, n, profiler)
 ], function (err) {
   profiler.step("Benchmark finished");
 
