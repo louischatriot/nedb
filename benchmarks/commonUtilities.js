@@ -152,6 +152,38 @@ module.exports.updateDocs = function (options, d, n, profiler, cb) {
 };
 
 
+/**
+ * Remove documents
+ * options is the same as the options object for update
+ */
+module.exports.removeDocs = function (options, d, n, profiler, cb) {
+  var beg = new Date()
+    , order = getRandomArray(n)
+    ;
+
+  profiler.step("Removing " + n + " documents");
+
+  function runFrom(i) {
+    if (i === n) {   // Finished
+      console.log("Average time for one remove in a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      profiler.step('Finished removing ' + n + ' docs');
+      return cb();
+    }
+
+    d.remove({ docNumber: order[i] }, options, function (err, nr) {
+      if (nr !== 1) { return cb('One remove didnt work'); }
+      d.insert({ docNumber: order[i] }, function (err) {   // Reinserting just removed document so that the collection size doesn't change
+                                                           // Time is about 70x smaller for an insert so the impact on the results is minimal
+        process.nextTick(function () {
+          runFrom(i + 1);
+        });
+      });
+    });
+  }
+  runFrom(0);
+};
+
+
 
 
 
