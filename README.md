@@ -15,6 +15,7 @@ It is pretty fast on the kind of datasets it was designed for (10,000 documents 
 * A read takes 5.7ms
 * An update takes 62ms
 * A deletion takes 61ms  
+
 Read, update and deletion times are pretty much non impacted by the number of concerned documents. Inserts, updates and deletions are non-blocking. Read will be soon, too (but they are so fast it is not so important anyway).
 
 You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. They all take an optional parameter which is the size of the dataset to use (default is 10,000).
