@@ -1,57 +1,24 @@
 var Datastore = require('../lib/datastore')
   , benchDb = 'workspace/insert.bench.db'
-  , fs = require('fs')
-  , path = require('path')
   , async = require('async')
-  , customUtils = require('../lib/customUtils')
+  , commonUtilities = require('./commonUtilities')
+  , execTime = require('exec-time')
+  , profiler = new execTime('INSERT BENCH')
   , n = 10000
-  , d
+  , d = new Datastore(benchDb)
   ;
 
 if (process.argv[2]) { n = parseInt(process.argv[2], 10); }
 
-console.log("Benchmarking insert");
-
 async.waterfall([
-  function (cb) {
-    console.log("Preparing database");
-
-    customUtils.ensureDirectoryExists(path.dirname(benchDb), function () {
-      fs.exists(benchDb, function (exists) {
-        if (exists) {
-          fs.unlink(benchDb, cb);
-        } else { return cb(); }
-      });
-    });
-  }
+  async.apply(commonUtilities.prepareDb, benchDb)
 , function (cb) {
-    d = new Datastore(benchDb);
     d.loadDatabase(cb);
   }
-, function (cb) {
-    var beg = new Date()
-      , i = 0;
-
-    console.log("Inserting " + n + " documents");
-
-    function insertOne(i) {
-      if (i === n) {   // Finished
-        var timeTaken = (new Date()).getTime() - beg.getTime();   // In ms
-        console.log("Time taken: " + (timeTaken / 1000) + "s");
-        console.log("Average time for one insert: " + (timeTaken / n) + "ms");
-        return cb();
-      }
-
-      d.insert({ docNumber: i }, function (err) {
-        process.nextTick(function () {
-          insertOne(i + 1);
-        });
-      });
-    }
-    insertOne(0);
-  }
+, function (cb) { profiler.beginProfiling(); return cb(); }
+, async.apply(commonUtilities.insertDocs, d, n, profiler)
 ], function (err) {
-  console.log("Benchmark finished");
+  profiler.step("Benchmark finished");
 
   if (err) { return console.log("An error was encountered: ", err); }
 });
