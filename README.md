@@ -6,7 +6,7 @@ Embedded persistent database for Node.js, with no dependency (except npm modules
 I needed to store data from another project ([https://github.com/louischatriot/braindead-ci](Braindead CI)). I needed the datastore to be standalone (i.e. no dependency except other Node modules) so that people can install the software using a simple `npm install`. I couldn't find one without bugs and a clean API so I made this one.
 
 ## Installation, tests
-It will be published as an npm module once it is finished. To launch tests: `npm test`. You 
+It will be published as an npm module once it is finished. To launch tests: `npm test`.
 
 ## Performance
 ### Speed
@@ -17,8 +17,10 @@ It is pretty fast on the kind of datasets it was designed for (10,000 documents 
 * A deletion takes 61ms
 Read, update and deletion times are pretty much non impacted by the number of concerned documents. Inserts, updates and deletions are non-blocking. Read will be soon, too (but they are so fast it is not so important anyway).
 
+You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. They all take an optional parameter which is the size of the dataset to use (default is 10,000).
+
 ### Memory footprint
-For now, a copy of the whole database is kept in memory. For the kind of datasets expected this should be too much (max 20MB) but I am planning on stopping using that method to free RAM and make it completely asynchronous.
+For now, a copy of the whole database is kept in memory. For the kind of datasets expected this should not be too much (max 20MB) but I am planning on stopping using that method to free RAM and make it completely asynchronous.
 
 ## API
 It's a subset of MongoDB's API.
