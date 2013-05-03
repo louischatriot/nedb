@@ -1,11 +1,11 @@
 var Datastore = require('../lib/datastore')
-  , benchDb = 'workspace/findOne.bench.db'
+  , benchDb = 'workspace/update.bench.db'
   , fs = require('fs')
   , path = require('path')
   , async = require('async')
   , commonUtilities = require('./commonUtilities')
   , execTime = require('exec-time')
-  , profiler = new execTime('FINDONE BENCH')
+  , profiler = new execTime('UPDATE BENCH')
   , d = new Datastore(benchDb)
   , n = 10000
   ;
@@ -19,7 +19,8 @@ async.waterfall([
   }
 , function (cb) { profiler.beginProfiling(); return cb(); }
 , async.apply(commonUtilities.insertDocs, d, n, profiler)
-, async.apply(commonUtilities.findOneDocs, d, n, profiler)
+, function (cb) { profiler.step('MULTI: FALSE'); return cb(); }
+, async.apply(commonUtilities.updateDocs, { multi: false }, d, n, profiler)
 ], function (err) {
   profiler.step("Benchmark finished");
 

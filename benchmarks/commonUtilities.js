@@ -122,3 +122,36 @@ module.exports.findOneDocs = function (d, n, profiler, cb) {
   runFrom(0);
 };
 
+
+/**
+ * Update documents
+ * options is the same as the options object for update
+ */
+module.exports.updateDocs = function (options, d, n, profiler, cb) {
+  var beg = new Date()
+    , order = getRandomArray(n)
+    ;
+
+  profiler.step("Updating " + n + " documents");
+
+  function runFrom(i) {
+    if (i === n) {   // Finished
+      console.log("Average time for one update in a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      profiler.step('Finished updating ' + n + ' docs');
+      return cb();
+    }
+
+    d.update({ docNumber: order[i] }, { newDocNumber: i }, options, function (err, nr) {
+      if (nr !== 1) { return cb('One update didnt work'); }
+      process.nextTick(function () {
+        runFrom(i + 1);
+      });
+    });
+  }
+  runFrom(0);
+};
+
+
+
+
+
