@@ -114,4 +114,39 @@ describe('Model', function () {
 
   });   // ==== End of 'Serialization, deserialization' ==== //
 
+
+  describe('Deep copying', function () {
+
+    it('Should be able to deep copy any serializable model', function () {
+      var d = new Date()
+        , obj = { a: ['ee', 'ff', 42], date: d, subobj: { a: 'b', b: 'c' } }
+        , res = model.deepCopy(obj);
+        ;
+
+      res.a.length.should.equal(3);
+      res.a[0].should.equal('ee');
+      res.a[1].should.equal('ff');
+      res.a[2].should.equal(42);
+      res.date.getTime().should.equal(d.getTime());
+      res.subobj.a.should.equal('b');
+      res.subobj.b.should.equal('c');
+
+      obj.a.push('ggg');
+      obj.date = 'notadate';
+      obj.subobj = [];
+
+      // Even if the original object is modified, the copied one isn't
+      res.a.length.should.equal(3);
+      res.a[0].should.equal('ee');
+      res.a[1].should.equal('ff');
+      res.a[2].should.equal(42);
+      res.date.getTime().should.equal(d.getTime());
+      res.subobj.a.should.equal('b');
+      res.subobj.b.should.equal('c');
+    });
+
+
+
+  });   // ==== End of 'Deep copying' ==== //
+
 });
