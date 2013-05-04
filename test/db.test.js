@@ -11,46 +11,55 @@ var Datastore = require('../lib/datastore')
 
 
 describe('Database', function () {
+  var d = new Datastore(testDb);
+
   beforeEach(function (done) {
-    customUtils.ensureDirectoryExists(path.dirname(testDb), function () {
-      fs.exists(testDb, function (exists) {
-        if (exists) {
-          fs.unlink(testDb, done);
-        } else { return done(); }
-      });
-    });
+    async.waterfall([
+      function (cb) {
+        customUtils.ensureDirectoryExists(path.dirname(testDb), function () {
+          fs.exists(testDb, function (exists) {
+            if (exists) {
+              fs.unlink(testDb, cb);
+            } else { return cb(); }
+          });
+        });
+      }
+    , function (cb) {
+        d.loadDatabase(function (err) {
+          assert.isNull(err);
+          return cb();
+        });
+      }
+    ], done);
+
   });
 
   describe('Insert', function () {
 
     it('Able to insert a document in the database and retrieve it even after a reload', function (done) {
-      var d = new Datastore(testDb);
-      d.loadDatabase(function (err) {
-        assert.isNull(err);
-        d.find({}, function (err, docs) {
-          docs.length.should.equal(0);
+      d.find({}, function (err, docs) {
+        docs.length.should.equal(0);
 
-          d.insert({ somedata: 'ok' }, function (err) {
-            // The data was correctly updated
-            d.find({}, function (err, docs) {
-              assert.isNull(err);
-              docs.length.should.equal(1);
-              Object.keys(docs[0]).length.should.equal(2);
-              docs[0].somedata.should.equal('ok');
-              assert.isDefined(docs[0]._id);
+        d.insert({ somedata: 'ok' }, function (err) {
+          // The data was correctly updated
+          d.find({}, function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(1);
+            Object.keys(docs[0]).length.should.equal(2);
+            docs[0].somedata.should.equal('ok');
+            assert.isDefined(docs[0]._id);
 
-              // After a reload the data has been correctly persisted
-              d.loadDatabase(function (err) {
-                d.find({}, function (err, docs) {
-                  assert.isNull(err);
-                  docs.length.should.equal(1);
-                  Object.keys(docs[0]).length.should.equal(2);
-                  docs[0].somedata.should.equal('ok');
-                  assert.isDefined(docs[0]._id);
+            // After a reload the data has been correctly persisted
+            d.loadDatabase(function (err) {
+              d.find({}, function (err, docs) {
+                assert.isNull(err);
+                docs.length.should.equal(1);
+                Object.keys(docs[0]).length.should.equal(2);
+                docs[0].somedata.should.equal('ok');
+                assert.isDefined(docs[0]._id);
 
 
-                  done();
-                });
+                done();
               });
             });
           });
@@ -59,22 +68,18 @@ describe('Database', function () {
     });
 
     it('Can insert multiple documents in the database', function (done) {
-      var d = new Datastore(testDb);
-      d.loadDatabase(function (err) {
-        assert.isNull(err);
-        d.find({}, function (err, docs) {
-          docs.length.should.equal(0);
+      d.find({}, function (err, docs) {
+        docs.length.should.equal(0);
 
-          d.insert({ somedata: 'ok' }, function (err) {
-            d.insert({ somedata: 'another' }, function (err) {
-              d.insert({ somedata: 'again' }, function (err) {
-                d.find({}, function (err, docs) {
-                  docs.length.should.equal(3);
-                  _.pluck(docs, 'somedata').should.contain('ok');
-                  _.pluck(docs, 'somedata').should.contain('another');
-                  _.pluck(docs, 'somedata').should.contain('again');
-                  done();
-                });
+        d.insert({ somedata: 'ok' }, function (err) {
+          d.insert({ somedata: 'another' }, function (err) {
+            d.insert({ somedata: 'again' }, function (err) {
+              d.find({}, function (err, docs) {
+                docs.length.should.equal(3);
+                _.pluck(docs, 'somedata').should.contain('ok');
+                _.pluck(docs, 'somedata').should.contain('another');
+                _.pluck(docs, 'somedata').should.contain('again');
+                done();
               });
             });
           });
@@ -85,23 +90,20 @@ describe('Database', function () {
     it('Can insert and get back from DB complex objects with all primitive and secondary types', function (done) {
       var da = new Date()
         , obj = { a: ['ee', 'ff', 42], date: da, subobj: { a: 'b', b: 'c' } }
-        , d = new Datastore(testDb)
         ;
 
-      d.loadDatabase(function () {
-        d.insert(obj, function (err) {
-          d.findOne({}, function (err, res) {
-            assert.isNull(err);
-            res.a.length.should.equal(3);
-            res.a[0].should.equal('ee');
-            res.a[1].should.equal('ff');
-            res.a[2].should.equal(42);
-            res.date.getTime().should.equal(da.getTime());
-            res.subobj.a.should.equal('b');
-            res.subobj.b.should.equal('c');
+      d.insert(obj, function (err) {
+        d.findOne({}, function (err, res) {
+          assert.isNull(err);
+          res.a.length.should.equal(3);
+          res.a[0].should.equal('ee');
+          res.a[1].should.equal('ff');
+          res.a[2].should.equal(42);
+          res.date.getTime().should.equal(da.getTime());
+          res.subobj.a.should.equal('b');
+          res.subobj.b.should.equal('c');
 
-            done();
-          });
+          done();
         });
       });
     });
@@ -112,15 +114,11 @@ describe('Database', function () {
   describe('Find', function () {
 
     it('Can find all documents an empty query is used', function (done) {
-      var d = new Datastore(testDb);
-
       async.waterfall([
       function (cb) {
-        d.loadDatabase(function (err) {
-          d.insert({ somedata: 'ok' }, function (err) {
-            d.insert({ somedata: 'another', plus: 'additional data' }, function (err) {
-              d.insert({ somedata: 'again' }, function (err) { return cb(err); });
-            });
+        d.insert({ somedata: 'ok' }, function (err) {
+          d.insert({ somedata: 'another', plus: 'additional data' }, function (err) {
+            d.insert({ somedata: 'again' }, function (err) { return cb(err); });
           });
         });
       }
@@ -139,15 +137,11 @@ describe('Database', function () {
     });
 
     it('Can find all documents matching a basic query', function (done) {
-      var d = new Datastore(testDb);
-
       async.waterfall([
       function (cb) {
-        d.loadDatabase(function (err) {
-          d.insert({ somedata: 'ok' }, function (err) {
-            d.insert({ somedata: 'again', plus: 'additional data' }, function (err) {
-              d.insert({ somedata: 'again' }, function (err) { return cb(err); });
-            });
+        d.insert({ somedata: 'ok' }, function (err) {
+          d.insert({ somedata: 'again', plus: 'additional data' }, function (err) {
+            d.insert({ somedata: 'again' }, function (err) { return cb(err); });
           });
         });
       }
@@ -170,15 +164,11 @@ describe('Database', function () {
     });
 
     it('Can find one document matching a basic query and return null if none is found', function (done) {
-      var d = new Datastore(testDb);
-
       async.waterfall([
       function (cb) {
-        d.loadDatabase(function (err) {
-          d.insert({ somedata: 'ok' }, function (err) {
-            d.insert({ somedata: 'again', plus: 'additional data' }, function (err) {
-              d.insert({ somedata: 'again' }, function (err) { return cb(err); });
-            });
+        d.insert({ somedata: 'ok' }, function (err) {
+          d.insert({ somedata: 'again', plus: 'additional data' }, function (err) {
+            d.insert({ somedata: 'again' }, function (err) { return cb(err); });
           });
         });
       }
@@ -207,15 +197,11 @@ describe('Database', function () {
   describe('Update', function () {
 
     it("If the query doesn't match anything, database is not modified", function (done) {
-      var d = new Datastore(testDb);
-
       async.waterfall([
       function (cb) {
-        d.loadDatabase(function (err) {
-          d.insert({ somedata: 'ok' }, function (err) {
-            d.insert({ somedata: 'again', plus: 'additional data' }, function (err) {
-              d.insert({ somedata: 'another' }, function (err) { return cb(err); });
-            });
+        d.insert({ somedata: 'ok' }, function (err) {
+          d.insert({ somedata: 'again', plus: 'additional data' }, function (err) {
+            d.insert({ somedata: 'another' }, function (err) { return cb(err); });
           });
         });
       }
@@ -253,8 +239,7 @@ describe('Database', function () {
     });
 
     it("Can update multiple documents matching the query", function (done) {
-      var d = new Datastore(testDb)
-        , id1, id2, id3;
+      var id1, id2, id3;
 
       // Test DB state after update and reload
       function testPostUpdateState (cb) {
@@ -285,15 +270,13 @@ describe('Database', function () {
       // Actually launch the tests
       async.waterfall([
       function (cb) {
-        d.loadDatabase(function (err) {
-          d.insert({ somedata: 'ok' }, function (err, doc1) {
-            id1 = doc1._id;
-            d.insert({ somedata: 'again', plus: 'additional data' }, function (err, doc2) {
-              id2 = doc2._id;
-              d.insert({ somedata: 'again' }, function (err, doc3) {
-                id3 = doc3._id;
-                return cb(err);
-              });
+        d.insert({ somedata: 'ok' }, function (err, doc1) {
+          id1 = doc1._id;
+          d.insert({ somedata: 'again', plus: 'additional data' }, function (err, doc2) {
+            id2 = doc2._id;
+            d.insert({ somedata: 'again' }, function (err, doc3) {
+              id3 = doc3._id;
+              return cb(err);
             });
           });
         });
@@ -314,8 +297,7 @@ describe('Database', function () {
     });
 
     it("Can update only one document matching the query", function (done) {
-      var d = new Datastore(testDb)
-        , id1, id2, id3;
+      var id1, id2, id3;
 
       // Test DB state after update and reload
       function testPostUpdateState (cb) {
@@ -347,15 +329,13 @@ describe('Database', function () {
       // Actually launch the test
       async.waterfall([
       function (cb) {
-        d.loadDatabase(function (err) {
-          d.insert({ somedata: 'ok' }, function (err, doc1) {
-            id1 = doc1._id;
-            d.insert({ somedata: 'again', plus: 'additional data' }, function (err, doc2) {
-              id2 = doc2._id;
-              d.insert({ somedata: 'again' }, function (err, doc3) {
-                id3 = doc3._id;
-                return cb(err);
-              });
+        d.insert({ somedata: 'ok' }, function (err, doc1) {
+          id1 = doc1._id;
+          d.insert({ somedata: 'again', plus: 'additional data' }, function (err, doc2) {
+            id2 = doc2._id;
+            d.insert({ somedata: 'again' }, function (err, doc3) {
+              id3 = doc3._id;
+              return cb(err);
             });
           });
         });
@@ -381,8 +361,7 @@ describe('Database', function () {
   describe('Remove', function () {
 
     it('Can remove multiple documents', function (done) {
-      var d = new Datastore(testDb)
-        , id1, id2, id3;
+      var id1, id2, id3;
 
       // Test DB status
       function testPostUpdateState (cb) {
@@ -400,15 +379,13 @@ describe('Database', function () {
       // Actually launch the test
       async.waterfall([
       function (cb) {
-        d.loadDatabase(function (err) {
-          d.insert({ somedata: 'ok' }, function (err, doc1) {
-            id1 = doc1._id;
-            d.insert({ somedata: 'again', plus: 'additional data' }, function (err, doc2) {
-              id2 = doc2._id;
-              d.insert({ somedata: 'again' }, function (err, doc3) {
-                id3 = doc3._id;
-                return cb(err);
-              });
+        d.insert({ somedata: 'ok' }, function (err, doc1) {
+          id1 = doc1._id;
+          d.insert({ somedata: 'again', plus: 'additional data' }, function (err, doc2) {
+            id2 = doc2._id;
+            d.insert({ somedata: 'again' }, function (err, doc3) {
+              id3 = doc3._id;
+              return cb(err);
             });
           });
         });
