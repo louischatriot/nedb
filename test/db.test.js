@@ -108,6 +108,30 @@ describe('Database', function () {
       });
     });
 
+    it('If an object returned from the DB is modified and refetched, the original value should be found', function (done) {
+      d.insert({ a: 'something' }, function () {
+        d.findOne({}, function (err, doc) {
+          doc.a.should.equal('something');
+          doc.a = 'another thing';
+          doc.a.should.equal('another thing');
+
+          // Re-fetching with findOne should yield the persisted value
+          d.findOne({}, function (err, doc) {
+            doc.a.should.equal('something');
+            doc.a = 'another thing';
+            doc.a.should.equal('another thing');
+
+            // Re-fetching with find should yield the persisted value
+            d.find({}, function (err, docs) {
+              docs[0].a.should.equal('something');
+
+              done();
+            });
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Insert' ==== //
 
 
