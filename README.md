@@ -1,4 +1,4 @@
-# node-embedded-db
+# NE DB (Node Embedded DataBase)
 
 Embedded persistent database for Node.js, with no dependency (except npm modules of course). The API is the same as MongoDB.
 
