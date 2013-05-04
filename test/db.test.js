@@ -355,6 +355,31 @@ describe('Database', function () {
       ], done);
     });
 
+    it('Can perform upserts if needed', function (done) {
+      d.update({ impossible: 'db is empty anyway' }, { newDoc: true }, {}, function (err, nr, upsert) {
+        assert.isNull(err);
+        nr.should.equal(0);
+        assert.isUndefined(upsert);
+
+        d.find({}, function (err, docs) {
+          docs.length.should.equal(0);   // Default option for upsert is false
+
+          d.update({ impossible: 'db is empty anyway' }, { newDoc: true }, { upsert: true }, function (err, nr, upsert) {
+            assert.isNull(err);
+            nr.should.equal(1);
+            upsert.should.equal(true);
+
+            d.find({}, function (err, docs) {
+              docs.length.should.equal(1);   // Default option for upsert is false
+              docs[0].newDoc.should.equal(true);
+
+              done();
+            });
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Update' ==== //
 
 
