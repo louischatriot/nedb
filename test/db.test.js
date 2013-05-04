@@ -82,6 +82,30 @@ describe('Database', function () {
       });
     });
 
+    it('Can insert and get back from DB complex objects with all primitive and secondary types', function (done) {
+      var da = new Date()
+        , obj = { a: ['ee', 'ff', 42], date: da, subobj: { a: 'b', b: 'c' } }
+        , d = new Datastore(testDb)
+        ;
+
+      d.loadDatabase(function () {
+        d.insert(obj, function (err) {
+          d.findOne({}, function (err, res) {
+            assert.isNull(err);
+            res.a.length.should.equal(3);
+            res.a[0].should.equal('ee');
+            res.a[1].should.equal('ff');
+            res.a[2].should.equal(42);
+            res.date.getTime().should.equal(da.getTime());
+            res.subobj.a.should.equal('b');
+            res.subobj.b.should.equal('c');
+
+            done();
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Insert' ==== //
 
 
