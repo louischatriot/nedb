@@ -1,6 +1,6 @@
 {
   "name": "nedb",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": {
     "name": "tldr.io",
     "email": "hello@tldr.io"
@@ -33,6 +33,6 @@
   "scripts": {
     "test": "make test"
   },
-  "main": "server",
+  "main": "index",
   "licence": "MIT"
 }
