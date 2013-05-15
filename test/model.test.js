@@ -250,7 +250,6 @@ describe('Model', function () {
     });
 
     describe('$set modifier', function () {
-
       it('Can change already set fields without modfifying the underlying object', function () {
         var obj = { some: 'thing', yup: 'yes', nay: 'noes' }
           , updateQuery = { $set: { some: 'changed', nay: 'yes indeed' } }
@@ -285,7 +284,42 @@ describe('Model', function () {
 
         _.isEqual(modified, { yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } }).should.equal(true);
       });
+    });
 
+    describe('$inc modifier', function () {
+      it('Throw an error if you try to use it with a non-number or on a non number field', function () {
+        (function () {
+        var obj = { some: 'thing', yup: 'yes', nay: 2 }
+          , updateQuery = { $inc: { nay: 'notanumber' } }
+          , modified = model.modify(obj, updateQuery);
+        }).should.throw();
+
+        (function () {
+        var obj = { some: 'thing', yup: 'yes', nay: 'nope' }
+          , updateQuery = { $inc: { nay: 1 } }
+          , modified = model.modify(obj, updateQuery);
+        }).should.throw();
+      });
+
+      it('Can increment number fields or create and initialize them if needed', function () {
+        var obj = { some: 'thing', nay: 40 }
+          , modified;
+
+        modified = model.modify(obj, { $inc: { nay: 2 } });
+        _.isEqual(modified, { some: 'thing', nay: 42 }).should.equal(true);
+
+        // Incidentally, this tests that obj was not modified
+        modified = model.modify(obj, { $inc: { inexistent: -6 } });
+        _.isEqual(modified, { some: 'thing', nay: 40, inexistent: -6 }).should.equal(true);
+      });
+
+      it('Works recursively', function () {
+        var obj = { some: 'thing', nay: { nope: 40 } }
+          , modified;
+
+        modified = model.modify(obj, { $inc: { "nay.nope": -2, "blip.blop": 123 } });
+        _.isEqual(modified, { some: 'thing', nay: { nope: 38 }, blip: { blop: 123 } }).should.equal(true);
+      });
     });
 
   });   // ==== End of 'Modifying documents' ==== //
