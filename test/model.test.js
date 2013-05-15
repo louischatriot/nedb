@@ -157,7 +157,15 @@ describe('Model', function () {
       res.subobj.b.should.equal('c');
     });
 
+    it('Will throw an error if obj contains a field beginning by the $ sign', function () {
+      (function () {
+        model.deepCopy({ $something: true });
+      }).should.throw();
 
+      (function () {
+        model.deepCopy({ something: true, another: { $badfield: 'rrr' } });
+      }).should.throw();
+    });
 
   });   // ==== End of 'Deep copying' ==== //
 

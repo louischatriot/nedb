@@ -422,6 +422,15 @@ describe('Database', function () {
       });
     });
 
+    it('Cannot perform update if the new document contains a field beginning by $', function (done) {
+      d.insert({ something: 'yup' }, function () {
+        d.update({}, { boom: { $badfield: 5 } }, { multi: false }, function (err) {
+          assert.isDefined(err);
+          done();
+        });
+      });
+    });
+
   });   // ==== End of 'Update' ==== //
 
 
