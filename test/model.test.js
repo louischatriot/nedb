@@ -127,6 +127,30 @@ describe('Model', function () {
   });   // ==== End of 'Serialization, deserialization' ==== //
 
 
+  describe('Object checking', function () {
+
+    it('Field names beginning with a $ sign are forbidden', function () {
+      assert.isDefined(model.checkObject);
+
+      (function () {
+        model.checkObject({ $bad: true });
+      }).should.throw();
+
+      (function () {
+        model.checkObject({ some: 42, nested: { again: "no", $worse: true } });
+      }).should.throw();
+
+      // This shouldn't throw since "$actuallyok" is not a field name
+      model.checkObject({ some: 42, nested: [ 5, "no", "$actuallyok", true ] });
+
+      (function () {
+        model.checkObject({ some: 42, nested: [ 5, "no", "$actuallyok", true, { $hidden: "useless" } ] });
+      }).should.throw();
+    });
+
+  });   // ==== End of 'Object checking' ==== //
+
+
   describe('Deep copying', function () {
 
     it('Should be able to deep copy any serializable model', function () {
@@ -155,16 +179,6 @@ describe('Model', function () {
       res.date.getTime().should.equal(d.getTime());
       res.subobj.a.should.equal('b');
       res.subobj.b.should.equal('c');
-    });
-
-    it('Will throw an error if obj contains a field beginning by the $ sign', function () {
-      (function () {
-        model.deepCopy({ $something: true });
-      }).should.throw();
-
-      (function () {
-        model.deepCopy({ something: true, another: { $badfield: 'rrr' } });
-      }).should.throw();
     });
 
   });   // ==== End of 'Deep copying' ==== //
