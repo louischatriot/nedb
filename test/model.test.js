@@ -249,6 +249,45 @@ describe('Model', function () {
       }).should.throw();
     });
 
+    describe('$set modifier', function () {
+
+      it('Can change already set fields without modfifying the underlying object', function () {
+        var obj = { some: 'thing', yup: 'yes', nay: 'noes' }
+          , updateQuery = { $set: { some: 'changed', nay: 'yes indeed' } }
+          , modified = model.modify(obj, updateQuery);
+
+        Object.keys(modified).length.should.equal(3);
+        modified.some.should.equal('changed');
+        modified.yup.should.equal('yes');
+        modified.nay.should.equal('yes indeed');
+
+        Object.keys(obj).length.should.equal(3);
+        obj.some.should.equal('thing');
+        obj.yup.should.equal('yes');
+        obj.nay.should.equal('noes');
+      });
+
+      it('Creates fields to set if they dont exist yet', function () {
+        var obj = { yup: 'yes' }
+          , updateQuery = { $set: { some: 'changed', nay: 'yes indeed' } }
+          , modified = model.modify(obj, updateQuery);
+
+        Object.keys(modified).length.should.equal(3);
+        modified.some.should.equal('changed');
+        modified.yup.should.equal('yes');
+        modified.nay.should.equal('yes indeed');
+      });
+
+      it('Can set sub-fields and create them if necessary', function () {
+        var obj = { yup: { subfield: 'bloup' } }
+          , updateQuery = { $set: { "yup.subfield": 'changed', "yup.yop": 'yes indeed', "totally.doesnt.exist": 'now it does' } }
+          , modified = model.modify(obj, updateQuery);
+
+        _.isEqual(modified, { yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } }).should.equal(true);
+      });
+
+    });
+
   });   // ==== End of 'Modifying documents' ==== //
 
 });
