@@ -240,6 +240,15 @@ describe('Model', function () {
       }).should.throw();
     });
 
+    it('Throw an error if a modifier is used with a non-object argument', function () {
+      var obj = { some: 'thing' }
+        , updateQuery = { $set: 'this exists' };
+
+      (function () {
+        model.modify(obj, updateQuery);
+      }).should.throw();
+    });
+
   });   // ==== End of 'Modifying documents' ==== //
 
 });
