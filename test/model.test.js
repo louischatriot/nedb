@@ -148,6 +148,16 @@ describe('Model', function () {
       }).should.throw();
     });
 
+    it('Field names cannot contain a .', function () {
+      assert.isDefined(model.checkObject);
+
+      (function () {
+        model.checkObject({ "so.bad": true });
+      }).should.throw();
+
+      // Recursive behaviour testing done in the above test on $ signs
+    });
+
   });   // ==== End of 'Object checking' ==== //
 
 
