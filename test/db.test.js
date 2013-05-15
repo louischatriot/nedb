@@ -422,13 +422,49 @@ describe('Database', function () {
       });
     });
 
-    it('Cannot perform update if the new document contains a field beginning by $', function (done) {
+    it('Cannot perform update if the update query is not either registered-modifiers-only or copy-only, or contain badly formatted fields', function (done) {
       d.insert({ something: 'yup' }, function () {
         d.update({}, { boom: { $badfield: 5 } }, { multi: false }, function (err) {
           assert.isDefined(err);
-          done();
+
+          d.update({}, { boom: { "bad.field": 5 } }, { multi: false }, function (err) {
+            assert.isDefined(err);
+
+            d.update({}, { $inc: { test: 5 }, mixed: 'rrr' }, { multi: false }, function (err) {
+              assert.isDefined(err);
+
+              d.update({}, { $inexistent: { test: 5 } }, { multi: false }, function (err) {
+                assert.isDefined(err);
+
+                done();
+              });
+            });
+          });
         });
       });
+    });
+
+    it('Can update documents using multiple modifiers', function (done) {
+      var id;
+
+      d.insert({ something: 'yup', other: 40 }, function (err, newDoc) {
+        id = newDoc._id;
+
+        d.update({}, { $set: { something: 'changed' }, $inc: { other: 10 } }, { multi: false }, function (err, nr) {
+          assert.isNull(err);
+          nr.should.equal(1);
+
+          d.findOne({ _id: id }, function (err, doc) {
+            Object.keys(doc).length.should.equal(3);
+            doc._id.should.equal(id);
+            doc.something.should.equal('changed');
+            doc.other.should.equal(50);
+
+            done();
+          });
+        });
+      });
+
     });
 
   });   // ==== End of 'Update' ==== //
