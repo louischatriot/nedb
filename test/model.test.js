@@ -193,4 +193,35 @@ describe('Model', function () {
 
   });   // ==== End of 'Deep copying' ==== //
 
+
+  describe('Modifying documents', function () {
+
+    it('Queries not containing any modifier just replace the document by the contents of the query but keep its _id', function () {
+      var obj = { some: 'thing', _id: 'keepit' }
+        , updateQuery = { replace: 'done', bloup: [ 1, 8] }
+        , t
+        ;
+
+      t = model.modify(obj, updateQuery);
+      t.replace.should.equal('done');
+      t.bloup.length.should.equal(2);
+      t.bloup[0].should.equal(1);
+      t.bloup[1].should.equal(8);
+
+      assert.isUndefined(t.some);
+      t._id.should.equal('keepit');
+    });
+
+    it('Raise an error if trying to replace the _id field in a copy-type modification', function () {
+      var obj = { some: 'thing', _id: 'keepit' }
+        , updateQuery = { replace: 'done', bloup: [ 1, 8], _id: 'donttryit' }
+        ;
+
+      (function () {
+        model.modify(obj, updateQuery);
+      }).should.throw();
+    });
+
+  });   // ==== End of 'Modifying documents' ==== //
+
 });
