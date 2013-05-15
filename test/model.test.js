@@ -112,6 +112,18 @@ describe('Model', function () {
       done();
     });
 
+    it('Reject field names beginning with a $ sign', function (done) {
+      var a = { $something: 'totest' }
+        , b;
+
+      try {
+        b = model.serialize(a);
+        return done('An error should have been thrown');
+      } catch (e) {
+        return done();
+      }
+    });
+
   });   // ==== End of 'Serialization, deserialization' ==== //
 
 

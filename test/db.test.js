@@ -36,7 +36,7 @@ describe('Database', function () {
 
   describe('Insert', function () {
 
-    it('Able to insert a document in the database and retrieve it even after a reload', function (done) {
+    it('Able to insert a document in the database, setting an _id if none provided, and retrieve it even after a reload', function (done) {
       d.find({}, function (err, docs) {
         docs.length.should.equal(0);
 
@@ -129,6 +129,24 @@ describe('Database', function () {
             });
           });
         });
+      });
+    });
+
+    it('Cannot insert a doc that has a field beginning with a $ sign', function (done) {
+      d.insert({ $something: 'atest' }, function (err) {
+        assert.isDefined(err);
+        done();
+      });
+    });
+
+    it('If an _id is already given when we insert a document, use it and not the default uid', function (done) {
+      d.insert({ _id: 'test', stuff: true }, function (err, newDoc) {
+        if (err) { return done(err); }
+
+        newDoc.stuff.should.equal(true);
+        newDoc._id.should.equal('test');
+
+        done();
       });
     });
 
