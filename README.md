@@ -18,12 +18,29 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 var Datastore = require('nedb')
   , db = new Datastore('path/to/datafile');
   
-db.loadDatabase(callback);   // Callback is optional and has signature err
+db.loadDatabase(function (err) {    // Callback is optional
+  // err is the error, if any
+});
 ```
 
 ### Inserting documents
-```javascript
+The native types are String, Number, Boolean and Date. You can also use
+arrays and subdocuments (objects). If you specify an `_id` field, it
+will be used as the document's _id, otherwise a nedb will generate one.
+Note the generated `_id` is a simple string, not an ObjectId.
 
+```javascript
+var document = { hello: 'world'
+               , n: 5
+               , today: new Date()
+               , nedbIsAwesome: true
+               , fruits: [ 'apple, 'orange', 'pear' ]
+               , infos: { name: 'nedb' }
+               };
+
+db.insert(document, function (err, newDoc) {   // Callback is optional
+  // newDoc is the newly inserted document, including its _id
+});
 ```
 
 
