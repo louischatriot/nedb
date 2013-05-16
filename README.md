@@ -82,6 +82,8 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 });
 ```
 
+### Updating documents
+
 
 ## Performance
 ### Speed
