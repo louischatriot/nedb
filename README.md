@@ -135,6 +135,28 @@ db.update({ planet: 'Pluton' }, { $set: { inhabited: false } }, { upsert: true }
 });
 ```
 
+### Removing documents
+`db.remove(query, options, callback)` will remove all documents matching `query` according to `options`  
+* `query` is the same as the ones used for finding and updating
+* `options` only one option for now: `multi` which allows the removal of multiple documents if set to true. Default is false
+* `callback` is optional, signature: err, numRemoved
+
+```javascript
+// Let's use the same example collection as in the "finding document" part
+
+// Remove one document from the collection
+// options set to {} since the default for multi is false
+db.remove({ _id: 'id2' }, {}, function (err, numRemoved) {
+  // numRemoved = 1
+});
+
+// Remove multiple documents
+db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
+  // numRemoved = 3
+  // All planets from the solar system were removed
+});
+```
+
 
 ## Performance
 ### Speed
