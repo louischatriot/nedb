@@ -44,7 +44,7 @@ var document = { hello: 'world'
                , n: 5
                , today: new Date()
                , nedbIsAwesome: true
-               , fruits: [ 'apple, 'orange', 'pear' ]
+               , fruits: [ 'apple', 'orange', 'pear' ]
                , infos: { name: 'nedb' }
                };
 
