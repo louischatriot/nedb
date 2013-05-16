@@ -11,7 +11,7 @@ I needed to store data from another project (<a href="https://github.com/louisch
 It will be published as an npm module once it is finished. To launch tests: `npm test`.
 
 ## API
-It's a subset of MongoDB's API (the most used operations).
+It's a subset of MongoDB's API (the most used operations). The current API will not change, but I will add operations as they are needed.
 
 ### Creating/loading a database
 ```javascript
@@ -19,6 +19,11 @@ var Datastore = require('nedb')
   , db = new Datastore('path/to/datafile');
   
 db.loadDatabase(callback);   // Callback is optional and has signature err
+```
+
+### Inserting documents
+```javascript
+
 ```
 
 
