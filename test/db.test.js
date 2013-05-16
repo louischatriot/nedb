@@ -474,8 +474,9 @@ describe('Database', function () {
 
         d.find({}, function (err, docs) {
           docs.length.should.equal(1);
-          Object.keys(docs[0]).length.should.equal(2);
+          Object.keys(docs[0]).length.should.equal(3);
           docs[0].hello.should.equal('world');
+          docs[0].bloup.should.equal('blap');
           assert.isDefined(docs[0]._id);
 
           done();
