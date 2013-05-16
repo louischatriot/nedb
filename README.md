@@ -85,9 +85,15 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 ### Updating documents
 `db.update(query, update, options, callback)` will update all documents matching `query` according to the `update` rules:  
 * `query` is the same kind of finding query you use with `find` and `findOne`
-* `update` specifies how the documents should be modified. It is either a new document which will replace the matched ones, or a set of modifiers. The available modifiers are `$set` to change a field's value and `$inc` to increment a field's value. You cannot use mixed updates with both modes (that doesn't make sense anyway)
-* `options` is an object with two possible parameters: `multi` (defaults to `false`) which allows the modification of several documents if set to true, and `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything
-* `callback` (optional) signature: err, numReplaced, upsert. `numReplaced` is the number of documents replaced and `upsert` is set to true if the upsert mode was chosen and a document was inserted
+* `update` specifies how the documents should be modified. It is either:
+  * A new document which will replace the matched ones
+  * A set of modifiers. The available modifiers are `$set` to change a field's value and `$inc` to increment a field's value. You cannot use mixed updates with both modes (that doesn't make sense anyway)
+* `options` is an object with two possible parameters
+  * `multi` (defaults to `false`) which allows the modification of several documents if set to true
+  * `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything
+* `callback` (optional) signature: err, numReplaced, upsert
+  * `numReplaced` is the number of documents replaced
+  * `upsert` is set to true if the upsert mode was chosen and a document was inserted
 
 ```javascript
 // Let's use the same example collection as in the "finding document" part
