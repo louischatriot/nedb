@@ -10,6 +10,18 @@ I needed to store data from another project (<a href="https://github.com/louisch
 ## Installation, tests
 It will be published as an npm module once it is finished. To launch tests: `npm test`.
 
+## API
+It's a subset of MongoDB's API (the most used operations).
+
+### Creating/loading a database
+```javascript
+var Datastore = require('nedb')
+  , db = new Datastore('path/to/datafile');
+  
+db.loadDatabase(callback);   // Callback is optional and has signature err
+```
+
+
 ## Performance
 ### Speed
 It is pretty fast on the kind of datasets it was designed for (10,000 documents or less). On my machine (3 years old, no SSD), with a collection with 10,000 documents:  
@@ -25,8 +37,6 @@ You can run the simple benchmarks I use by executing the scripts in the `benchma
 ### Memory footprint
 For now, a copy of the whole database is kept in memory. For the kind of datasets expected this should not be too much (max 20MB) but I am planning on stopping using that method to free RAM and make it completely asynchronous.
 
-## API
-It's a subset of MongoDB's API.
 
 
 ## License 
