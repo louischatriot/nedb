@@ -101,9 +101,14 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 db.update({ planet: 'Jupiter' }, { planet: 'Pluton'}, {}, function (err, numReplaced) {
   // numReplaced = 1
   // The doc #3 has been replaced by { _id: 'id3', planet: 'Pluton' }
-  // Note that the _id has not been modified
+  // Note that the _id is kept unchanged, and the document has been replaced
+  // (the 'system' field is not here anymore)
 });
 
+db.update({ system: 'solar' }, { $set: { system: 'solar system' } }, { multi: true }, function (err, numResult) {
+  // numResult = 3
+  // Field 'system' on Mars, Earth, Jupiter now has value 'solar system'
+});
 ```
 
 
