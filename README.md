@@ -36,8 +36,8 @@ db.robots.loadDatabase();
 ### Inserting documents
 The native types are String, Number, Boolean and Date. You can also use
 arrays and subdocuments (objects). If you specify an `_id` field, it
-will be used as the document's _id, otherwise a nedb will generate one.
-Note the generated `_id` is a simple string, not an ObjectId.
+will be used as the document's _id, otherwise nedb will generate one.
+Note that the generated `_id` is a simple string, not an ObjectId.
 
 ```javascript
 var document = { hello: 'world'
@@ -68,11 +68,17 @@ use `find` to look for multiple documents matching you query, of
 // Finding all planets in the solar system
 db.find({ system: 'solar' }, function (err, docs) {
   // docs is an array containing documents _id1, _id2, _id3
+  // If no document is found, docs is equal to []
 });
 
 // Finding all inhabited planets in the solar system
 db.find({ system: 'solar', inhabited: true }, function (err, docs) {
   // docs is an array containing document _id2 only
+});
+
+db.findOne({ _id: 'id1' }, function (err, doc) {
+  // doc is the document _id1
+  // If no document is found, doc is null
 });
 ```
 
