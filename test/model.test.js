@@ -212,7 +212,7 @@ describe('Model', function () {
       t._id.should.equal('keepit');
     });
 
-    it('Throw an error if trying to replace the _id field in a copy-type modification', function () {
+    it('Throw an error if trying to change the _id field in a copy-type modification', function () {
       var obj = { some: 'thing', _id: 'keepit' }
         , updateQuery = { replace: 'done', bloup: [ 1, 8], _id: 'donttryit' }
         ;
@@ -220,6 +220,9 @@ describe('Model', function () {
       (function () {
         model.modify(obj, updateQuery);
       }).should.throw();
+
+      updateQuery._id = 'keepit';
+      model.modify(obj, updateQuery);   // No error thrown
     });
 
     it('Throw an error if trying to use modify in a mixed copy+modify way', function () {
