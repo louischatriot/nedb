@@ -464,7 +464,23 @@ describe('Database', function () {
           });
         });
       });
+    });
 
+    it('Can upsert a document even with modifiers', function (done) {
+      d.update({ bloup: 'blap' }, { $set: { hello: 'world' } }, { upsert: true }, function (err, nr, upsert) {
+        assert.isNull(err);
+        nr.should.equal(1);
+        upsert.should.equal(true);
+
+        d.find({}, function (err, docs) {
+          docs.length.should.equal(1);
+          Object.keys(docs[0]).length.should.equal(2);
+          docs[0].hello.should.equal('world');
+          assert.isDefined(docs[0]._id);
+
+          done();
+        });
+      });
     });
 
   });   // ==== End of 'Update' ==== //
