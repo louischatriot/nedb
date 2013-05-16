@@ -89,6 +89,11 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 * `options` is an object with two possible parameters: `multi` (defaults to `false`) which allows the modification of several documents if set to true, and `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything
 * `callback` (optional) signature: err, numReplaced, upsert. `numReplaced` is the number of documents replaced and `upsert` is set to true if the upsert mode was chosen and a document was inserted
 
+```javascript
+// Let's use the same example collection as in the "finding document" part
+
+```
+
 
 ## Performance
 ### Speed
