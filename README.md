@@ -76,6 +76,10 @@ db.find({ system: 'solar', inhabited: true }, function (err, docs) {
   // docs is an array containing document _id2 only
 });
 
+db.find({}, function (err, docs) {
+  // docs contains all documents in the collection  
+});
+
 db.findOne({ _id: 'id1' }, function (err, doc) {
   // doc is the document _id1
   // If no document is found, doc is null
@@ -87,7 +91,7 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 * `query` is the same kind of finding query you use with `find` and `findOne`
 * `update` specifies how the documents should be modified. It is either a new document or a set of modifiers (you cannot use both together, it doesn't make sense!)
   * A new document will replace the matched docs
-  * The available modifiers are `$set` to change a field's value and `$inc` to increment a field's value. The modifiers create the fields they need to modify if they don't exist, and you can apply them to subdocs (see examples below)
+  * The available modifiers are `$set` to change a field's value and `$inc` to increment a field's value. The modifiers create the fields they need to modify if they don't exist, and you can apply them to subdocs. See examples below for the syntax
 * `options` is an object with two possible parameters
   * `multi` (defaults to `false`) which allows the modification of several documents if set to true
   * `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything
@@ -98,12 +102,32 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 ```javascript
 // Let's use the same example collection as in the "finding document" part
 
+// Replace a document by another
 db.update({ planet: 'Jupiter' }, { planet: 'Pluton'}, {}, function (err, numReplaced) {
   // numReplaced = 1
   // The doc #3 has been replaced by { _id: 'id3', planet: 'Pluton' }
-  // Note that the _id has not been modified
+  // Note that the _id is kept unchanged, and the document has been replaced
+  // (the 'system' and inhabited fields are not here anymore)
 });
 
+// Set an existing field's value
+db.update({ system: 'solar' }, { $set: { system: 'solar system' } }, { multi: true }, function (err, numReplaced) {
+  // numReplaced = 3
+  // Field 'system' on Mars, Earth, Jupiter now has value 'solar system'
+});
+
+// Incrementing the value of a non-existing field in a subdocument
+db.update({ planet: 'Mars' }, { $inc: { "data.satellites": 2 } }, {}, function () {
+  // Mars document now is { _id: 'id1', system: 'solar', inhabited: false
+  //                      , data: { satellites: 2 }
+  //                      }
+});
+
+// Upserting a document
+db.update({ planet: 'Pluton' }, { planet: 'Pluton', inhabited: false }, { upsert: true }, function (err, numReplaced, upsert) {
+  // numReplaced = 1, upsert = true
+  // A new document { _id: 'id5', planet: 'Pluton', inhabited: false } has been added to the collection
+});
 ```
 
 
