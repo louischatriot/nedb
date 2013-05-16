@@ -21,6 +21,16 @@ var Datastore = require('nedb')
 db.loadDatabase(function (err) {    // Callback is optional
   // err is the error, if any
 });
+
+// Of course you can create multiple datastores if you need several
+// collections. For example:
+db = {};
+db.users = new Datastore('path/to/users.db');
+db.robots = new Datastore('path/to/robots.db');
+
+// You need to load each database
+db.users.loadDatabase();
+db.robots.loadDatabase();
 ```
 
 ### Inserting documents
@@ -40,6 +50,29 @@ var document = { hello: 'world'
 
 db.insert(document, function (err, newDoc) {   // Callback is optional
   // newDoc is the newly inserted document, including its _id
+});
+```
+
+### Finding documents
+For now, you can only select documents based on field equality. You can
+use `find` to look for multiple documents matching you query, of
+`findOne` to look for one specific document.
+
+```javascript
+// Let's say our datastore contains the following collection
+// { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false }
+// { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true }
+// { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
+// { _id: 'id4', planet: 'Omicron Persia 8', system: 'futurama', inhabited: true }
+
+// Finding all planets in the solar system
+db.find({ system: 'solar' }, function (err, docs) {
+  // docs is an array containing documents _id1, _id2, _id3
+});
+
+// Finding all inhabited planets in the solar system
+db.find({ system: 'solar', inhabited: true }, function (err, docs) {
+  // docs is an array containing document _id2 only
 });
 ```
 
