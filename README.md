@@ -128,6 +128,11 @@ db.update({ planet: 'Pluton' }, { planet: 'Pluton', inhabited: false }, { upsert
   // numReplaced = 1, upsert = true
   // A new document { _id: 'id5', planet: 'Pluton', inhabited: false } has been added to the collection
 });
+
+// If you upsert with a modifier, the upserted doc is the query modified by the modifier
+db.update({ planet: 'Pluton' }, { $set: { inhabited: false } }, { upsert: true }, function () {
+  // A new document { _id: 'id5', planet: 'Pluton', inhabited: false } has been added to the collection  
+});
 ```
 
 
