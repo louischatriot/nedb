@@ -37,7 +37,7 @@ db.robots.loadDatabase();
 The native types are String, Number, Boolean and Date. You can also use
 arrays and subdocuments (objects). If you specify an `_id` field, it
 will be used as the document's _id, otherwise nedb will generate one.
-Note that the generated `_id` is a simple string, not an ObjectId.
+Note that the generated `_id` is a simple string, not an ObjectId. Field names cannot begin by '$' or contain a '.'.
 
 ```javascript
 var document = { hello: 'world'
@@ -83,6 +83,28 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 ```
 
 ### Updating documents
+`db.update(query, update, options, callback)` will update all documents matching `query` according to the `update` rules:  
+* `query` is the same kind of finding query you use with `find` and `findOne`
+* `update` specifies how the documents should be modified. It is either a new document or a set of modifiers (you cannot use both together, it doesn't make sense!)
+  * A new document will replace the matched docs
+  * The available modifiers are `$set` to change a field's value and `$inc` to increment a field's value. The modifiers create the fields they need to modify if they don't exist, and you can apply them to subdocs (see examples below)
+* `options` is an object with two possible parameters
+  * `multi` (defaults to `false`) which allows the modification of several documents if set to true
+  * `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything
+* `callback` (optional) signature: err, numReplaced, upsert
+  * `numReplaced` is the number of documents replaced
+  * `upsert` is set to true if the upsert mode was chosen and a document was inserted
+
+```javascript
+// Let's use the same example collection as in the "finding document" part
+
+db.update({ planet: 'Jupiter' }, { planet: 'Pluton'}, {}, function (err, numReplaced) {
+  // numReplaced = 1
+  // The doc #3 has been replaced by { _id: 'id3', planet: 'Pluton' }
+  // Note that the _id has not been modified
+});
+
+```
 
 
 ## Performance
