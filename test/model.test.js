@@ -327,4 +327,31 @@ describe('Model', function () {
 
   });   // ==== End of 'Modifying documents' ==== //
 
+
+  describe('Finding documents', function () {
+
+    describe('$eq', function () {
+
+      it('Can find documents with simple fields', function () {
+        model.match({ test: 'yeah' }, { test: 'yea' }).should.equal(false);
+        model.match({ test: 'yeah' }, { test: 'yeahh' }).should.equal(false);
+        model.match({ test: 'yeah' }, { test: 'yeah' }).should.equal(true);
+      });
+
+      it('Can find documents with the dot-notation', function () {
+        model.match({ test: { ooo: 'yeah' } }, { "test.ooo": 'yea' }).should.equal(false);
+        model.match({ test: { ooo: 'yeah' } }, { "test.oo": 'yeah' }).should.equal(false);
+        model.match({ test: { ooo: 'yeah' } }, { "tst.ooo": 'yeah' }).should.equal(false);
+        model.match({ test: { ooo: 'yeah' } }, { "test.ooo": 'yeah' }).should.equal(true);
+      });
+
+      it('Can find undefined in first level or dot notation', function () {
+        model.match({ test: undefined }, { test: undefined }).should.equal(true);
+        model.match({ test: { pp: undefined } }, { "test.pp": undefined }).should.equal(true);
+      });
+
+    });
+
+  });   // ==== End of 'Finding documents' ==== //
+
 });
