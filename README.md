@@ -175,7 +175,7 @@ You can run the simple benchmarks I use by executing the scripts in the `benchma
 
 ### Memory footprint
 A copy of the whole database is kept in memory. This is not much on the
-expected (20MB for 10,000 2K documents). If requested, I'll introduce an
+expected kind of datasets (20MB for 10,000 2KB documents). If requested, I'll introduce an
 option to not use this cache to decrease memory footprint (at the cost
 of a lower speed).
 
