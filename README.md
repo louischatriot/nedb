@@ -104,6 +104,10 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 
 ```javascript
 // Let's use the same example collection as in the "finding document" part
+// { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false }
+// { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true }
+// { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
+// { _id: 'id4', planet: 'Omicron Persia 8', system: 'futurama', inhabited: true }
 
 // Replace a document by another
 db.update({ planet: 'Jupiter' }, { planet: 'Pluton'}, {}, function (err, numReplaced) {
@@ -119,11 +123,19 @@ db.update({ system: 'solar' }, { $set: { system: 'solar system' } }, { multi: tr
   // Field 'system' on Mars, Earth, Jupiter now has value 'solar system'
 });
 
-// Incrementing the value of a non-existing field in a subdocument
-db.update({ planet: 'Mars' }, { $inc: { "data.satellites": 2 } }, {}, function () {
+// Setting the value of a non-existing field in a subdocument by using the dot-notation
+db.update({ planet: 'Mars' }, { $set: { "data.satellites": 2, "data.red": true } }, {}, function () {
   // Mars document now is { _id: 'id1', system: 'solar', inhabited: false
-  //                      , data: { satellites: 2 }
+  //                      , data: { satellites: 2, red: true }
   //                      }
+  // Not that to set fields in subdocuments, you HAVE to use dot-notation
+  // Using object-notation will just replace the top-level field
+  db.update({ planet: 'Mars' }, { $set: { date: { satellites: 3 } } }, {}, function () {
+    // Mars document now is { _id: 'id1', system: 'solar', inhabited: false
+    //                      , data: { satellites: 3 }
+    //                      }
+    // You lost the "data.red" field which is probably not the intended behavior
+  });
 });
 
 // Upserting a document
@@ -133,8 +145,9 @@ db.update({ planet: 'Pluton' }, { planet: 'Pluton', inhabited: false }, { upsert
 });
 
 // If you upsert with a modifier, the upserted doc is the query modified by the modifier
-db.update({ planet: 'Pluton' }, { $set: { inhabited: false } }, { upsert: true }, function () {
-  // A new document { _id: 'id5', planet: 'Pluton', inhabited: false } has been added to the collection  
+// This is simpler than it sounds :)
+db.update({ planet: 'Pluton' }, { $inc: { distance: 38 } }, { upsert: true }, function () {
+  // A new document { _id: 'id5', planet: 'Pluton', distance: 38 } has been added to the collection  
 });
 ```
 
@@ -146,6 +159,10 @@ db.update({ planet: 'Pluton' }, { $set: { inhabited: false } }, { upsert: true }
 
 ```javascript
 // Let's use the same example collection as in the "finding document" part
+// { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false }
+// { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true }
+// { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
+// { _id: 'id4', planet: 'Omicron Persia 8', system: 'futurama', inhabited: true }
 
 // Remove one document from the collection
 // options set to {} since the default for multi is false
