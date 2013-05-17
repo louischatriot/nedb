@@ -1,6 +1,6 @@
 # NeDB (Node Embedded DataBase)
 
-<img src="http://i.imgur.com/qHV42XB.png" style="width: 25%; height: 25%; float: left;">
+<img src="http://i.imgur.com/GdeQBmc.png" style="width: 25%; height: 25%; float: left;">
 
 Embedded persistent database for Node.js, with no dependency (except npm
 modules of course). You can think of it as a SQLite for Node.js, which
