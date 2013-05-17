@@ -59,7 +59,7 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 ```
 
 ### Finding documents
-You can use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. For now, you can only select documents based on field equality,but I'm planning to add Mongo's <a href="http://docs.mongodb.org/manual/reference/operator/query-comparison/" target="_blank">$in, $lt, $gt, $lte and $gte comparison operators</a>.
+You can use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. For now, you can only select documents based on field equality, but I'm planning to add Mongo's <a href="http://docs.mongodb.org/manual/reference/operator/query-comparison/" target="_blank">$in, $lt, $gt, $lte and $gte comparison operators</a>.
 
 ```javascript
 // Let's say our datastore contains the following collection
