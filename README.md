@@ -1,15 +1,18 @@
 # NeDB (Node Embedded DataBase)
 
+<img src="http://i.imgur.com/qHV42XB.png" style="width: 25%; height: 25%; float: left;">
+
 Embedded persistent database for Node.js, with no dependency (except npm
 modules of course). You can think of it as a SQLite for Node.js, which
 can be installed and used in less than 30 seconds. The API is a subset of MongoDB's.
 
 
 ## Installation, tests
+Module name on npm is `nedb`.
 ```javascript
 npm install nedb --save   // Put latest version in your package.json
 
-make test
+make test   // You'll need the dev dependencies to test it
 ```
 
 ## API
