@@ -484,6 +484,28 @@ describe('Database', function () {
       });
     });
 
+    it('When using modifiers, the only way to update subdocs is with the dot-notation', function (done) {
+      d.insert({ bloup: { blip: "blap", other: true } }, function () {
+        // Correct methos
+        d.update({}, { $set: { "bloup.blip": "hello" } }, {}, function () {
+          d.findOne({}, function (err, doc) {
+            doc.bloup.blip.should.equal("hello");
+            doc.bloup.other.should.equal(true);
+
+            // Wrong
+            d.update({}, { $set: { bloup: { blip: "ola" } } }, {}, function () {
+              d.findOne({}, function (err, doc) {
+                doc.bloup.blip.should.equal("ola");
+                assert.isUndefined(doc.bloup.other);   // This information was lost
+
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Update' ==== //
 
 
@@ -534,9 +556,33 @@ describe('Database', function () {
       ], done);
     });
 
+    // This tests concurrency issues
+    // Right now, it doesn't pass, because I need to 
+    //it.only('Remove can be called multiple times in parallel and everything that needs to be removed will be', function (done) {
+      //d.insert({ planet: 'Earth' }, function () {
+        //d.insert({ planet: 'Mars' }, function () {
+          //d.insert({ planet: 'Saturn' }, function () {
+            //d.find({}, function (err, docs) {
+              //docs.length.should.equal(3);
+
+              //// Remove two docs simultaneously
+              //var toRemove = ['Mars', 'Saturn'];
+              //async.each(toRemove, function(planet, cb) {
+                //d.remove({ planet: planet }, function (err) { return cb(err); });
+              //}, function (err) {
+                //d.find({}, function (err, docs) {
+                  //docs.length.should.equal(1);
+
+                  //done();
+                //});
+              //});
+            //});
+          //});
+        //});
+      //});
+    //});
+
   });   // ==== End of 'Remove' ==== //
-
-
 
 
 });
