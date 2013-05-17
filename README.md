@@ -1,9 +1,9 @@
-# NeDB (Node Embedded DataBase)
+# NeDB (Node embedded database)
 
 <img src="http://i.imgur.com/GdeQBmc.png" style="width: 25%; height: 25%; float: left;">
 
-Embedded persistent database for Node.js, with no dependency (except npm
-modules of course). You can think of it as a SQLite for Node.js, which
+**Embedded persistent database for Node.js, with no dependency** (except npm
+modules of course). You can **think of it as a SQLite for Node.js projects**, which
 can be installed and used in less than 30 seconds. The API is a subset of MongoDB's.
 
 
@@ -33,7 +33,7 @@ db = {};
 db.users = new Datastore('path/to/users.db');
 db.robots = new Datastore('path/to/robots.db');
 
-// You need to load each database
+// You need to load each database (here we do it asynchronously)
 db.users.loadDatabase();
 db.robots.loadDatabase();
 ```
@@ -59,9 +59,7 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 ```
 
 ### Finding documents
-For now, you can only select documents based on field equality. You can
-use `find` to look for multiple documents matching you query, of
-`findOne` to look for one specific document.
+You can use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. For now, you can only select documents based on field equality,but I'm planning to add Mongo's <a href="http://docs.mongodb.org/manual/reference/operator/query-comparison/" target="_blank">$in, $lt, $gt, $lte and $gte comparison operators</a>.
 
 ```javascript
 // Let's say our datastore contains the following collection
