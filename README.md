@@ -163,7 +163,9 @@ db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
 
 ## Performance
 ### Speed
-It is pretty fast on the kind of datasets it is designed for (10,000
+**NeDB is not intended to be a replacement of large-scale databases such as MongoDB!** Its goal is to provide you with a clean and easy way to query data and persist it to disk, for applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a>.
+
+As such, it was not designed for speed. That said, it is still pretty fast on the expected datasets (10,000
 documents max). On my machine (3 years old, no SSD), with a collection
 containing 10,000 documents:  
 * An insert takes 0.1ms
