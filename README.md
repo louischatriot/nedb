@@ -88,7 +88,6 @@ db.find({}, function (err, docs) {
   // docs contains all documents in the collection  
 });
 
-
 // The same rules apply when you want to only find one document
 db.findOne({ _id: 'id1' }, function (err, doc) {
   // doc is the document _id1
