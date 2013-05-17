@@ -104,6 +104,10 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 
 ```javascript
 // Let's use the same example collection as in the "finding document" part
+// { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false }
+// { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true }
+// { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
+// { _id: 'id4', planet: 'Omicron Persia 8', system: 'futurama', inhabited: true }
 
 // Replace a document by another
 db.update({ planet: 'Jupiter' }, { planet: 'Pluton'}, {}, function (err, numReplaced) {
@@ -155,6 +159,10 @@ db.update({ planet: 'Pluton' }, { $inc: { distance: 38 } }, { upsert: true }, fu
 
 ```javascript
 // Let's use the same example collection as in the "finding document" part
+// { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false }
+// { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true }
+// { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
+// { _id: 'id4', planet: 'Omicron Persia 8', system: 'futurama', inhabited: true }
 
 // Remove one document from the collection
 // options set to {} since the default for multi is false
