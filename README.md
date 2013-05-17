@@ -119,7 +119,7 @@ db.update({ system: 'solar' }, { $set: { system: 'solar system' } }, { multi: tr
   // Field 'system' on Mars, Earth, Jupiter now has value 'solar system'
 });
 
-// Incrementing the value of a non-existing field in a subdocument by using the dot-notation
+// Setting the value of a non-existing field in a subdocument by using the dot-notation
 db.update({ planet: 'Mars' }, { $set: { "data.satellites": 2, "data.red": true } }, {}, function () {
   // Mars document now is { _id: 'id1', system: 'solar', inhabited: false
   //                      , data: { satellites: 2, red: true }
@@ -142,8 +142,8 @@ db.update({ planet: 'Pluton' }, { planet: 'Pluton', inhabited: false }, { upsert
 
 // If you upsert with a modifier, the upserted doc is the query modified by the modifier
 // This is simpler than it sounds :)
-db.update({ planet: 'Pluton' }, { $set: { inhabited: false } }, { upsert: true }, function () {
-  // A new document { _id: 'id5', planet: 'Pluton', inhabited: false } has been added to the collection  
+db.update({ planet: 'Pluton' }, { $inc: { distance: 38 } }, { upsert: true }, function () {
+  // A new document { _id: 'id5', planet: 'Pluton', distance: 38 } has been added to the collection  
 });
 ```
 
