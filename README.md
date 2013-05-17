@@ -64,7 +64,7 @@ You can use `find` to look for multiple documents matching you query, or `findOn
 ```javascript
 // Let's say our datastore contains the following collection
 // { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false }
-// { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true }
+// { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true, humans: { genders: 2 } }
 // { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
 // { _id: 'id4', planet: 'Omicron Persia 8', system: 'futurama', inhabited: true }
 
@@ -79,10 +79,17 @@ db.find({ system: 'solar', inhabited: true }, function (err, docs) {
   // docs is an array containing document _id2 only
 });
 
+// Use the dot-notation to match fields in subdocuments
+db.find({ "humans.genders": 2 }, function (err, docs) {
+  // docs contains Earth
+});
+
 db.find({}, function (err, docs) {
   // docs contains all documents in the collection  
 });
 
+
+// The same rules apply when you want to only find one document
 db.findOne({ _id: 'id1' }, function (err, doc) {
   // doc is the document _id1
   // If no document is found, doc is null
