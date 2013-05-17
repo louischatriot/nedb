@@ -233,6 +233,16 @@ describe('Database', function () {
       ], done);
     });
 
+    it.skip('Can use dot-notation to query subfields', function (done) {
+      d.insert({ greeting: { english: 'hello' } }, function () {
+        d.findOne({ "greeting.english": 'hello' }, function (err, doc) {
+          doc.greeting.english.should.equal('hello');
+
+          done();
+        });
+      });
+    });
+
   });   // ==== End of 'Find' ==== //
 
 
