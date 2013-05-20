@@ -196,7 +196,7 @@ containing 10,000 documents:
 * An update takes 58ms
 * A deletion takes 57ms  
 
-You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. They all take an optional parameter which is the size of the dataset to use (default is 10,000). Most of the time spent during update and remove operations is IO, and I will work on optimizing this in the future.
+You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. They all take an optional parameter which is the size of the dataset to use (default is 10,000). Most of the time spent during update and remove operations is IO, and I will work on optimizing this in the future (probably by switching to an append-only format).
 
 ### Memory footprint
 A copy of the whole database is kept in memory. This is not much on the
