@@ -184,6 +184,32 @@ module.exports.removeDocs = function (options, d, n, profiler, cb) {
 };
 
 
+/**
+ * Load database
+ */
+module.exports.loadDatabase = function (d, n, profiler, cb) {
+  var beg = new Date()
+    , order = getRandomArray(n)
+    ;
+
+  profiler.step("Loading the database " + n + " times");
+
+  function runFrom(i) {
+    if (i === n) {   // Finished
+      console.log("Average time for one loadDatabse for a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      profiler.step('Finished loading a database' + n + ' times');
+      return cb();
+    }
+
+    d.loadDatabase(function (err) {
+      process.nextTick(function () {
+        runFrom(i + 1);
+      });
+    });
+  }
+  runFrom(0);
+};
+
 
 
 
