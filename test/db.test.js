@@ -567,30 +567,29 @@ describe('Database', function () {
     });
 
     // This tests concurrency issues
-    // Right now, it doesn't pass, because I need to 
-    //it.only('Remove can be called multiple times in parallel and everything that needs to be removed will be', function (done) {
-      //d.insert({ planet: 'Earth' }, function () {
-        //d.insert({ planet: 'Mars' }, function () {
-          //d.insert({ planet: 'Saturn' }, function () {
-            //d.find({}, function (err, docs) {
-              //docs.length.should.equal(3);
+    it('Remove can be called multiple times in parallel and everything that needs to be removed will be', function (done) {
+      d.insert({ planet: 'Earth' }, function () {
+        d.insert({ planet: 'Mars' }, function () {
+          d.insert({ planet: 'Saturn' }, function () {
+            d.find({}, function (err, docs) {
+              docs.length.should.equal(3);
 
-              //// Remove two docs simultaneously
-              //var toRemove = ['Mars', 'Saturn'];
-              //async.each(toRemove, function(planet, cb) {
-                //d.remove({ planet: planet }, function (err) { return cb(err); });
-              //}, function (err) {
-                //d.find({}, function (err, docs) {
-                  //docs.length.should.equal(1);
+              // Remove two docs simultaneously
+              var toRemove = ['Mars', 'Saturn'];
+              async.each(toRemove, function(planet, cb) {
+                d.remove({ planet: planet }, function (err) { return cb(err); });
+              }, function (err) {
+                d.find({}, function (err, docs) {
+                  docs.length.should.equal(1);
 
-                  //done();
-                //});
-              //});
-            //});
-          //});
-        //});
-      //});
-    //});
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+    });
 
   });   // ==== End of 'Remove' ==== //
 
