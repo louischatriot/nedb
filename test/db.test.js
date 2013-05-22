@@ -284,6 +284,35 @@ describe('Database', function () {
       });
     });
 
+    it('Array fields match if any element matches', function (done) {
+      d.insert({ fruits: ['pear', 'apple', 'banana'] }, function (err, doc1) {
+        d.insert({ fruits: ['coconut', 'orange', 'pear'] }, function (err, doc2) {
+          d.insert({ fruits: ['banana'] }, function (err, doc3) {
+            d.find({ fruits: 'pear' }, function (err, docs) {
+              assert.isNull(err);
+              docs.length.should.equal(2);
+              _.pluck(docs, '_id').should.contain(doc1._id);
+              _.pluck(docs, '_id').should.contain(doc2._id);
+
+              d.find({ fruits: 'banana' }, function (err, docs) {
+                assert.isNull(err);
+                docs.length.should.equal(2);
+                _.pluck(docs, '_id').should.contain(doc1._id);
+                _.pluck(docs, '_id').should.contain(doc3._id);
+
+                d.find({ fruits: 'doesntexist' }, function (err, docs) {
+                  assert.isNull(err);
+                  docs.length.should.equal(0);
+
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Find' ==== //
 
 
