@@ -39,22 +39,29 @@ db.robots.loadDatabase();
 ```
 
 ### Inserting documents
-The native types are String, Number, Boolean and Date. You can also use
-arrays and subdocuments (objects). If you specify an `_id` field, it
-will be used as the document's _id, otherwise nedb will generate one.
-Note that the generated `_id` is a simple string, not an ObjectId. Field names cannot begin by '$' or contain a '.'.
+The native types are `String`, `Number`, `Boolean`, `Date` and `null`. You can also use
+arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from 
+MongoDB which transforms `undefined` in `null`, something I find counter-intuitive).  
+
+If you specify an `_id` field, it will be used as the document's id, otherwise nedb will generate one randomly.
+Note that the generated `_id` is a simple string, not an `ObjectId`.  
+
+Field names cannot begin by '$' or contain a '.'.
 
 ```javascript
 var document = { hello: 'world'
                , n: 5
                , today: new Date()
                , nedbIsAwesome: true
+               , notthere: null
+               , notToBeSaved: undefined  // Will not be saved
                , fruits: [ 'apple', 'orange', 'pear' ]
                , infos: { name: 'nedb' }
                };
 
 db.insert(document, function (err, newDoc) {   // Callback is optional
   // newDoc is the newly inserted document, including its _id
+  // newDoc has no key called notToBeSaved since its value was undefined
 });
 ```
 
