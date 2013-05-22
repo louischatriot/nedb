@@ -325,13 +325,13 @@ describe('Model', function () {
   });   // ==== End of 'Modifying documents' ==== //
 
 
-  describe.only('Finding documents', function () {
+  describe('Finding documents', function () {
 
     describe('Comparing things', function () {
 
       it('Two things of different types cannot be equal, two identical native things are equal', function () {
-        var toTest = [null, undefined, 'somestring', 42, true, new Date(72998322), { hello: 'world' }]
-          , toTestAgainst = [null, undefined, 'somestring', 42, true, new Date(72998322), { hello: 'world' }]   // Use another array so that we don't test pointer equality
+        var toTest = [null, 'somestring', 42, true, new Date(72998322), { hello: 'world' }]
+          , toTestAgainst = [null, 'somestring', 42, true, new Date(72998322), { hello: 'world' }]   // Use another array so that we don't test pointer equality
           , i, j
           ;
 
@@ -353,7 +353,7 @@ describe('Model', function () {
         }
       });
 
-      it('If one side is an array, comparison fails', function () {
+      it('If one side is an array or undefined, comparison fails', function () {
         var toTestAgainst = [null, undefined, 'somestring', 42, true, new Date(72998322), { hello: 'world' }]
           , i
           ;
@@ -361,6 +361,9 @@ describe('Model', function () {
         for (i = 0; i < toTestAgainst.length; i += 1) {
           model.areThingsEqual([1, 2, 3], toTestAgainst[i]).should.equal(false);
           model.areThingsEqual(toTestAgainst[i], []).should.equal(false);
+
+          model.areThingsEqual(undefined, toTestAgainst[i]).should.equal(false);
+          model.areThingsEqual(toTestAgainst[i], undefined).should.equal(false);
         }
       });
 
@@ -388,9 +391,9 @@ describe('Model', function () {
         model.match({ test: { ooo: 'yeah' } }, { "test.ooo": 'yeah' }).should.equal(true);
       });
 
-      it('Can find undefined in first level or dot notation', function () {
-        model.match({ test: undefined }, { test: undefined }).should.equal(true);
-        model.match({ test: { pp: undefined } }, { "test.pp": undefined }).should.equal(true);
+      it('Cannot find undefined', function () {
+        model.match({ test: undefined }, { test: undefined }).should.equal(false);
+        model.match({ test: { pp: undefined } }, { "test.pp": undefined }).should.equal(false);
       });
 
     });
