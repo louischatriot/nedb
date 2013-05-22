@@ -416,6 +416,9 @@ describe('Model', function () {
         model.match({ tags: ['node', 'js', 'db'] }, { tags: 'python' }).should.equal(false);
         model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js' }).should.equal(true);
         model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js', tags: 'node' }).should.equal(true);
+
+        // Mixed matching with array and non array
+        model.match({ tags: ['node', 'js', 'db'], nedb: true }, { tags: 'js', nedb: true }).should.equal(true);
       });
 
     });
