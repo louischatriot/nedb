@@ -330,7 +330,7 @@ describe('Model', function () {
 
   describe('Finding documents', function () {
 
-    describe.only('Comparing things', function () {
+    describe('Comparing things', function () {
 
       it('Two things of different types cannot be equal, two identical native things are equal', function () {
         var toTest = [null, undefined, 'somestring', 42, true, new Date(72998322), { hello: 'world' }]

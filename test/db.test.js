@@ -233,15 +233,33 @@ describe('Database', function () {
       ], done);
     });
 
-    it('Can find dates and objects', function (done) {
-      var now = new Date();
+    it('Can find dates and objects (non JS-native types)', function (done) {
+      var date1 = new Date(1234543)
+        , date2 = new Date(9999)
+        ;
 
-      d.insert({ now: now, sth: { name: 'nedb' } }, function () {
-        d.findOne({ now: now }, function (err, doc) {
-          //console.log(doc);
-          // TODO
+      d.insert({ now: date1, sth: { name: 'nedb' } }, function () {
+        d.findOne({ now: date1 }, function (err, doc) {
+          assert.isNull(err);
+          doc.sth.name.should.equal('nedb');
 
-          done();
+          d.findOne({ now: date2 }, function (err, doc) {
+            assert.isNull(err);
+            assert.isNull(doc);
+
+            d.findOne({ sth: { name: 'nedb' } }, function (err, doc) {
+              assert.isNull(err);
+              doc.sth.name.should.equal('nedb');
+
+              d.findOne({ sth: { name: 'other' } }, function (err, doc) {
+                assert.isNull(err);
+                assert.isNull(doc);
+
+
+                done();
+              });
+            });
+          });
         });
       });
     });
@@ -249,9 +267,20 @@ describe('Database', function () {
     it('Can use dot-notation to query subfields', function (done) {
       d.insert({ greeting: { english: 'hello' } }, function () {
         d.findOne({ "greeting.english": 'hello' }, function (err, doc) {
+          assert.isNull(err);
           doc.greeting.english.should.equal('hello');
 
-          done();
+          d.findOne({ "greeting.english": 'hellooo' }, function (err, doc) {
+            assert.isNull(err);
+            assert.isNull(doc);
+
+            d.findOne({ "greeting.englis": 'hello' }, function (err, doc) {
+              assert.isNull(err);
+              assert.isNull(doc);
+
+              done();
+            });
+          });
         });
       });
     });
