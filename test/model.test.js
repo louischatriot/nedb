@@ -10,7 +10,7 @@ describe('Model', function () {
 
   describe('Serialization, deserialization', function () {
 
-    it('Can serialize and deserialize strings', function (done) {
+    it('Can serialize and deserialize strings', function () {
       var a, b, c;
 
       a = { test: "Some string" };
@@ -28,11 +28,9 @@ describe('Model', function () {
       a.test.indexOf('\n').should.not.equal(-1);
       b.indexOf('\n').should.equal(-1);
       c.test.indexOf('\n').should.not.equal(-1);
-
-      done();
     });
 
-    it('Can serialize and deserialize booleans', function (done) {
+    it('Can serialize and deserialize booleans', function () {
       var a, b, c;
 
       a = { test: true };
@@ -40,11 +38,9 @@ describe('Model', function () {
       c = model.deserialize(b);
       b.indexOf('\n').should.equal(-1);
       c.test.should.equal(true);
-
-      done();
     });
 
-    it('Can serialize and deserialize numbers', function (done) {
+    it('Can serialize and deserialize numbers', function () {
       var a, b, c;
 
       a = { test: 5 };
@@ -52,11 +48,9 @@ describe('Model', function () {
       c = model.deserialize(b);
       b.indexOf('\n').should.equal(-1);
       c.test.should.equal(5);
-
-      done();
     });
 
-    it('Can serialize and deserialize null', function (done) {
+    it('Can serialize and deserialize null', function () {
       var a, b, c;
 
       a = { test: null };
@@ -64,11 +58,20 @@ describe('Model', function () {
       c = model.deserialize(b);
       b.indexOf('\n').should.equal(-1);
       assert.isNull(a.test);
-
-      done();
     });
 
-    it('Can serialize and deserialize a date', function (done) {
+    it('undefined fields are removed when serialized', function() {
+      var a = { bloup: undefined, hello: 'world' }
+        , b = model.serialize(a)
+        , c = model.deserialize(b)
+        ;
+
+      Object.keys(c).length.should.equal(1);
+      c.hello.should.equal('world');
+      assert.isUndefined(c.bloup);
+    });
+
+    it('Can serialize and deserialize a date', function () {
       var a, b, c
         , d = new Date();
 
@@ -78,11 +81,9 @@ describe('Model', function () {
       b.indexOf('\n').should.equal(-1);
       c.test.constructor.name.should.equal('Date');
       c.test.getTime().should.equal(d.getTime());
-
-      done();
     });
 
-    it('Can serialize and deserialize sub objects', function (done) {
+    it('Can serialize and deserialize sub objects', function () {
       var a, b, c
         , d = new Date();
 
@@ -93,11 +94,9 @@ describe('Model', function () {
       c.test.something.should.equal(39);
       c.test.also.getTime().should.equal(d.getTime());
       c.test.yes.again.should.equal('yes');
-
-      done();
     });
 
-    it('Can serialize and deserialize sub arrays', function (done) {
+    it('Can serialize and deserialize sub arrays', function () {
       var a, b, c
         , d = new Date();
 
@@ -108,8 +107,6 @@ describe('Model', function () {
       c.test[0].should.equal(39);
       c.test[1].getTime().should.equal(d.getTime());
       c.test[2].again.should.equal('yes');
-
-      done();
     });
 
     it('Reject field names beginning with a $ sign', function (done) {
@@ -328,7 +325,7 @@ describe('Model', function () {
   });   // ==== End of 'Modifying documents' ==== //
 
 
-  describe('Finding documents', function () {
+  describe.only('Finding documents', function () {
 
     describe('Comparing things', function () {
 
