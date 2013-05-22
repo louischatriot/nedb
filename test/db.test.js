@@ -155,7 +155,7 @@ describe('Database', function () {
 
   describe('Find', function () {
 
-    it('Can find all documents an empty query is used', function (done) {
+    it('Can find all documents if an empty query is used', function (done) {
       async.waterfall([
       function (cb) {
         d.insert({ somedata: 'ok' }, function (err) {
@@ -231,6 +231,19 @@ describe('Database', function () {
         });
       }
       ], done);
+    });
+
+    it('Can find dates and objects', function (done) {
+      var now = new Date();
+
+      d.insert({ now: now, sth: { name: 'nedb' } }, function () {
+        d.findOne({ now: now }, function (err, doc) {
+          //console.log(doc);
+          // TODO
+
+          done();
+        });
+      });
     });
 
     it('Can use dot-notation to query subfields', function (done) {

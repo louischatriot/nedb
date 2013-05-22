@@ -330,6 +330,52 @@ describe('Model', function () {
 
   describe('Finding documents', function () {
 
+    describe.only('Comparing things', function () {
+
+      it('Two things of different types cannot be equal, two identical native things are equal', function () {
+        var toTest = [null, undefined, 'somestring', 42, true, new Date(72998322), { hello: 'world' }]
+          , toTestAgainst = [null, undefined, 'somestring', 42, true, new Date(72998322), { hello: 'world' }]   // Use another array so that we don't test pointer equality
+          , i, j
+          ;
+
+        for (i = 0; i < toTest.length; i += 1) {
+          for (j = 0; j < toTestAgainst.length; j += 1) {
+            model.areThingsEqual(toTest[i], toTestAgainst[j]).should.equal(i === j);
+          }
+        }
+      });
+
+      it('Can test native types null undefined string number boolean date equality', function () {
+        var toTest = [null, undefined, 'somestring', 42, true, new Date(72998322), { hello: 'world' }]
+          , toTestAgainst = [undefined, null, 'someotherstring', 5, false, new Date(111111), { hello: 'mars' }]
+          , i
+          ;
+
+        for (i = 0; i < toTest.length; i += 1) {
+          model.areThingsEqual(toTest[i], toTestAgainst[i]).should.equal(false);
+        }
+      });
+
+      it('If one side is an array, comparison fails', function () {
+        var toTestAgainst = [null, undefined, 'somestring', 42, true, new Date(72998322), { hello: 'world' }]
+          , i
+          ;
+
+        for (i = 0; i < toTestAgainst.length; i += 1) {
+          model.areThingsEqual([1, 2, 3], toTestAgainst[i]).should.equal(false);
+          model.areThingsEqual(toTestAgainst[i], []).should.equal(false);
+        }
+      });
+
+      it('Can test objects equality', function () {
+        model.areThingsEqual({ hello: 'world' }, {}).should.equal(false);
+        model.areThingsEqual({ hello: 'world' }, { hello: 'mars' }).should.equal(false);
+        model.areThingsEqual({ hello: 'world' }, { hello: 'world', temperature: 42 }).should.equal(false);
+        model.areThingsEqual({ hello: 'world', other: { temperature: 42 }}, { hello: 'world', other: { temperature: 42 }}).should.equal(true);
+      });
+
+    });
+
     describe('$eq', function () {
 
       it('Can find documents with simple fields', function () {
