@@ -325,7 +325,7 @@ describe('Model', function () {
   });   // ==== End of 'Modifying documents' ==== //
 
 
-  describe('Finding documents', function () {
+  describe('Querying', function () {
 
     describe('Comparing things', function () {
 
@@ -410,6 +410,12 @@ describe('Model', function () {
       it('Cannot find undefined', function () {
         model.match({ test: undefined }, { test: undefined }).should.equal(false);
         model.match({ test: { pp: undefined } }, { "test.pp": undefined }).should.equal(false);
+      });
+
+      it('For field array, a match means a match on at least one element', function () {
+        model.match({ tags: ['node', 'js', 'db'] }, { tags: 'python' }).should.equal(false);
+        model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js' }).should.equal(true);
+        model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js', tags: 'node' }).should.equal(true);
       });
 
     });
