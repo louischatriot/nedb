@@ -64,7 +64,7 @@ You can use `find` to look for multiple documents matching you query, or `findOn
 ```javascript
 // Let's say our datastore contains the following collection
 // { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false }
-// { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true, humans: { genders: 2 } }
+// { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true, humans: { genders: 2, eyes: true } }
 // { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
 // { _id: 'id4', planet: 'Omicron Persia 8', system: 'futurama', inhabited: true }
 
@@ -82,6 +82,11 @@ db.find({ system: 'solar', inhabited: true }, function (err, docs) {
 // Use the dot-notation to match fields in subdocuments
 db.find({ "humans.genders": 2 }, function (err, docs) {
   // docs contains Earth
+});
+
+// You can also deep-compare objects. Don't confuse this with dot-notation!
+db.find({ humans: { genders: 2 } }, function (err, docs) {
+  // docs is empty, because { genders: 2 } is not equal to { genders: 2, eyes: true }
 });
 
 db.find({}, function (err, docs) {
