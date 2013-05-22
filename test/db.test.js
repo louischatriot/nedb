@@ -255,7 +255,6 @@ describe('Database', function () {
                 assert.isNull(err);
                 assert.isNull(doc);
 
-
                 done();
               });
             });
