@@ -376,6 +376,22 @@ describe('Model', function () {
 
     });
 
+
+    describe('Getting a fields value in dot notation', function () {
+
+      it('Return first-level and nested values', function () {
+        model.getDotValue({ hello: 'world' }, 'hello').should.equal('world');
+        model.getDotValue({ hello: 'world', type: { planet: true, blue: true } }, 'type.planet').should.equal(true);
+      });
+
+      it('Return undefined if the field cannot be found in the object', function () {
+        assert.isUndefined(model.getDotValue({ hello: 'world' }, 'helloo'));
+        assert.isUndefined(model.getDotValue({ hello: 'world', type: { planet: true } }, 'type.plane'));
+      });
+
+    });
+
+
     describe('$eq', function () {
 
       it('Can find documents with simple fields', function () {
