@@ -284,6 +284,17 @@ describe('Database', function () {
       });
     });
 
+    it.only('By default, matching on an array field is matching any of its components', function (done) {
+      d.insert({ fruits: ['orange', 'apple', 'pear'] }, function () {
+        d.insert({ fruits: ['banana', 'coconut', 'pear'] }, function () {
+          d.find({ fruits: 'pear' }, function (err, docs) {
+            console.log(docs);
+            done();
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Find' ==== //
 
 
