@@ -414,11 +414,27 @@ describe('Model', function () {
 
       it('For field array, a match means a match on at least one element', function () {
         model.match({ tags: ['node', 'js', 'db'] }, { tags: 'python' }).should.equal(false);
+        model.match({ tags: ['node', 'js', 'db'] }, { tagss: 'js' }).should.equal(false);
         model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js' }).should.equal(true);
         model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js', tags: 'node' }).should.equal(true);
 
         // Mixed matching with array and non array
         model.match({ tags: ['node', 'js', 'db'], nedb: true }, { tags: 'js', nedb: true }).should.equal(true);
+
+        // Nested matching
+        model.match({ number: 5, data: { tags: ['node', 'js', 'db'] } }, { "data.tags": 'js' }).should.equal(true);
+        model.match({ number: 5, data: { tags: ['node', 'js', 'db'] } }, { "data.tags": 'j' }).should.equal(false);
+      });
+
+    });
+
+
+    describe('$or', function () {
+
+      it('Any of the subconditions can be used', function () {
+        model.match({ hello: 'world' }, { $or: [ { hello: 'pluton' }, { hello: 'world' } ] }).should.equal(true);
+        model.match({ hello: 'pluton' }, { $or: [ { hello: 'pluton' }, { hello: 'world' } ] }).should.equal(true);
+        model.match({ hello: 'nope' }, { $or: [ { hello: 'pluton' }, { hello: 'world' } ] }).should.equal(false);
       });
 
     });
