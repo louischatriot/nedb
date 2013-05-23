@@ -66,7 +66,7 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 ```
 
 ### Finding documents
-You can use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. For now, you can only select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`). You can also use logical operators `$or` and `$and`. See below for the syntax.
+You can use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`). You can also use logical operators `$or` and `$and`. See below for the syntax.
 
 ```javascript
 // Let's say our datastore contains the following collection
