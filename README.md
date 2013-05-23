@@ -73,7 +73,7 @@ You can use `find` to look for multiple documents matching you query, or `findOn
 // { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false, satellites: ['Phobos', 'Deimos'] }
 // { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true, humans: { genders: 2, eyes: true } }
 // { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
-// { _id: 'id4', planet: 'Omicron Persia 8', system: 'futurama', inhabited: true }
+// { _id: 'id4', planet: 'Omicron Persei 8', system: 'futurama', inhabited: true, humans: { genders: 7 } }
 
 // Finding all planets in the solar system
 db.find({ system: 'solar' }, function (err, docs) {
@@ -101,13 +101,19 @@ db.find({ satellites: 'Phobos' }, function (err, docs) {
   // docs contains Mars. Result would have been the same if query had been { satellites: 'Deimos' }
 });
 
+// You can use comparison operators $lt (less than), $lte (less than or equal),
+// $gt (greater than) and $gte (greater than or equal)
+db.find({ "humans.genders": { $gt: 5 } }, function (err, docs) {
+  // docs contains Omicron Persei 8, whose humans have more than 5 genders (7).
+});
+
 // Find all documents in the collection
 db.find({}, function (err, docs) {
 });
 
 // The same rules apply when you want to only find one document
 db.findOne({ _id: 'id1' }, function (err, doc) {
-  // doc is the document _id1
+  // doc is the document Mars
   // If no document is found, doc is null
 });
 ```
