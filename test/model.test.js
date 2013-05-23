@@ -489,7 +489,7 @@ describe('Model', function () {
       });
 
       it('Logical operators are all top-level, only other logical operators can be above', function () {
-        model.match({ a: { b: 7 } }, { a: { $or: [ { b: 5 }, { b: 7 } ] } }).should.equal(false);
+        (function () { model.match({ a: { b: 7 } }, { a: { $or: [ { b: 5 }, { b: 7 } ] } })}).should.throw();
         model.match({ a: { b: 7 } }, { $or: [ { "a.b": 5 }, { "a.b": 7 } ] }).should.equal(true);
       });
 
