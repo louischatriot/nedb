@@ -66,7 +66,7 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 ```
 
 ### Finding documents
-You can use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
+Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
 
 #### Basic querying
 
@@ -154,15 +154,19 @@ db.find({ satellites: { $in: ['Moon', 'Deimos'] } }, function (err, docs) {
 });
 ```
 
-#### Logical operators
+#### Logical operators $or, $and, $not
+You can combine queries using logical operators:  
 
+* For `$or` and `$and`, the syntax is `{ $op: [query1, query2, ...] }`.
+* For `$not`, the syntax is `{ $not: query }`
 
 ```javascript
-// You can use logical operator $or and $and ($and is the same
-// as just using a normal query object)
-// Syntax is { $logicalOperator: [query1, query2, ...] }
 db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }] }, function (err, docs) {
   // docs contains Earth and Mars
+});
+
+db.find({ $not: { planet: 'Earth' } }, function (err, docs) {
+  // docs contains Mars, Jupiter, Omicron Persei 8
 });
 
 // You can mix normal queries, comparison queries and logical operators
