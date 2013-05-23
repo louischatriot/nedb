@@ -488,6 +488,22 @@ describe('Model', function () {
         model.match({ hello: 'world', age: 15 }, { $and: [ { hello: 'pluton' }, { age: { $lt: 20 } } ] }).should.equal(false);
       });
 
+      it('Logical operators are all top-level, only other logical operators can be above', function () {
+        model.match({ a: { b: 7 } }, { a: { $or: [ { b: 5 }, { b: 7 } ] } }).should.equal(false);
+        model.match({ a: { b: 7 } }, { $or: [ { "a.b": 5 }, { "a.b": 7 } ] }).should.equal(true);
+      });
+
+      it('Logical operators can be combined as long as they are on top of the decision tree', function () {
+        model.match({ a: 5, b: 7, c: 12 }, { $or: [ { $and: [ { a: 5 }, { b: 8 } ] }, { $and: [{ a: 5 }, { c : { $lt: 40 } }] } ] }).should.equal(true);
+        model.match({ a: 5, b: 7, c: 12 }, { $or: [ { $and: [ { a: 5 }, { b: 8 } ] }, { $and: [{ a: 5 }, { c : { $lt: 10 } }] } ] }).should.equal(false);
+      });
+
+      it('Should throw an error if a logical operator is used without an array or if an unknown logical operator is used', function () {
+        (function () { model.match({ a: 5 }, { $or: { a: 5, a: 6 } }); }).should.throw();
+        (function () { model.match({ a: 5 }, { $and: { a: 5, a: 6 } }); }).should.throw();
+        (function () { model.match({ a: 5 }, { $unknown: [ { a: 5 } ] }); }).should.throw();
+      });
+
     });
 
   });   // ==== End of 'Finding documents' ==== //
