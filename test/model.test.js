@@ -412,20 +412,6 @@ describe('Model', function () {
         model.match({ test: { pp: undefined } }, { "test.pp": undefined }).should.equal(false);
       });
 
-      it('For an array field, a match means a match on at least one element', function () {
-        model.match({ tags: ['node', 'js', 'db'] }, { tags: 'python' }).should.equal(false);
-        model.match({ tags: ['node', 'js', 'db'] }, { tagss: 'js' }).should.equal(false);
-        model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js' }).should.equal(true);
-        model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js', tags: 'node' }).should.equal(true);
-
-        // Mixed matching with array and non array
-        model.match({ tags: ['node', 'js', 'db'], nedb: true }, { tags: 'js', nedb: true }).should.equal(true);
-
-        // Nested matching
-        model.match({ number: 5, data: { tags: ['node', 'js', 'db'] } }, { "data.tags": 'js' }).should.equal(true);
-        model.match({ number: 5, data: { tags: ['node', 'js', 'db'] } }, { "data.tags": 'j' }).should.equal(false);
-      });
-
       it('Nested objects are deep-equality matched and not treated as sub-queries', function () {
         model.match({ a: { b: 5 } }, { a: { b: 5 } }).should.equal(true);
         model.match({ a: { b: 5, c: 3 } }, { a: { b: 5 } }).should.equal(false);
@@ -502,6 +488,41 @@ describe('Model', function () {
         (function () { model.match({ a: 5 }, { $or: { a: 5, a: 6 } }); }).should.throw();
         (function () { model.match({ a: 5 }, { $and: { a: 5, a: 6 } }); }).should.throw();
         (function () { model.match({ a: 5 }, { $unknown: [ { a: 5 } ] }); }).should.throw();
+      });
+
+    });
+
+
+    describe('Array fields', function () {
+
+      it('Field equality', function () {
+        model.match({ tags: ['node', 'js', 'db'] }, { tags: 'python' }).should.equal(false);
+        model.match({ tags: ['node', 'js', 'db'] }, { tagss: 'js' }).should.equal(false);
+        model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js' }).should.equal(true);
+        model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js', tags: 'node' }).should.equal(true);
+
+        // Mixed matching with array and non array
+        model.match({ tags: ['node', 'js', 'db'], nedb: true }, { tags: 'js', nedb: true }).should.equal(true);
+
+        // Nested matching
+        model.match({ number: 5, data: { tags: ['node', 'js', 'db'] } }, { "data.tags": 'js' }).should.equal(true);
+        model.match({ number: 5, data: { tags: ['node', 'js', 'db'] } }, { "data.tags": 'j' }).should.equal(false);
+      });
+
+      it('With one comparison operator', function () {
+        model.match({ ages: [3, 7, 12] }, { ages: { $lt: 2 } }).should.equal(false);
+        model.match({ ages: [3, 7, 12] }, { ages: { $lt: 3 } }).should.equal(false);
+        model.match({ ages: [3, 7, 12] }, { ages: { $lt: 4 } }).should.equal(true);
+        model.match({ ages: [3, 7, 12] }, { ages: { $lt: 8 } }).should.equal(true);
+        model.match({ ages: [3, 7, 12] }, { ages: { $lt: 13 } }).should.equal(true);
+      });
+
+      it('Works also with arrays that are in subdocuments', function () {
+        model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 2 } }).should.equal(false);
+        model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 3 } }).should.equal(false);
+        model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 4 } }).should.equal(true);
+        model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 8 } }).should.equal(true);
+        model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 13 } }).should.equal(true);
       });
 
     });
