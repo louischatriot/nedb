@@ -66,7 +66,7 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 ```
 
 ### Finding documents
-You can use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. For now, you can only select documents based on field equality, but I'm planning to add Mongo's <a href="http://docs.mongodb.org/manual/reference/operator/query-comparison/" target="_blank">$in, $lt, $gt, $lte and $gte comparison operators</a>.
+You can use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. For now, you can only select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`). You can also use logical operators `$or` and `$and`. See below for the syntax.
 
 ```javascript
 // Let's say our datastore contains the following collection
@@ -106,6 +106,8 @@ db.find({ satellites: 'Phobos' }, function (err, docs) {
 // They work on numbers and strings (lexicographical order in that case)
 db.find({ "humans.genders": { $gt: 5 } }, function (err, docs) {
   // docs contains Omicron Persei 8, whose humans have more than 5 genders (7).
+  // You can use comparison operators on array fields
+  // For example: { "human.genders": { $lte: "Deimot" } }
 });
 
 // You can use logical operator $or and $and ($and is the same
