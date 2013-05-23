@@ -103,8 +103,21 @@ db.find({ satellites: 'Phobos' }, function (err, docs) {
 
 // You can use comparison operators $lt (less than), $lte (less than or equal),
 // $gt (greater than) and $gte (greater than or equal)
+// They work on numbers and strings (lexicographical order in that case)
 db.find({ "humans.genders": { $gt: 5 } }, function (err, docs) {
   // docs contains Omicron Persei 8, whose humans have more than 5 genders (7).
+});
+
+// You can use logical operator $or and $and ($and is the same
+// as just using a normal query object)
+// Syntax is { $logicalOperator: [query1, query2, ...] }
+db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }] }, function (err, docs) {
+  // docs contains Earth and Mars
+});
+
+// You can mix normal queries, comparison queries and logical operators
+db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }], inhabited: true }, function (err, docs) {
+  // docs contains Earth
 });
 
 // Find all documents in the collection
