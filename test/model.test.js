@@ -426,6 +426,14 @@ describe('Model', function () {
         model.match({ number: 5, data: { tags: ['node', 'js', 'db'] } }, { "data.tags": 'j' }).should.equal(false);
       });
 
+      it('Nested objects are deep-equality matched and not treated as sub-queries', function () {
+        model.match({ a: { b: 5 } }, { a: { b: 5 } }).should.equal(true);
+        model.match({ a: { b: 5, c: 3 } }, { a: { b: 5 } }).should.equal(false);
+
+        model.match({ a: { b: 5 } }, { a: { b: { $lt: 10 } } }).should.equal(false);
+        model.match({ a: { b: 5 } }, { a: { $or: { b: 10, b: 5 } } }).should.equal(false);
+      });
+
     });
 
 
