@@ -434,7 +434,8 @@ describe('Model', function () {
 
       it('Can compare numbers, with or without dot notation', function () {
         model.match({ a: 5 }, { a: { $lt: 6 } }).should.equal(true);
-        model.match({ a: 5 }, { a: { $lt: 3 } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $lt: 5 } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $lt: 4 } }).should.equal(false);
 
         model.match({ a: { b: 5 } }, { "a.b": { $lt: 6 } }).should.equal(true);
         model.match({ a: { b: 5 } }, { "a.b": { $lt: 3 } }).should.equal(false);
@@ -452,6 +453,30 @@ describe('Model', function () {
         model.match({ a: [5, 10] }, { a: { $lt: 4 } }).should.equal(false);
         model.match({ a: [5, 10] }, { a: { $lt: 6 } }).should.equal(true);
         model.match({ a: [5, 10] }, { a: { $lt: 11 } }).should.equal(true);
+      });
+
+    });
+
+
+    // General behaviour is tested in the block about $lt. Here we just test operators work
+    describe('Other comparison operators: $lte, $gt, $gte', function () {
+
+      it('$lte', function () {
+        model.match({ a: 5 }, { a: { $lte: 6 } }).should.equal(true);
+        model.match({ a: 5 }, { a: { $lte: 5 } }).should.equal(true);
+        model.match({ a: 5 }, { a: { $lte: 4 } }).should.equal(false);
+      });
+
+      it('$gt', function () {
+        model.match({ a: 5 }, { a: { $gt: 6 } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $gt: 5 } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $gt: 4 } }).should.equal(true);
+      });
+
+      it('$gte', function () {
+        model.match({ a: 5 }, { a: { $gte: 6 } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $gte: 5 } }).should.equal(true);
+        model.match({ a: 5 }, { a: { $gte: 4 } }).should.equal(true);
       });
 
     });
