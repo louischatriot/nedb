@@ -66,7 +66,9 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 ```
 
 ### Finding documents
-You can use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`). You can also use logical operators `$or` and `$and`. See below for the syntax.
+You can use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
+
+#### Basic querying
 
 ```javascript
 // Let's say our datastore contains the following collection
@@ -96,18 +98,36 @@ db.find({ humans: { genders: 2 } }, function (err, docs) {
   // docs is empty, because { genders: 2 } is not equal to { genders: 2, eyes: true }
 });
 
-// If a document's field is an array, matching it means matching any element of the array
-db.find({ satellites: 'Phobos' }, function (err, docs) {
-  // docs contains Mars. Result would have been the same if query had been { satellites: 'Deimos' }
+// Find all documents in the collection
+db.find({}, function (err, docs) {
 });
 
-// You can use comparison operators $lt (less than), $lte (less than or equal),
-// $gt (greater than) and $gte (greater than or equal)
+// The same rules apply when you want to only find one document
+db.findOne({ _id: 'id1' }, function (err, doc) {
+  // doc is the document Mars
+  // If no document is found, doc is null
+});
+```
+
+#### Comparison operators ($lt, $lte, $gt, $gte, $in, $nin, $ne)
+The syntax is `{ field: { $op: value } }` where `$op` is any comparison operator:  
+
+* `$lt`, `$lte`: less than, less than or equal
+* `$gt`, `$gte`: greater than, greater than or equal
+* `$in`: member of. `value` must be an array of values
+* `$ne`, `$nin`: not equal, not a member of
+
+```javascript
 // They work on numbers and strings (lexicographical order in that case)
 db.find({ "humans.genders": { $gt: 5 } }, function (err, docs) {
   // docs contains Omicron Persei 8, whose humans have more than 5 genders (7).
   // You can use comparison operators on array fields
   // For example: { "human.genders": { $lte: "Deimot" } }
+});
+
+// If a document's field is an array, matching it means matching any element of the array
+db.find({ satellites: 'Phobos' }, function (err, docs) {
+  // docs contains Mars. Result would have been the same if query had been { satellites: 'Deimos' }
 });
 
 // You can use logical operator $or and $and ($and is the same
@@ -122,15 +142,6 @@ db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }], inhabited: true }, fun
   // docs contains Earth
 });
 
-// Find all documents in the collection
-db.find({}, function (err, docs) {
-});
-
-// The same rules apply when you want to only find one document
-db.findOne({ _id: 'id1' }, function (err, doc) {
-  // doc is the document Mars
-  // If no document is found, doc is null
-});
 ```
 
 ### Updating documents
