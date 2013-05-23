@@ -495,6 +495,19 @@ describe('Model', function () {
         (function () { model.match({ a: 5 }, { a: { $in: 5 } }); }).should.throw();
       });
 
+      it('$nin', function () {
+        model.match({ a: 5 }, { a: { $nin: [6, 8, 9] } }).should.equal(true);
+        model.match({ a: 6 }, { a: { $nin: [6, 8, 9] } }).should.equal(false);
+        model.match({ a: 7 }, { a: { $nin: [6, 8, 9] } }).should.equal(true);
+        model.match({ a: 8 }, { a: { $nin: [6, 8, 9] } }).should.equal(false);
+        model.match({ a: 9 }, { a: { $nin: [6, 8, 9] } }).should.equal(false);
+
+        // Matches if field doesn't exist
+        model.match({ a: 9 }, { b: { $nin: [6, 8, 9] } }).should.equal(true);
+
+        (function () { model.match({ a: 5 }, { a: { $in: 5 } }); }).should.throw();
+      });
+
     });
 
 
