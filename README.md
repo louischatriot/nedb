@@ -70,20 +70,20 @@ You can use `find` to look for multiple documents matching you query, or `findOn
 
 ```javascript
 // Let's say our datastore contains the following collection
-// { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false }
+// { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false, satellites: ['Phobos', 'Deimos'] }
 // { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true, humans: { genders: 2, eyes: true } }
 // { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
 // { _id: 'id4', planet: 'Omicron Persia 8', system: 'futurama', inhabited: true }
 
 // Finding all planets in the solar system
 db.find({ system: 'solar' }, function (err, docs) {
-  // docs is an array containing documents _id1, _id2, _id3
+  // docs is an array containing documents Mars, Earth, Jupiter
   // If no document is found, docs is equal to []
 });
 
 // Finding all inhabited planets in the solar system
 db.find({ system: 'solar', inhabited: true }, function (err, docs) {
-  // docs is an array containing document _id2 only
+  // docs is an array containing document Earth only
 });
 
 // Use the dot-notation to match fields in subdocuments
@@ -96,8 +96,13 @@ db.find({ humans: { genders: 2 } }, function (err, docs) {
   // docs is empty, because { genders: 2 } is not equal to { genders: 2, eyes: true }
 });
 
+// If a document's field is an array, matching it means matching any element of the array
+db.find({ satellites: 'Phobos' }, function (err, docs) {
+  // docs contains Mars. Result would have been the same if query had been { satellites: 'Deimos' }
+});
+
+// Find all documents in the collection
 db.find({}, function (err, docs) {
-  // docs contains all documents in the collection  
 });
 
 // The same rules apply when you want to only find one document
