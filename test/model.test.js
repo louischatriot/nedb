@@ -482,7 +482,7 @@ describe('Model', function () {
     });
 
 
-    describe('Logical operators $or, $and', function () {
+    describe('Logical operators $or, $and, $not', function () {
 
       it('Any of the subqueries should match for an $or to match', function () {
         model.match({ hello: 'world' }, { $or: [ { hello: 'pluton' }, { hello: 'world' } ] }).should.equal(true);
@@ -497,6 +497,11 @@ describe('Model', function () {
         model.match({ hello: 'world', age: 15 }, { $and: [ { age: 16 }, { hello: 'world' } ] }).should.equal(false);
         model.match({ hello: 'world', age: 15 }, { $and: [ { hello: 'world' }, { age: { $lt: 20 } } ] }).should.equal(true);
         model.match({ hello: 'world', age: 15 }, { $and: [ { hello: 'pluton' }, { age: { $lt: 20 } } ] }).should.equal(false);
+      });
+
+      it('Subquery should not match for a $not to match', function () {
+        model.match({ a: 5, b: 10 }, { a: 5 }).should.equal(true);
+        model.match({ a: 5, b: 10 }, { $not: { a: 5 } }).should.equal(false);
       });
 
       it('Logical operators are all top-level, only other logical operators can be above', function () {
