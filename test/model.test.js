@@ -459,7 +459,7 @@ describe('Model', function () {
 
 
     // General behaviour is tested in the block about $lt. Here we just test operators work
-    describe('Other comparison operators: $lte, $gt, $gte, $ne', function () {
+    describe('Other comparison operators: $lte, $gt, $gte, $ne, $in', function () {
 
       it('$lte', function () {
         model.match({ a: 5 }, { a: { $lte: 6 } }).should.equal(true);
@@ -483,6 +483,16 @@ describe('Model', function () {
         model.match({ a: 5 }, { a: { $ne: 4 } }).should.equal(true);
         model.match({ a: 5 }, { a: { $ne: 5 } }).should.equal(false);
         model.match({ a: 5 }, { b: { $ne: 5 } }).should.equal(true);
+      });
+
+      it('$in', function () {
+        model.match({ a: 5 }, { a: { $in: [6, 8, 9] } }).should.equal(false);
+        model.match({ a: 6 }, { a: { $in: [6, 8, 9] } }).should.equal(true);
+        model.match({ a: 7 }, { a: { $in: [6, 8, 9] } }).should.equal(false);
+        model.match({ a: 8 }, { a: { $in: [6, 8, 9] } }).should.equal(true);
+        model.match({ a: 9 }, { a: { $in: [6, 8, 9] } }).should.equal(true);
+
+        (function () { model.match({ a: 5 }, { a: { $in: 5 } }); }).should.throw();
       });
 
     });
