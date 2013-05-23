@@ -313,6 +313,22 @@ describe('Database', function () {
       });
     });
 
+    it('Returns an error if the query is not well formed', function (done) {
+      d.insert({ hello: 'world' }, function () {
+        d.find({ $or: { hello: 'world' } }, function (err, docs) {
+          assert.isDefined(err);
+          assert.isUndefined(docs);
+
+          d.findOne({ $or: { hello: 'world' } }, function (err, doc) {
+            assert.isDefined(err);
+            assert.isUndefined(doc);
+
+            done();
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Find' ==== //
 
 
@@ -586,6 +602,18 @@ describe('Database', function () {
       });
     });
 
+    it('Returns an error if the query is not well formed', function (done) {
+      d.insert({ hello: 'world' }, function () {
+        d.update({ $or: { hello: 'world' } }, { a: 1 }, {}, function (err, nr, upsert) {
+          assert.isDefined(err);
+          assert.isUndefined(nr);
+          assert.isUndefined(upsert);
+
+          done();
+        });
+      });
+    });
+
   });   // ==== End of 'Update' ==== //
 
 
@@ -657,6 +685,18 @@ describe('Database', function () {
               });
             });
           });
+        });
+      });
+    });
+
+    it('Returns an error if the query is not well formed', function (done) {
+      d.insert({ hello: 'world' }, function () {
+        d.remove({ $or: { hello: 'world' } }, {}, function (err, nr, upsert) {
+          assert.isDefined(err);
+          assert.isUndefined(nr);
+          assert.isUndefined(upsert);
+
+          done();
         });
       });
     });
