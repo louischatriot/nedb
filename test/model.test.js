@@ -392,7 +392,7 @@ describe('Model', function () {
     });
 
 
-    describe('$eq', function () {
+    describe('Field equality', function () {
 
       it('Can find documents with simple fields', function () {
         model.match({ test: 'yeah' }, { test: 'yea' }).should.equal(false);
@@ -412,7 +412,7 @@ describe('Model', function () {
         model.match({ test: { pp: undefined } }, { "test.pp": undefined }).should.equal(false);
       });
 
-      it('For field array, a match means a match on at least one element', function () {
+      it('For an array field, a match means a match on at least one element', function () {
         model.match({ tags: ['node', 'js', 'db'] }, { tags: 'python' }).should.equal(false);
         model.match({ tags: ['node', 'js', 'db'] }, { tagss: 'js' }).should.equal(false);
         model.match({ tags: ['node', 'js', 'db'] }, { tags: 'js' }).should.equal(true);
@@ -429,12 +429,55 @@ describe('Model', function () {
     });
 
 
-    describe('$or', function () {
+    describe('$lt', function () {
 
-      it('Any of the subconditions can be used', function () {
+      it('Cannot compare a field to an object, an array, null or a boolean, it will return false', function () {
+        model.match({ a: 5 }, { a: { $lt: { a: 6 } } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $lt: [6, 7] } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $lt: null } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $lt: true } }).should.equal(false);
+      });
+
+      it('Can compare numbers, with or without dot notation', function () {
+        model.match({ a: 5 }, { a: { $lt: 6 } }).should.equal(true);
+        model.match({ a: 5 }, { a: { $lt: 3 } }).should.equal(false);
+
+        model.match({ a: { b: 5 } }, { "a.b": { $lt: 6 } }).should.equal(true);
+        model.match({ a: { b: 5 } }, { "a.b": { $lt: 3 } }).should.equal(false);
+      });
+
+      it('Can compare strings, with or without dot notation', function () {
+        model.match({ a: "nedb" }, { a: { $lt: "nedc" } }).should.equal(true);
+        model.match({ a: "nedb" }, { a: { $lt: "neda" } }).should.equal(false);
+
+        model.match({ a: { b: "nedb" } }, { "a.b": { $lt: "nedc" } }).should.equal(true);
+        model.match({ a: { b: "nedb" } }, { "a.b": { $lt: "neda" } }).should.equal(false);
+      });
+
+      it('If field is an array field, a match means a match on at least one element', function () {
+        model.match({ a: [5, 10] }, { a: { $lt: 4 } }).should.equal(false);
+        model.match({ a: [5, 10] }, { a: { $lt: 6 } }).should.equal(true);
+        model.match({ a: [5, 10] }, { a: { $lt: 11 } }).should.equal(true);
+      });
+
+    });
+
+
+    describe('Logical operators $or, $and', function () {
+
+      it('Any of the subqueries should match for an $or to match', function () {
         model.match({ hello: 'world' }, { $or: [ { hello: 'pluton' }, { hello: 'world' } ] }).should.equal(true);
         model.match({ hello: 'pluton' }, { $or: [ { hello: 'pluton' }, { hello: 'world' } ] }).should.equal(true);
         model.match({ hello: 'nope' }, { $or: [ { hello: 'pluton' }, { hello: 'world' } ] }).should.equal(false);
+        model.match({ hello: 'world', age: 15 }, { $or: [ { hello: 'pluton' }, { age: { $lt: 20 } } ] }).should.equal(true);
+        model.match({ hello: 'world', age: 15 }, { $or: [ { hello: 'pluton' }, { age: { $lt: 10 } } ] }).should.equal(false);
+      });
+
+      it('All of the subqueries should match for an $and to match', function () {
+        model.match({ hello: 'world', age: 15 }, { $and: [ { age: 15 }, { hello: 'world' } ] }).should.equal(true);
+        model.match({ hello: 'world', age: 15 }, { $and: [ { age: 16 }, { hello: 'world' } ] }).should.equal(false);
+        model.match({ hello: 'world', age: 15 }, { $and: [ { hello: 'world' }, { age: { $lt: 20 } } ] }).should.equal(true);
+        model.match({ hello: 'world', age: 15 }, { $and: [ { hello: 'pluton' }, { age: { $lt: 20 } } ] }).should.equal(false);
       });
 
     });
