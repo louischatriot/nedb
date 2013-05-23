@@ -118,18 +118,46 @@ The syntax is `{ field: { $op: value } }` where `$op` is any comparison operator
 * `$ne`, `$nin`: not equal, not a member of
 
 ```javascript
-// They work on numbers and strings (lexicographical order in that case)
+// $lt, $lte, $gt and $gte work on numbers and strings
 db.find({ "humans.genders": { $gt: 5 } }, function (err, docs) {
   // docs contains Omicron Persei 8, whose humans have more than 5 genders (7).
-  // You can use comparison operators on array fields
-  // For example: { "human.genders": { $lte: "Deimot" } }
 });
 
+// When used with strings, lexicographical order is used
+db.find({ planet: { $gt: 'Mercury' }}, function (err, docs) {
+  // docs contains Omicron Persei 8
+})
+
+// Using $in. $nin is used in the same way
+db.find({ planet: { $in: ['Earth', 'Jupiter'] }}, function (err, docs) {
+  // docs contains Earth and Jupiter
+});
+```
+
+#### Array fields
+When a field in a document is an array, NeDB tries the query on every element and there is a match if at least one element matches.
+
+```javascript
 // If a document's field is an array, matching it means matching any element of the array
 db.find({ satellites: 'Phobos' }, function (err, docs) {
   // docs contains Mars. Result would have been the same if query had been { satellites: 'Deimos' }
 });
 
+// This also works for queries that use comparison operators
+db.find({ satellites: { $lt: 'Amos' } }, function (err, docs) {
+  // docs is empty since Phobos and Deimos are after Amos in lexicographical order
+});
+
+// This also works with the $in and $nin operator
+db.find({ satellites: { $in: ['Moon', 'Deimos'] } }, function (err, docs) {
+  // docs contains Mars (the Earth document is not complete!)
+});
+```
+
+#### Logical operators
+
+
+```javascript
 // You can use logical operator $or and $and ($and is the same
 // as just using a normal query object)
 // Syntax is { $logicalOperator: [query1, query2, ...] }
