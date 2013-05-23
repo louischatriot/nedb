@@ -431,7 +431,7 @@ describe('Model', function () {
         model.match({ a: { b: 5, c: 3 } }, { a: { b: 5 } }).should.equal(false);
 
         model.match({ a: { b: 5 } }, { a: { b: { $lt: 10 } } }).should.equal(false);
-        model.match({ a: { b: 5 } }, { a: { $or: { b: 10, b: 5 } } }).should.equal(false);
+        (function () { model.match({ a: { b: 5 } }, { a: { $or: [ { b: 10 }, { b: 5 } ] } }) }).should.throw();
       });
 
     });
