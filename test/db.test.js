@@ -34,6 +34,16 @@ describe('Database', function () {
 
   });
 
+
+  describe('Loading the database data from file', function () {
+
+    it('Every line represents a document', function () {
+      // TODO
+    });
+
+  });   // ==== End of 'Loading the database data from file' ==== //
+
+
   describe('Insert', function () {
 
     it('Able to insert a document in the database, setting an _id if none provided, and retrieve it even after a reload', function (done) {
