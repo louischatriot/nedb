@@ -455,6 +455,11 @@ describe('Model', function () {
         model.match({ a: [5, 10] }, { a: { $lt: 11 } }).should.equal(true);
       });
 
+      it('Works with dates too', function () {
+        model.match({ a: new Date(1000) }, { a: { $gte: new Date(1001) } }).should.equal(false);
+        model.match({ a: new Date(1000) }, { a: { $lt: new Date(1001) } }).should.equal(true);
+      });
+
     });
 
 
