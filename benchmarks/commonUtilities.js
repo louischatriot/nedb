@@ -5,7 +5,14 @@
 var customUtils = require('../lib/customUtils')
   , fs = require('fs')
   , path = require('path')
+  , executeAsap   // process.nextTick or setImmediate depending on your Node version
   ;
+
+try {
+  executeAsap = setImmediate;
+} catch (e) {
+  executeAsap = process.nextTick;
+}
 
 
 /**
@@ -58,7 +65,7 @@ module.exports.insertDocs = function (d, n, profiler, cb) {
     }
 
     d.insert({ docNumber: i }, function (err) {
-      process.nextTick(function () {
+      executeAsap(function () {
         runFrom(i + 1);
       });
     });
@@ -86,7 +93,7 @@ module.exports.findDocs = function (d, n, profiler, cb) {
 
     d.find({ docNumber: order[i] }, function (err, docs) {
       if (docs.length !== 1 || docs[0].docNumber !== order[i]) { return cb('One find didnt work'); }
-      process.nextTick(function () {
+      executeAsap(function () {
         runFrom(i + 1);
       });
     });
@@ -114,7 +121,7 @@ module.exports.findOneDocs = function (d, n, profiler, cb) {
 
     d.findOne({ docNumber: order[i] }, function (err, doc) {
       if (!doc || doc.docNumber !== order[i]) { return cb('One find didnt work'); }
-      process.nextTick(function () {
+      executeAsap(function () {
         runFrom(i + 1);
       });
     });
@@ -143,7 +150,7 @@ module.exports.updateDocs = function (options, d, n, profiler, cb) {
 
     d.update({ docNumber: order[i] }, { newDocNumber: i }, options, function (err, nr) {
       if (nr !== 1) { return cb('One update didnt work'); }
-      process.nextTick(function () {
+      executeAsap(function () {
         runFrom(i + 1);
       });
     });
@@ -174,7 +181,7 @@ module.exports.removeDocs = function (options, d, n, profiler, cb) {
       if (nr !== 1) { return cb('One remove didnt work'); }
       d.insert({ docNumber: order[i] }, function (err) {   // Reinserting just removed document so that the collection size doesn't change
                                                            // Time is about 70x smaller for an insert so the impact on the results is minimal
-        process.nextTick(function () {
+        executeAsap(function () {
           runFrom(i + 1);
         });
       });
@@ -202,7 +209,7 @@ module.exports.loadDatabase = function (d, n, profiler, cb) {
     }
 
     d.loadDatabase(function (err) {
-      process.nextTick(function () {
+      executeAsap(function () {
         runFrom(i + 1);
       });
     });
