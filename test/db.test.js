@@ -36,7 +36,7 @@ describe('Database', function () {
   });
 
 
-  describe.only('Loading the database data from file', function () {
+  describe('Loading the database data from file', function () {
 
     it('Every line represents a document', function () {
       var now = new Date()
@@ -93,6 +93,35 @@ describe('Database', function () {
       treatedData.length.should.equal(2);
       _.isEqual(treatedData[0], { _id: "1", nested: { today: now } }).should.equal(true);
       _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
+    });
+
+    it('If a doc contains $$deleted: true, that means we need to remove it from the data', function () {
+      var now = new Date()
+        , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                    model.serialize({ _id: "2", hello: 'world' }) + '\n' +
+                    model.serialize({ _id: "1", $$deleted: true }) + '\n' +
+                    model.serialize({ _id: "3", today: now })
+        , treatedData = Datastore.treatRawData(rawData)
+        ;
+
+      treatedData.sort(function (a, b) { return a._id - b._id; });
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { _id: "2", hello: 'world' }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+    });
+
+    it('If a doc contains $$deleted: true, no error is thrown if the doc wasnt in the list before', function () {
+      var now = new Date()
+        , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                    model.serialize({ _id: "2", $$deleted: true }) + '\n' +
+                    model.serialize({ _id: "3", today: now })
+        , treatedData = Datastore.treatRawData(rawData)
+        ;
+
+      treatedData.sort(function (a, b) { return a._id - b._id; });
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
     });
 
   });   // ==== End of 'Loading the database data from file' ==== //
