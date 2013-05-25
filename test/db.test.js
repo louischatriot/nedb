@@ -36,7 +36,7 @@ describe('Database', function () {
   });
 
 
-  describe.only('Loading the database data from file', function () {
+  describe('Loading the database data from file', function () {
 
     it('Every line represents a document', function () {
       var now = new Date()
@@ -63,6 +63,10 @@ describe('Database', function () {
       treatedData.length.should.equal(2);
       _.isEqual(treatedData[0], { a: 2, ages: [1, 5, 12] }).should.equal(true);
       _.isEqual(treatedData[1], { nested: { today: now } }).should.equal(true);
+    });
+
+    it('Documents with', function () {
+
     });
 
   });   // ==== End of 'Loading the database data from file' ==== //
