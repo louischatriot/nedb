@@ -52,6 +52,19 @@ describe('Database', function () {
       _.isEqual(treatedData[2], { nested: { today: now } }).should.equal(true);
     });
 
+    it('Badly formatted lines have no impact on the treated data', function () {
+      var now = new Date()
+        , rawData = model.serialize({a: 2, ages: [1, 5, 12]}) + '\n' +
+                    'garbage\n' +
+                    model.serialize({nested: { today: now }})
+        , treatedData = Datastore.treatRawData(rawData)
+        ;
+
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { nested: { today: now } }).should.equal(true);
+    });
+
   });   // ==== End of 'Loading the database data from file' ==== //
 
 
