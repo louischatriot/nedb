@@ -40,33 +40,42 @@ describe('Database', function () {
 
     it('Every line represents a document', function () {
       var now = new Date()
-        , rawData = model.serialize({a: 2, ages: [1, 5, 12]}) + '\n' +
-                    model.serialize({hello: 'world'}) + '\n' +
-                    model.serialize({nested: { today: now }})
+        , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                    model.serialize({ _id: "2", hello: 'world' }) + '\n' +
+                    model.serialize({ _id: "3", nested: { today: now } })
         , treatedData = Datastore.treatRawData(rawData)
         ;
 
       treatedData.length.should.equal(3);
-      _.isEqual(treatedData[0], { a: 2, ages: [1, 5, 12] }).should.equal(true);
-      _.isEqual(treatedData[1], { hello: 'world' }).should.equal(true);
-      _.isEqual(treatedData[2], { nested: { today: now } }).should.equal(true);
+      _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
+      _.isEqual(treatedData[2], { _id: "3", nested: { today: now } }).should.equal(true);
     });
 
     it('Badly formatted lines have no impact on the treated data', function () {
       var now = new Date()
-        , rawData = model.serialize({a: 2, ages: [1, 5, 12]}) + '\n' +
+        , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                     'garbage\n' +
-                    model.serialize({nested: { today: now }})
+                    model.serialize({ _id: "3", nested: { today: now } })
         , treatedData = Datastore.treatRawData(rawData)
         ;
 
       treatedData.length.should.equal(2);
-      _.isEqual(treatedData[0], { a: 2, ages: [1, 5, 12] }).should.equal(true);
-      _.isEqual(treatedData[1], { nested: { today: now } }).should.equal(true);
+      _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "3", nested: { today: now } }).should.equal(true);
     });
 
-    it('Documents with', function () {
+    it('Well formatted lines that have no _id are not included in the data', function () {
+      var now = new Date()
+        , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                    model.serialize({ _id: "2", hello: 'world' }) + '\n' +
+                    model.serialize({ nested: { today: now } })
+        , treatedData = Datastore.treatRawData(rawData)
+        ;
 
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
     });
 
   });   // ==== End of 'Loading the database data from file' ==== //
