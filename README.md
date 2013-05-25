@@ -271,13 +271,13 @@ db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
 
 As such, it was not designed for speed. That said, it is still pretty fast on the expected datasets (10,000
 documents max). On my machine (3 years old, no SSD), with a collection
-containing 10,000 documents:  
+containing 10,000 documents and with no index (they not implemented yet):  
 * An insert takes 0.1ms
 * A read takes 5.7ms
-* An update takes 58ms
-* A deletion takes 57ms  
+* An update takes 10.9ms
+* A deletion takes 8.1ms  
 
-You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. They all take an optional parameter which is the size of the dataset to use (default is 10,000). Most of the time spent during update and remove operations is IO, and I will work on optimizing this in the future (probably by switching to an append-only format).
+You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. They all take an optional parameter which is the size of the dataset to use (default is 10,000).
 
 ### Memory footprint
 A copy of the whole database is kept in memory. This is not much on the
