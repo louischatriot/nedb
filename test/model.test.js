@@ -109,16 +109,20 @@ describe('Model', function () {
       c.test[2].again.should.equal('yes');
     });
 
-    it('Reject field names beginning with a $ sign', function (done) {
-      var a = { $something: 'totest' }
+    it('Reject field names beginning with a $ sign or containing a dot, except the two edge cases', function () {
+      var a1 = { $something: 'totest' }
+        , a2 = { "with.dot": 'totest' }
+        , e1 = { $$date: 4321 }
+        , e2 = { $$deleted: true }
         , b;
 
-      try {
-        b = model.serialize(a);
-        return done('An error should have been thrown');
-      } catch (e) {
-        return done();
-      }
+      // Normal cases
+      (function () { b = model.serialize(a1); }).should.throw();
+      (function () { b = model.serialize(a2); }).should.throw();
+
+      // Edge cases
+      b = model.serialize(e1);
+      b = model.serialize(e2);
     });
 
   });   // ==== End of 'Serialization, deserialization' ==== //
