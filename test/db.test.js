@@ -876,6 +876,68 @@ describe('Database', function () {
       });
     });
 
+    it('Non-multi removes are persistent', function (done) {
+      d.insert({ a:1, hello: 'world' }, function (err, doc1) {
+        d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
+          d.insert({ a:3, hello: 'moto' }, function (err, doc3) {
+            d.remove({ a: 2 }, {}, function (err) {
+              assert.isNull(err);
+
+              d.find({}, function (err, docs) {
+                docs.sort(function (a, b) { return a.a - b.a; });
+                docs.length.should.equal(2);
+                _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' }).should.equal(true);
+                _.isEqual(docs[1], { _id: doc3._id, a:3, hello: 'moto' }).should.equal(true);
+
+                // Even after a reload the database state hasn't changed
+                d.loadDatabase(function (err) {
+                  assert.isUndefined(err);
+
+                  d.find({}, function (err, docs) {
+                    docs.sort(function (a, b) { return a.a - b.a; });
+                    docs.length.should.equal(2);
+                    _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' }).should.equal(true);
+                    _.isEqual(docs[1], { _id: doc3._id, a:3, hello: 'moto' }).should.equal(true);
+
+                    done();
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it('Multi removes are persistent', function (done) {
+      d.insert({ a:1, hello: 'world' }, function (err, doc1) {
+        d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
+          d.insert({ a:3, hello: 'moto' }, function (err, doc3) {
+            d.remove({ a: { $in: [1, 3] } }, { multi: true }, function (err) {
+              assert.isNull(err);
+
+              d.find({}, function (err, docs) {
+                docs.length.should.equal(1);
+                _.isEqual(docs[0], { _id: doc2._id, a:2, hello: 'earth' }).should.equal(true);
+
+                // Even after a reload the database state hasn't changed
+                d.loadDatabase(function (err) {
+                  assert.isUndefined(err);
+
+                  d.find({}, function (err, docs) {
+                    docs.length.should.equal(1);
+                    _.isEqual(docs[0], { _id: doc2._id, a:2, hello: 'earth' }).should.equal(true);
+
+                    done();
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Remove' ==== //
 
 
