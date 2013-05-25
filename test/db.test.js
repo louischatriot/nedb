@@ -7,6 +7,7 @@ var Datastore = require('../lib/datastore')
   , assert = require('chai').assert
   , _ = require('underscore')
   , async = require('async')
+  , model = require('../lib/model')
   ;
 
 
@@ -35,10 +36,20 @@ describe('Database', function () {
   });
 
 
-  describe('Loading the database data from file', function () {
+  describe.only('Loading the database data from file', function () {
 
     it('Every line represents a document', function () {
-      // TODO
+      var now = new Date()
+        , rawData = model.serialize({a: 2, ages: [1, 5, 12]}) + '\n' +
+                    model.serialize({hello: 'world'}) + '\n' +
+                    model.serialize({nested: { today: now }})
+        , treatedData = Datastore.treatRawData(rawData)
+        ;
+
+      treatedData.length.should.equal(3);
+      _.isEqual(treatedData[0], { a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { hello: 'world' }).should.equal(true);
+      _.isEqual(treatedData[2], { nested: { today: now } }).should.equal(true);
     });
 
   });   // ==== End of 'Loading the database data from file' ==== //
