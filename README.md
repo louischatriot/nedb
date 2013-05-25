@@ -290,7 +290,7 @@ of a lower speed).
 * <a href="https://github.com/louischatriot/connect-nedb-session"
   target="_blank">connect-nedb-session</a> is a session store for
 Connect and Express, backed by nedb
-* I'm planning on making an export tool to get all your data in an nedb
+* I'm planning on making an export tool to get all your data in a nedb
   database in a Mongo database
 
 
