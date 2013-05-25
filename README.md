@@ -273,8 +273,8 @@ As such, it was not designed for speed. That said, it is still pretty fast on th
 documents max). On my machine (3 years old, no SSD), with a collection
 containing 10,000 documents and with no index (they are not implemented yet):  
 * An insert takes 0.1 ms
-* A read takes 5.7 ms
-* An update takes 10.9 ms
+* A read takes 6.4 ms
+* An update takes 9.2 ms
 * A deletion takes 8.1 ms  
 
 You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. They all take an optional parameter which is the size of the dataset to use (default is 10,000).
