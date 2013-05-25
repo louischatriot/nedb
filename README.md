@@ -2,7 +2,7 @@
 
 <img src="http://i.imgur.com/GdeQBmc.png" style="width: 25%; height: 25%; float: left;">
 
-**Embedded persistent database for Node.js, with no dependency** (except npm
+**Embedded persistent database for Node.js, written in Javascript, with no dependency** (except npm
 modules of course). You can **think of it as a SQLite for Node.js projects**, which
 can be used with a simple `require` statement. The API is a subset of MongoDB's.
 
