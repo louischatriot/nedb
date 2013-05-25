@@ -36,7 +36,7 @@ describe('Database', function () {
   });
 
 
-  describe('Loading the database data from file', function () {
+  describe.only('Loading the database data from file', function () {
 
     it('Every line represents a document', function () {
       var now = new Date()
@@ -46,6 +46,7 @@ describe('Database', function () {
         , treatedData = Datastore.treatRawData(rawData)
         ;
 
+      treatedData.sort(function (a, b) { return a._id - b._id; });
       treatedData.length.should.equal(3);
       _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
       _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
@@ -60,6 +61,7 @@ describe('Database', function () {
         , treatedData = Datastore.treatRawData(rawData)
         ;
 
+      treatedData.sort(function (a, b) { return a._id - b._id; });
       treatedData.length.should.equal(2);
       _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
       _.isEqual(treatedData[1], { _id: "3", nested: { today: now } }).should.equal(true);
@@ -73,8 +75,23 @@ describe('Database', function () {
         , treatedData = Datastore.treatRawData(rawData)
         ;
 
+      treatedData.sort(function (a, b) { return a._id - b._id; });
       treatedData.length.should.equal(2);
       _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
+    });
+
+    it('If two lines concern the same doc (= same _id), the last one is the good version', function () {
+      var now = new Date()
+        , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                    model.serialize({ _id: "2", hello: 'world' }) + '\n' +
+                    model.serialize({ _id: "1", nested: { today: now } })
+        , treatedData = Datastore.treatRawData(rawData)
+        ;
+
+      treatedData.sort(function (a, b) { return a._id - b._id; });
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { _id: "1", nested: { today: now } }).should.equal(true);
       _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
     });
 
