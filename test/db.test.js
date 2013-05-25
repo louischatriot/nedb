@@ -151,7 +151,6 @@ describe('Database', function () {
                 docs[0].somedata.should.equal('ok');
                 assert.isDefined(docs[0]._id);
 
-
                 done();
               });
             });
@@ -719,6 +718,72 @@ describe('Database', function () {
             docs[0]._id.should.equal(newDoc._id);
 
             done();
+          });
+        });
+      });
+    });
+
+    it('Non-multi updates are persistent', function (done) {
+      d.insert({ a:1, hello: 'world' }, function (err, doc1) {
+        d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
+          d.update({ a: 2 }, { $set: { hello: 'changed' } }, {}, function (err) {
+            assert.isNull(err);
+
+            d.find({}, function (err, docs) {
+              docs.sort(function (a, b) { return a.a - b.a; });
+              docs.length.should.equal(2);
+              _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' }).should.equal(true);
+              _.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' }).should.equal(true);
+
+              // Even after a reload the database state hasn't changed
+              d.loadDatabase(function (err) {
+                assert.isUndefined(err);
+
+                d.find({}, function (err, docs) {
+                  docs.sort(function (a, b) { return a.a - b.a; });
+                  docs.length.should.equal(2);
+                  _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' }).should.equal(true);
+                  _.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' }).should.equal(true);
+
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it('Multi updates are persistent', function (done) {
+      d.insert({ a:1, hello: 'world' }, function (err, doc1) {
+        d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
+          d.insert({ a:5, hello: 'pluton' }, function (err, doc3) {
+            d.update({ a: { $in: [1, 2] } }, { $set: { hello: 'changed' } }, { multi: true }, function (err) {
+              assert.isNull(err);
+
+              d.find({}, function (err, docs) {
+                docs.sort(function (a, b) { return a.a - b.a; });
+                docs.length.should.equal(3);
+                _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'changed' }).should.equal(true);
+                _.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' }).should.equal(true);
+                _.isEqual(docs[2], { _id: doc3._id, a:5, hello: 'pluton' }).should.equal(true);
+
+                // Even after a reload the database state hasn't changed
+                d.loadDatabase(function (err) {
+                  assert.isUndefined(err);
+
+                  d.find({}, function (err, docs) {
+                    docs.sort(function (a, b) { return a.a - b.a; });
+                    docs.length.should.equal(3);
+                    _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'changed' }).should.equal(true);
+                    _.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' }).should.equal(true);
+                    _.isEqual(docs[2], { _id: doc3._id, a:5, hello: 'pluton' }).should.equal(true);
+
+                    done();
+                  });
+                });
+              });
+            });
           });
         });
       });
