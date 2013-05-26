@@ -36,7 +36,7 @@ describe('Database', function () {
   });
 
 
-  describe('Loading the database data from file', function () {
+  describe('Loading the database data from file and persistence', function () {
 
     it('Every line represents a document', function () {
       var now = new Date()
@@ -124,7 +124,35 @@ describe('Database', function () {
       _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
     });
 
-  });   // ==== End of 'Loading the database data from file' ==== //
+    it('Compact database on load', function (done) {
+      d.insert({ a: 2 }, function () {
+        d.insert({ a: 4 }, function () {
+          d.remove({ a: 2 }, {}, function () {
+            // Here, the underlying file is 3 lines long for only one document
+            var data = fs.readFileSync(d.filename, 'utf8').split('\n')
+              , filledCount = 0;
+
+            data.forEach(function (item) { if (item.length > 0) { filledCount += 1; } });
+            filledCount.should.equal(3);
+
+            d.loadDatabase(function (err) {
+              assert.isNull(err);
+
+              // Now, the file has been compacted and is only 1 line long
+              var data = fs.readFileSync(d.filename, 'utf8').split('\n')
+                , filledCount = 0;
+
+              data.forEach(function (item) { if (item.length > 0) { filledCount += 1; } });
+              filledCount.should.equal(1);
+
+              done();
+            });
+          })
+        });
+      });
+    });
+
+  });   // ==== End of 'Loading the database data from file and persistence' ==== //
 
 
   describe('Insert', function () {
@@ -737,7 +765,7 @@ describe('Database', function () {
 
               // Even after a reload the database state hasn't changed
               d.loadDatabase(function (err) {
-                assert.isUndefined(err);
+                assert.isNull(err);
 
                 d.find({}, function (err, docs) {
                   docs.sort(function (a, b) { return a.a - b.a; });
@@ -770,7 +798,7 @@ describe('Database', function () {
 
                 // Even after a reload the database state hasn't changed
                 d.loadDatabase(function (err) {
-                  assert.isUndefined(err);
+                  assert.isNull(err);
 
                   d.find({}, function (err, docs) {
                     docs.sort(function (a, b) { return a.a - b.a; });
@@ -891,7 +919,7 @@ describe('Database', function () {
 
                 // Even after a reload the database state hasn't changed
                 d.loadDatabase(function (err) {
-                  assert.isUndefined(err);
+                  assert.isNull(err);
 
                   d.find({}, function (err, docs) {
                     docs.sort(function (a, b) { return a.a - b.a; });
@@ -922,7 +950,7 @@ describe('Database', function () {
 
                 // Even after a reload the database state hasn't changed
                 d.loadDatabase(function (err) {
-                  assert.isUndefined(err);
+                  assert.isNull(err);
 
                   d.find({}, function (err, docs) {
                     docs.length.should.equal(1);
