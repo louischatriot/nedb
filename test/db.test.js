@@ -318,6 +318,17 @@ describe('Database', function () {
       });
     });
 
+    it('Modifying the insertedDoc after an insert doesnt change the copy saved in the database', function (done) {
+      d.insert({ a: 2, hello: 'world' }, function (err, newDoc) {
+        newDoc.hello = 'changed';
+
+        d.findOne({ a: 2 }, function (err, doc) {
+          doc.hello.should.equal('world');
+          done();
+        });
+      });
+    });
+
   });   // ==== End of 'Insert' ==== //
 
 
@@ -492,6 +503,28 @@ describe('Database', function () {
             assert.isUndefined(doc);
 
             done();
+          });
+        });
+      });
+    });
+
+    it('Changing the documents returned by find or findOne do not change the database state', function (done) {
+      d.insert({ a: 2, hello: 'world' }, function () {
+        d.findOne({ a: 2 }, function (err, doc) {
+          doc.hello = 'changed';
+
+          d.findOne({ a: 2 }, function (err, doc) {
+            doc.hello.should.equal('world');
+
+            d.find({ a: 2 }, function (err, docs) {
+              docs[0].hello = 'changed';
+
+              d.findOne({ a: 2 }, function (err, doc) {
+                doc.hello.should.equal('world');
+
+                done();
+              });
+            });
           });
         });
       });
