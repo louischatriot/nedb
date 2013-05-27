@@ -28,6 +28,8 @@ describe('Database', function () {
     , function (cb) {
         d.loadDatabase(function (err) {
           assert.isNull(err);
+          d.datafileSize.should.equal(0);
+          d.data.length.should.equal(0);
           return cb();
         });
       }
@@ -152,6 +154,34 @@ describe('Database', function () {
       });
     });
 
+    it('datafileSize is the size of the dataset upon a databaseLoad', function (done) {
+      var now = new Date()
+        , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                    model.serialize({ _id: "2", hello: 'world' }) + '\n' +
+                    model.serialize({ _id: "3", nested: { today: now } })
+        ;
+
+      d.data.length.should.equal(0);
+      d.datafileSize.should.equal(0);
+
+      fs.writeFile(testDb, rawData, 'utf8', function () {
+        d.loadDatabase(function () {
+          d.data.length.should.equal(3);
+          d.datafileSize.should.equal(3);
+
+          d.find({}, function (err, docs) {
+            docs.sort(function (a, b) { return a._id - b._id; });
+            docs.length.should.equal(3);
+            _.isEqual(docs[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+            _.isEqual(docs[1], { _id: "2", hello: 'world' }).should.equal(true);
+            _.isEqual(docs[2], { _id: "3", nested: { today: now } }).should.equal(true);
+
+            done();
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Loading the database data from file and persistence' ==== //
 
 
@@ -267,6 +297,24 @@ describe('Database', function () {
         newDoc._id.should.equal('test');
 
         done();
+      });
+    });
+
+    it('datafileSize is incremented by 1 upon every insert', function (done) {
+      d.datafileSize.should.equal(0);
+      d.data.length.should.equal(0);
+      d.insert({ a: 3 }, function () {
+        d.datafileSize.should.equal(1);
+        d.data.length.should.equal(1);
+        d.insert({ a: 3 }, function () {
+          d.datafileSize.should.equal(2);
+          d.data.length.should.equal(2);
+          d.insert({ a: 3 }, function () {
+            d.datafileSize.should.equal(3);
+            d.data.length.should.equal(3);
+            done();
+          });
+        });
       });
     });
 
@@ -817,6 +865,29 @@ describe('Database', function () {
       });
     });
 
+    it('datafileSize stays correct upon updates', function (done) {
+      d.insert({ a: 2 }, function () {
+        d.insert({ a: 3 }, function () {
+          d.insert({ a: 5 }, function () {
+            d.datafileSize.should.equal(3);
+            d.data.length.should.equal(3);
+
+            d.update({ a: 3 }, { $set: { a: 4 } }, {}, function () {
+              d.datafileSize.should.equal(4);
+              d.data.length.should.equal(3);
+
+              d.update({ a: { $in: [2, 4] } }, { $set: { a: 5 } }, { multi: true }, function () {
+                d.datafileSize.should.equal(6);
+                d.data.length.should.equal(3);
+
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Update' ==== //
 
 
@@ -959,6 +1030,29 @@ describe('Database', function () {
                     done();
                   });
                 });
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it('datafileSize stays correct upon removes', function (done) {
+      d.insert({ a: 2 }, function () {
+        d.insert({ a: 3 }, function () {
+          d.insert({ a: 5 }, function () {
+            d.datafileSize.should.equal(3);
+            d.data.length.should.equal(3);
+
+            d.remove({ a: 3 }, {}, function () {
+              d.datafileSize.should.equal(4);
+              d.data.length.should.equal(2);
+
+              d.remove({ a: { $in: [2, 5] } }, { multi: true }, function () {
+                d.datafileSize.should.equal(6);
+                d.data.length.should.equal(0);
+
+                done();
               });
             });
           });
