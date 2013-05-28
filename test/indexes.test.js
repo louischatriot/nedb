@@ -116,4 +116,34 @@ describe('Indexing', function () {
 
   });   // ==== End of 'Removal' ==== //
 
+
+  describe('Update', function () {
+
+    it('Can update a document whose key did or didnt change', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        , doc4 = { a: 23, tf: 'world' }
+        , doc5 = { a: 1, tf: 'changed' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.tree.getNumberOfKeys().should.equal(3);
+      assert.deepEqual(idx.tree.search('world'), [doc2]);
+
+      idx.update(doc2, doc4);
+      idx.tree.getNumberOfKeys().should.equal(3);
+      assert.deepEqual(idx.tree.search('world'), [doc4]);
+
+      idx.update(doc1, doc5);
+      idx.tree.getNumberOfKeys().should.equal(3);
+      assert.deepEqual(idx.tree.search('hello'), []);
+      assert.deepEqual(idx.tree.search('changed'), [doc5]);
+    });
+
+  });   // ==== End of 'Update' ==== //
+
 });
