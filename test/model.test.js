@@ -379,6 +379,24 @@ describe('Model', function () {
       });
     });
 
+    it('Then booleans', function () {
+      var otherStuff = [new Date(4321), {}, { hello: 'world' }, [], ['quite', 5]]
+        , bools = [true, false];
+
+      model.compareThings(true, true).should.equal(0);
+      model.compareThings(false, false).should.equal(0);
+      model.compareThings(true, false).should.equal(1);
+      model.compareThings(false, true).should.equal(-1);
+
+      otherStuff.forEach(function (stuff) {
+        bools.forEach(function (bool) {
+          model.compareThings(bool, stuff).should.equal(-1);
+          model.compareThings(stuff, bool).should.equal(1);
+        });
+      });
+    });
+
+
   });   // ==== End of 'Comparing things' ==== //
 
 
