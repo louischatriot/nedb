@@ -69,6 +69,28 @@ describe('Indexing', function () {
       doc2.a.should.equal(12);
     });
 
+    it('Works with dot notation', function () {
+      var idx = new Index({ fieldName: 'tf.nested' })
+        , doc1 = { a: 5, tf: { nested: 'hello' } }
+        , doc2 = { a: 8, tf: { nested: 'world', additional: true } }
+        , doc3 = { a: 2, tf: { nested: 'bloup', age: 42 } }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      // The underlying BST now has 3 nodes which contain the docs where it's expected
+      idx.tree.getNumberOfKeys().should.equal(3);
+      assert.deepEqual(idx.tree.search('hello'), [doc1]);
+      assert.deepEqual(idx.tree.search('world'), [doc2]);
+      assert.deepEqual(idx.tree.search('bloup'), [doc3]);
+
+      // The nodes contain pointers to the actual documents
+      idx.tree.search('bloup')[0].a = 42;
+      doc3.a.should.equal(42);
+    });
+
   });   // ==== End of 'Insertion' ==== //
 
 
@@ -112,6 +134,30 @@ describe('Indexing', function () {
       idx.remove(doc1);
       idx.tree.getNumberOfKeys().should.equal(0);
       assert.deepEqual(idx.nonindexedDocs, [doc2]);
+    });
+
+    it('Works with dot notation', function () {
+      var idx = new Index({ fieldName: 'tf.nested' })
+        , doc1 = { a: 5, tf: { nested: 'hello' } }
+        , doc2 = { a: 8, tf: { nested: 'world', additional: true } }
+        , doc3 = { a: 2, tf: { nested: 'bloup', age: 42 } }
+        , doc4 = { a: 2, tf: { nested: 'world', fruits: ['apple', 'carrot'] } }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.insert(doc4);
+      idx.tree.getNumberOfKeys().should.equal(3);
+
+      idx.remove(doc1);
+      idx.tree.getNumberOfKeys().should.equal(2);
+      idx.tree.search('hello').length.should.equal(0);
+
+      idx.remove(doc2);
+      idx.tree.getNumberOfKeys().should.equal(2);
+      idx.tree.search('world').length.should.equal(1);
+      idx.tree.search('world')[0].should.equal(doc4);
     });
 
   });   // ==== End of 'Removal' ==== //
