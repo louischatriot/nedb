@@ -329,6 +329,39 @@ describe('Model', function () {
   });   // ==== End of 'Modifying documents' ==== //
 
 
+  describe.only('Comparing things', function () {
+
+    it('null is less than everything except null', function () {
+      var otherStuff = ["string", "", -1, 0, 5.3, 12, true, false, {}, { hello: 'world' }, [], ['quite', 5]];
+
+      model.compareThings(null, null).should.equal(0);
+
+      otherStuff.forEach(function (stuff) {
+        model.compareThings(null, stuff).should.equal(-1);
+        model.compareThings(stuff, null).should.equal(1);
+      });
+    });
+
+    it('After null, numbers are the smallest', function () {
+      var otherStuff = ["string", "", true, false, {}, { hello: 'world' }, [], ['quite', 5]]
+        , numbers = [-12, 0, 12, 5.7];
+
+      model.compareThings(-12, 0).should.equal(-1);
+      model.compareThings(0, -3).should.equal(1);
+      model.compareThings(5.7, 2).should.equal(1);
+      model.compareThings(5.7, 12.3).should.equal(-1);
+
+      otherStuff.forEach(function (stuff) {
+        numbers.forEach(function (number) {
+          model.compareThings(number, stuff).should.equal(-1);
+          model.compareThings(stuff, number).should.equal(1);
+        });
+      });
+    });
+
+  });   // ==== End of 'Comparing things' ==== //
+
+
   describe('Querying', function () {
 
     describe('Comparing things', function () {
