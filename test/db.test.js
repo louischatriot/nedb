@@ -817,7 +817,7 @@ describe('Database', function () {
 
     it('Cant change the _id of a document', function (done) {
       d.insert({ a: 2 }, function (err, newDoc) {
-        d.update({ a: 2 }, { _id: 'nope' }, {}, function (err) {
+        d.update({ a: 2 }, { a: 2, _id: 'nope' }, {}, function (err) {
           assert.isDefined(err);
 
           d.find({}, function (err, docs) {
@@ -826,7 +826,18 @@ describe('Database', function () {
             docs[0].a.should.equal(2);
             docs[0]._id.should.equal(newDoc._id);
 
-            done();
+            d.update({ a: 2 }, { $set: { _id: 'nope' } }, {}, function (err) {
+              assert.isDefined(err);
+
+              d.find({}, function (err, docs) {
+                docs.length.should.equal(1);
+                Object.keys(docs[0]).length.should.equal(2);
+                docs[0].a.should.equal(2);
+                docs[0]._id.should.equal(newDoc._id);
+
+                done();
+              });
+            });
           });
         });
       });
