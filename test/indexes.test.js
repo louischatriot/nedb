@@ -71,4 +71,49 @@ describe('Indexing', function () {
 
   });   // ==== End of 'Insertion' ==== //
 
+
+  describe('Removal', function () {
+
+    it('Can remove pointers from the index, even when multiple documents have the same key', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        , doc4 = { a: 23, tf: 'world' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.insert(doc4);
+      idx.tree.getNumberOfKeys().should.equal(3);
+
+      idx.remove(doc1);
+      idx.tree.getNumberOfKeys().should.equal(2);
+      idx.tree.search('hello').length.should.equal(0);
+
+      idx.remove(doc2);
+      idx.tree.getNumberOfKeys().should.equal(2);
+      idx.tree.search('world').length.should.equal(1);
+      idx.tree.search('world')[0].should.equal(doc4);
+    });
+
+    it('If we have a sparse index, we remove the doc from the nonindexedDocs array', function () {
+      var idx = new Index({ fieldName: 'nope', sparse: true })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 5, tf: 'world' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.tree.getNumberOfKeys().should.equal(0);
+      assert.deepEqual(idx.nonindexedDocs, [doc1, doc2]);
+
+      idx.remove(doc1);
+      idx.tree.getNumberOfKeys().should.equal(0);
+      assert.deepEqual(idx.nonindexedDocs, [doc2]);
+    });
+
+  });   // ==== End of 'Removal' ==== //
+
 });
