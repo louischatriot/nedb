@@ -332,7 +332,7 @@ describe('Model', function () {
   describe.only('Comparing things', function () {
 
     it('null is less than everything except null', function () {
-      var otherStuff = ["string", "", -1, 0, 5.3, 12, true, false, {}, { hello: 'world' }, [], ['quite', 5]];
+      var otherStuff = ["string", "", -1, 0, 5.3, 12, true, false, new Date(12345), {}, { hello: 'world' }, [], ['quite', 5]];
 
       model.compareThings(null, null).should.equal(0);
 
@@ -343,18 +343,38 @@ describe('Model', function () {
     });
 
     it('After null, numbers are the smallest', function () {
-      var otherStuff = ["string", "", true, false, {}, { hello: 'world' }, [], ['quite', 5]]
+      var otherStuff = ["string", "", true, false, new Date(4312), {}, { hello: 'world' }, [], ['quite', 5]]
         , numbers = [-12, 0, 12, 5.7];
 
       model.compareThings(-12, 0).should.equal(-1);
       model.compareThings(0, -3).should.equal(1);
       model.compareThings(5.7, 2).should.equal(1);
       model.compareThings(5.7, 12.3).should.equal(-1);
+      model.compareThings(0, 0).should.equal(0);
+      model.compareThings(-2.6, -2.6).should.equal(0);
+      model.compareThings(5, 5).should.equal(0);
 
       otherStuff.forEach(function (stuff) {
         numbers.forEach(function (number) {
           model.compareThings(number, stuff).should.equal(-1);
           model.compareThings(stuff, number).should.equal(1);
+        });
+      });
+    });
+
+    it('Then strings', function () {
+      var otherStuff = [true, false, new Date(4321), {}, { hello: 'world' }, [], ['quite', 5]]
+        , strings = ['', 'string', 'hello world'];
+
+      model.compareThings('', 'hey').should.equal(-1);
+      model.compareThings('hey', '').should.equal(1);
+      model.compareThings('hey', 'hew').should.equal(1);
+      model.compareThings('hey', 'hey').should.equal(0);
+
+      otherStuff.forEach(function (stuff) {
+        strings.forEach(function (string) {
+          model.compareThings(string, stuff).should.equal(-1);
+          model.compareThings(stuff, string).should.equal(1);
         });
       });
     });
