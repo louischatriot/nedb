@@ -415,6 +415,27 @@ describe('Model', function () {
       });
     });
 
+    it('Then arrays', function () {
+      var otherStuff = [{}, { hello: 'world' }]
+        , arrays = [[], ['yes'], ['hello', 5]]
+        ;
+
+      model.compareThings([], []).should.equal(0);
+      model.compareThings(['hello'], []).should.equal(1);
+      model.compareThings([], ['hello']).should.equal(-1);
+      model.compareThings(['hello'], ['hello', 'world']).should.equal(-1);
+      model.compareThings(['hello', 'earth'], ['hello', 'world']).should.equal(-1);
+      model.compareThings(['hello', 'zzz'], ['hello', 'world']).should.equal(1);
+      model.compareThings(['hello', 'world'], ['hello', 'world']).should.equal(0);
+
+      otherStuff.forEach(function (stuff) {
+        arrays.forEach(function (array) {
+          model.compareThings(array, stuff).should.equal(-1);
+          model.compareThings(stuff, array).should.equal(1);
+        });
+      });
+    });
+
   });   // ==== End of 'Comparing things' ==== //
 
 
