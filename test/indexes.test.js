@@ -192,4 +192,27 @@ describe('Indexing', function () {
 
   });   // ==== End of 'Update' ==== //
 
+
+  describe('Get matching documents', function () {
+
+    it('Get all documents where fieldName is equal to the given value, or an empty array if no match', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        , doc4 = { a: 23, tf: 'world' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.insert(doc4);
+
+      assert.deepEqual(idx.getMatching('bloup'), [doc3]);
+      assert.deepEqual(idx.getMatching('world'), [doc2, doc4]);
+      assert.deepEqual(idx.getMatching('nope'), []);
+    });
+
+  });   // ==== End of 'Get matching documents' ==== //
+
 });
