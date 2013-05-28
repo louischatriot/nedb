@@ -396,6 +396,24 @@ describe('Model', function () {
       });
     });
 
+    it('Then dates', function () {
+      var otherStuff = [{}, { hello: 'world' }, [], ['quite', 5]]
+        , dates = [new Date(-123), new Date(), new Date(5555), new Date(0)]
+        , now = new Date();
+
+      model.compareThings(now, now).should.equal(0);
+      model.compareThings(new Date(54341), now).should.equal(-1);
+      model.compareThings(now, new Date(54341)).should.equal(1);
+      model.compareThings(new Date(0), new Date(-54341)).should.equal(1);
+      model.compareThings(new Date(123), new Date(4341)).should.equal(-1);
+
+      otherStuff.forEach(function (stuff) {
+        dates.forEach(function (date) {
+          model.compareThings(date, stuff).should.equal(-1);
+          model.compareThings(stuff, date).should.equal(1);
+        });
+      });
+    });
 
   });   // ==== End of 'Comparing things' ==== //
 
