@@ -331,7 +331,18 @@ describe('Model', function () {
 
   describe('Comparing things', function () {
 
-    it('null is less than everything except null', function () {
+    it('undefined is the smallest', function () {
+      var otherStuff = [null, "string", "", -1, 0, 5.3, 12, true, false, new Date(12345), {}, { hello: 'world' }, [], ['quite', 5]];
+
+      model.compareThings(undefined, undefined).should.equal(0);
+
+      otherStuff.forEach(function (stuff) {
+        model.compareThings(undefined, stuff).should.equal(-1);
+        model.compareThings(stuff, undefined).should.equal(1);
+      });
+    });
+
+    it('Then null', function () {
       var otherStuff = ["string", "", -1, 0, 5.3, 12, true, false, new Date(12345), {}, { hello: 'world' }, [], ['quite', 5]];
 
       model.compareThings(null, null).should.equal(0);
@@ -342,7 +353,7 @@ describe('Model', function () {
       });
     });
 
-    it('After null, numbers are the smallest', function () {
+    it('Then numbers', function () {
       var otherStuff = ["string", "", true, false, new Date(4312), {}, { hello: 'world' }, [], ['quite', 5]]
         , numbers = [-12, 0, 12, 5.7];
 
