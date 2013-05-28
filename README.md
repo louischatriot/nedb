@@ -189,6 +189,8 @@ db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }], inhabited: true }, fun
   * `numReplaced` is the number of documents replaced
   * `upsert` is set to true if the upsert mode was chosen and a document was inserted
 
+**Note**: you can't change a document's _id.
+
 ```javascript
 // Let's use the same example collection as in the "finding document" part
 // { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false }
