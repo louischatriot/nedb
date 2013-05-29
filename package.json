@@ -21,7 +21,8 @@
   },
   "dependencies": {
     "async": "~0.2.8",
-    "underscore": "~1.4.4"
+    "underscore": "~1.4.4",
+    "binary-search-tree": "~0.1.1"
   },
   "devDependencies": {
     "chai": "1.0.x",
