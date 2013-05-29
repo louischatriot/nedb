@@ -277,7 +277,7 @@ containing 10,000 documents:
 * An insert takes **0.14 ms** (or **0.16 ms** with indexing)
 * A read takes **6.4 ms** (or **0.02 ms** with indexing)
 * An update takes **9.2 ms** (or **0.2 ms** with indexing)
-* A deletion takes 8.1 ms  
+* A deletion takes 8.1 ms (no speed boost with indexes currently due to the underlying data structure which I will change)  
 
 You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. They all take an optional parameter which is the size of the dataset to use (default is 10,000).
 
