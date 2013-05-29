@@ -7,7 +7,7 @@ var Index = require('../lib/indexes')
   , model = require('../lib/model')
   ;
 
-describe('Indexing', function () {
+describe('Indexes', function () {
 
   describe('Insertion', function () {
 

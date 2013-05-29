@@ -1107,4 +1107,44 @@ describe('Database', function () {
   });   // ==== End of 'Remove' ==== //
 
 
+  describe.only('Using indexes', function () {
+
+    describe('ensureIndex', function () {
+
+      it('ensureIndex can be called right after a loadDatabase and be initialized and filled correctly', function (done) {
+        var now = new Date()
+          , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      model.serialize({ _id: "2", hello: 'world' }) + '\n' +
+                      model.serialize({ _id: "3", nested: { today: now } })
+          ;
+
+        d.data.length.should.equal(0);
+        d.datafileSize.should.equal(0);
+
+        fs.writeFile(testDb, rawData, 'utf8', function () {
+          d.loadDatabase(function () {
+            d.data.length.should.equal(3);
+            d.datafileSize.should.equal(3);
+
+            assert.deepEqual(d.indexes, {});
+
+            d.ensureIndex({ fieldName: '_id' });
+            d.indexes._id.fieldName.should.equal('_id');
+            d.indexes._id.unique.should.equal(false);
+            d.indexes._id.sparse.should.equal(false);
+            d.indexes._id.tree.getNumberOfKeys().should.equal(3);
+            d.indexes._id.tree.search('1')[0].should.equal(d.data[0]);
+            d.indexes._id.tree.search('2')[0].should.equal(d.data[1]);
+            d.indexes._id.tree.search('3')[0].should.equal(d.data[2]);
+
+            done();
+          });
+        });
+      });
+
+    });
+
+  });   // ==== End of 'Using indexes' ==== //
+
+
 });

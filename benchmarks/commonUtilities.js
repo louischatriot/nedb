@@ -179,7 +179,7 @@ module.exports.removeDocs = function (options, d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("Average time for one remove in a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      console.log("Average time for one remove and one insert in a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
       profiler.step('Finished removing ' + n + ' docs');
       return cb();
     }
