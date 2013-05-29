@@ -53,6 +53,7 @@ module.exports.getRandomArray = getRandomArray;
  */
 module.exports.insertDocs = function (d, n, profiler, cb) {
   var beg = new Date()
+    , order = getRandomArray(n)
     ;
 
   profiler.step('Begin inserting ' + n + ' docs');
@@ -64,7 +65,7 @@ module.exports.insertDocs = function (d, n, profiler, cb) {
       return cb();
     }
 
-    d.insert({ docNumber: i }, function (err) {
+    d.insert({ docNumber: order[i] }, function (err) {
       executeAsap(function () {
         runFrom(i + 1);
       });
