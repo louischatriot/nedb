@@ -91,6 +91,20 @@ describe('Indexing', function () {
       doc3.a.should.equal(42);
     });
 
+    it('Can insert an array of documents', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        ;
+
+      idx.insert([doc1, doc2, doc3]);
+      idx.tree.getNumberOfKeys().should.equal(3);
+      assert.deepEqual(idx.tree.search('hello'), [doc1]);
+      assert.deepEqual(idx.tree.search('world'), [doc2]);
+      assert.deepEqual(idx.tree.search('bloup'), [doc3]);
+    });
+
   });   // ==== End of 'Insertion' ==== //
 
 
