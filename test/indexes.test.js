@@ -174,6 +174,22 @@ describe('Indexing', function () {
       idx.tree.search('world')[0].should.equal(doc4);
     });
 
+    it('Can remove an array of documents', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        ;
+
+      idx.insert([doc1, doc2, doc3]);
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.remove([doc1, doc3]);
+      idx.tree.getNumberOfKeys().should.equal(1);
+      assert.deepEqual(idx.tree.search('hello'), []);
+      assert.deepEqual(idx.tree.search('world'), [doc2]);
+      assert.deepEqual(idx.tree.search('bloup'), []);
+    });
+
   });   // ==== End of 'Removal' ==== //
 
 
