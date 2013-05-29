@@ -154,7 +154,8 @@ module.exports.updateDocs = function (options, d, n, profiler, cb) {
       return cb();
     }
 
-    d.update({ docNumber: order[i] }, { newDocNumber: i }, options, function (err, nr) {
+    // Will not actually modify the document but will take the same time
+    d.update({ docNumber: order[i] }, { docNumber: order[i] }, options, function (err, nr) {
       if (nr !== 1) { return cb('One update didnt work'); }
       executeAsap(function () {
         runFrom(i + 1);

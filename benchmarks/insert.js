@@ -21,7 +21,6 @@ console.log("Test with " + n + " documents");
 console.log(program.withIndex ? "Use an index" : "Don't use an index");
 console.log("----------------------------");
 
-
 async.waterfall([
   async.apply(commonUtilities.prepareDb, benchDb)
 , function (cb) {

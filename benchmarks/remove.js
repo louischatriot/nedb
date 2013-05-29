@@ -7,14 +7,33 @@ var Datastore = require('../lib/datastore')
   , execTime = require('exec-time')
   , profiler = new execTime('REMOVE BENCH')
   , d = new Datastore(benchDb)
-  , n = 10000
+  , program = require('commander')
+  , n
   ;
 
-if (process.argv[2]) { n = parseInt(process.argv[2], 10); }
+program
+  .option('-n --number [number]', 'Size of the collection to test on', parseInt)
+  .option('-i --with-index', 'Test with an index')
+  .parse(process.argv);
+
+n = program.number || 10000;
+
+console.log("----------------------------");
+console.log("Test with " + n + " documents");
+console.log(program.withIndex ? "Use an index" : "Don't use an index");
+console.log("----------------------------");
 
 async.waterfall([
   async.apply(commonUtilities.prepareDb, benchDb)
-, function (cb) { d.loadDatabase(cb); }
+, function (cb) {
+    d.loadDatabase(function (err) {
+      if (err) { return cb(err); }
+      if (program.withIndex) {
+        d.ensureIndex({ fieldName: 'docNumber' });
+      }
+      cb();
+    });
+  }
 , function (cb) { profiler.beginProfiling(); return cb(); }
 , async.apply(commonUtilities.insertDocs, d, n, profiler)
 
