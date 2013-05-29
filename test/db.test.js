@@ -12,9 +12,11 @@ var Datastore = require('../lib/datastore')
 
 
 describe('Database', function () {
-  var d = new Datastore(testDb);
+  var d;
 
   beforeEach(function (done) {
+    d = new Datastore(testDb);
+
     async.waterfall([
       function (cb) {
         customUtils.ensureDirectoryExists(path.dirname(testDb), function () {
@@ -1107,7 +1109,7 @@ describe('Database', function () {
   });   // ==== End of 'Remove' ==== //
 
 
-  describe.only('Using indexes', function () {
+  describe('Using indexes', function () {
 
     describe('ensureIndex', function () {
 
@@ -1140,6 +1142,43 @@ describe('Database', function () {
             done();
           });
         });
+      });
+
+      it('ensureIndex can be called after the data set was modified and still be correct', function (done) {
+        var rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      model.serialize({ _id: "2", hello: 'world' })
+          ;
+
+        d.data.length.should.equal(0);
+        d.datafileSize.should.equal(0);
+
+        fs.writeFile(testDb, rawData, 'utf8', function () {
+          d.loadDatabase(function () {
+            d.data.length.should.equal(2);
+            d.datafileSize.should.equal(2);
+
+            assert.deepEqual(d.indexes, {});
+
+            d.insert({ _id: "12", yes: 'yes' }, function () {
+              d.insert({ _id: "14", nope: 'nope' }, function () {
+                assert.deepEqual(d.indexes, {});
+
+                d.ensureIndex({ fieldName: '_id' });
+                d.indexes._id.fieldName.should.equal('_id');
+                d.indexes._id.unique.should.equal(false);
+                d.indexes._id.sparse.should.equal(false);
+                d.indexes._id.tree.getNumberOfKeys().should.equal(4);
+                d.indexes._id.tree.search('1')[0].should.equal(d.data[0]);
+                d.indexes._id.tree.search('2')[0].should.equal(d.data[1]);
+                d.indexes._id.tree.search('12')[0].should.equal(d.data[2]);
+                d.indexes._id.tree.search('14')[0].should.equal(d.data[3]);
+
+                done();
+              });
+            });
+          });
+        });
+
       });
 
     });
