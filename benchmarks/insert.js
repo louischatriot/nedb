@@ -4,9 +4,9 @@ var Datastore = require('../lib/datastore')
   , commonUtilities = require('./commonUtilities')
   , execTime = require('exec-time')
   , profiler = new execTime('INSERT BENCH')
-  , n
   , d = new Datastore(benchDb)
   , program = require('commander')
+  , n
   ;
 
 program
@@ -26,7 +26,7 @@ async.waterfall([
 , function (cb) {
     d.loadDatabase(function (err) {
       if (err) { return cb(err); }
-      if (program.withIndex) { d.ensureIndex('docNumber'); }
+      if (program.withIndex) { d.ensureIndex({ fieldName: 'docNumber' }); }
       cb();
     });
   }
