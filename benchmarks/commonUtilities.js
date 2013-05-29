@@ -31,17 +31,22 @@ module.exports.prepareDb = function (filename, cb) {
 
 /**
  * Return an array with the numbers from 0 to n-1, in a random order
+ * Uses Fisher Yates algorithm
  * Useful to get fair tests
  */
 function getRandomArray (n) {
-  var res, next;
+  var res = []
+    , i, j, temp
+    ;
 
-  if (n === 0) { return []; }
-  if (n === 1) { return [0]; }
+  for (i = 0; i < n; i += 1) { res[i] = i; }
 
-  res = getRandomArray(n - 1);
-  next = Math.floor(Math.random() * n);
-  res.splice(next, 0, n - 1);   // Add n-1 at a random position in the array
+  for (i = n - 1; i >= 1; i -= 1) {
+    j = Math.floor((i + 1) * Math.random());
+    temp = res[i];
+    res[i] = res[j];
+    res[j] = temp;
+  }
 
   return res;
 };

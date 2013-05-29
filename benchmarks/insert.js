@@ -21,12 +21,19 @@ console.log("Test with " + n + " documents");
 console.log(program.withIndex ? "Use an index" : "Don't use an index");
 console.log("----------------------------");
 
+
 async.waterfall([
   async.apply(commonUtilities.prepareDb, benchDb)
 , function (cb) {
     d.loadDatabase(function (err) {
       if (err) { return cb(err); }
-      if (program.withIndex) { d.ensureIndex({ fieldName: 'docNumber' }); }
+      if (program.withIndex) {
+        d.ensureIndex({ fieldName: 'docNumber' });
+        n = 2 * n;   // We will actually insert twice as many documents
+                     // because the index is slower when the collection is already
+                     // big. So the result given by the algorithm will be a bit worse than
+                     // actual performance
+      }
       cb();
     });
   }
