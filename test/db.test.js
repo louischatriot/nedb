@@ -1111,7 +1111,7 @@ describe('Database', function () {
 
   describe('Using indexes', function () {
 
-    describe('ensureIndex', function () {
+    describe('ensureIndex and index initialization in database loading', function () {
 
       it('ensureIndex can be called right after a loadDatabase and be initialized and filled correctly', function (done) {
         var now = new Date()
@@ -1300,7 +1300,7 @@ describe('Database', function () {
         });
       });
 
-    });   // ==== End of 'ensureIndex' ==== //
+    });   // ==== End of 'ensureIndex and index initialization in database loading' ==== //
 
     describe('Indexing newly inserted documents', function () {
 
