@@ -1288,7 +1288,7 @@ describe('Database', function () {
         });
       });
 
-      it('If the index has a unique constraint, an error is thrown if it is violated', function (done) {
+      it('If the index has a unique constraint, an error is thrown if it is violated and the data didnt change', function (done) {
         d.ensureIndex({ fieldName: 'z', unique: true });
         d.indexes.z.tree.getNumberOfKeys().should.equal(0);
 
@@ -1316,8 +1316,32 @@ describe('Database', function () {
         });
       });
 
-      it.skip('If the index has a unique constraint, others cannot be modified when it raises an error', function (done) {
-        done();
+      it('If the index has a unique constraint, others cannot be modified when it raises an error', function (done) {
+        d.ensureIndex({ fieldName: 'nonu1' });
+        d.ensureIndex({ fieldName: 'uni', unique: true });
+        d.ensureIndex({ fieldName: 'nonu2' });
+
+        d.insert({ nonu1: 'yes', nonu2: 'yes2', uni: 'willfail' }, function (err, newDoc) {
+          assert.isNull(err);
+          d.indexes.nonu1.tree.getNumberOfKeys().should.equal(1);
+          d.indexes.uni.tree.getNumberOfKeys().should.equal(1);
+          d.indexes.nonu2.tree.getNumberOfKeys().should.equal(1);
+
+          d.insert({ nonu1: 'no', nonu2: 'no2', uni: 'willfail' }, function (err) {
+            err.errorType.should.equal('uniqueViolated');
+
+            // No index was modified
+            d.indexes.nonu1.tree.getNumberOfKeys().should.equal(1);
+            d.indexes.uni.tree.getNumberOfKeys().should.equal(1);
+            d.indexes.nonu2.tree.getNumberOfKeys().should.equal(1);
+
+            assert.deepEqual(d.indexes.nonu1.getMatching('yes'), [newDoc]);
+            assert.deepEqual(d.indexes.uni.getMatching('willfail'), [newDoc]);
+            assert.deepEqual(d.indexes.nonu2.getMatching('yes2'), [newDoc]);
+
+            done();
+          });
+        });
       });
 
     });   // ==== End of 'Indexing newly inserted documents' ==== //
