@@ -1109,7 +1109,7 @@ describe('Database', function () {
   });   // ==== End of 'Remove' ==== //
 
 
-  describe('Using indexes', function () {
+  describe.only('Using indexes', function () {
 
     describe('ensureIndex and index initialization in database loading', function () {
 
@@ -1416,15 +1416,31 @@ describe('Database', function () {
         });
       });
 
-      it.skip('Insertion still works as before with indexing', function (done) {
+      it('Insertion still works as before with indexing', function (done) {
         d.ensureIndex({ fieldName: 'a' });
         d.ensureIndex({ fieldName: 'b' });
 
         d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
           d.insert({ a: 2, b: 'si' }, function (err, doc2) {
             d.find({}, function (err, docs) {
-              console.log(d.data);
-// TODO
+              assert.deepEqual(doc1, _.find(docs, function (d) { return d._id === doc1._id; }));
+              assert.deepEqual(doc2, _.find(docs, function (d) { return d._id === doc2._id; }));
+
+              done();
+            });
+          });
+        });
+      });
+
+      it('The index data points to the db data', function (done) {
+        d.ensureIndex({ fieldName: 'a' });
+
+        d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
+          d.insert({ a: 2, b: 'si' }, function (err, doc2) {
+            d.find({}, function (err, docs) {
+              d.data.indexOf(d.indexes.a.getMatching(1)[0]).should.not.equal(-1);
+              d.data.indexOf(d.indexes.a.getMatching(2)[0]).should.not.equal(-1);
+
               done();
             });
           });
