@@ -1416,7 +1416,73 @@ describe('Database', function () {
         });
       });
 
+      it.skip('Insertion still works as before with indexing', function (done) {
+        d.ensureIndex({ fieldName: 'a' });
+        d.ensureIndex({ fieldName: 'b' });
+
+        d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
+          d.insert({ a: 2, b: 'si' }, function (err, doc2) {
+            d.find({}, function (err, docs) {
+              console.log(d.data);
+// TODO
+              done();
+            });
+          });
+        });
+      });
+
     });   // ==== End of 'Indexing newly inserted documents' ==== //
+
+    describe('Updating indexes upon document update', function () {
+
+      it.skip('Indexes get updated when a document (or multiple documents) is updated', function (done) {
+        d.ensureIndex({ fieldName: 'a' });
+        d.ensureIndex({ fieldName: 'b' });
+
+        d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
+          d.insert({ a: 2, b: 'si' }, function (err, doc2) {
+            d.update({ a: 1 }, { $set: { a: 456, b: 'no' } }, {}, function (err, nr) {
+              assert.isNull(err);
+              nr.should.equal(1);
+              console.log(d.data);
+              throw 'fds'; // TODO
+
+              d.indexes.a.tree.getNumberOfKeys().should.equal(2);
+              d.indexes.a.getMatching(456)[0]._id.should.equal(doc1._id);
+              d.indexes.a.getMatching(2)[0]._id.should.equal(doc2._id);
+
+              d.indexes.b.tree.getNumberOfKeys().should.equal(2);
+              d.indexes.b.getMatching('no')[0]._id.should.equal(doc1._id);
+              d.indexes.b.getMatching('si')[0]._id.should.equal(doc2._id);
+
+              console.log("========================");
+              console.log("========================");
+              d.update({}, { $inc: { a: 10 }, $set: { b: 'same' } }, { multi: true }, function () {
+                assert.isNull(err);
+                nr.should.equal(2);
+
+                d.indexes.a.tree.getNumberOfKeys().should.equal(2);
+                d.indexes.a.getMatching(466)[0]._id.should.equal(doc1._id);
+                d.indexes.a.getMatching(12)[0]._id.should.equal(doc2._id);
+
+                d.indexes.b.tree.getNumberOfKeys().should.equal(1);
+                d.indexes.b.getMatching('same')[0]._id.should.equal(doc1._id);
+                d.indexes.b.getMatching('same')[1]._id.should.equal(doc2._id);
+
+                done();
+              });
+            });
+          });
+        });
+      });
+
+      it.skip('If an update violates a contraints, nothing is done', function (done) {
+      });
+
+      it.skip('Updates still work with indexing', function (done) {
+      });
+
+    });   // ==== End of 'Updating indexes upon document update' ==== //
 
 
 
