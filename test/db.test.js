@@ -1109,7 +1109,7 @@ describe('Database', function () {
   });   // ==== End of 'Remove' ==== //
 
 
-  describe.only('Using indexes', function () {
+  describe('Using indexes', function () {
 
     describe('ensureIndex', function () {
 
@@ -1187,7 +1187,6 @@ describe('Database', function () {
             });
           });
         });
-
       });
 
     });

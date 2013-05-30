@@ -245,4 +245,103 @@ describe('Indexes', function () {
 
   });   // ==== End of 'Get matching documents' ==== //
 
+
+  describe('Resetting', function () {
+
+    it('Can reset an index without any new data, the index will be empty afterwards', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.getMatching('hello').length.should.equal(1);
+      idx.getMatching('world').length.should.equal(1);
+      idx.getMatching('bloup').length.should.equal(1);
+
+      idx.reset();
+      idx.tree.getNumberOfKeys().should.equal(0);
+      idx.getMatching('hello').length.should.equal(0);
+      idx.getMatching('world').length.should.equal(0);
+      idx.getMatching('bloup').length.should.equal(0);
+    });
+
+    it('Can reset an index and initialize it with one document', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        , newDoc = { a: 555, tf: 'new' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.getMatching('hello').length.should.equal(1);
+      idx.getMatching('world').length.should.equal(1);
+      idx.getMatching('bloup').length.should.equal(1);
+
+      idx.reset(newDoc);
+      idx.tree.getNumberOfKeys().should.equal(1);
+      idx.getMatching('hello').length.should.equal(0);
+      idx.getMatching('world').length.should.equal(0);
+      idx.getMatching('bloup').length.should.equal(0);
+      idx.getMatching('new')[0].a.should.equal(555);
+    });
+
+    it('Can reset an index and initialize it with an array of documents', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        , newDocs = [{ a: 555, tf: 'new' }, { a: 666, tf: 'again' }]
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.getMatching('hello').length.should.equal(1);
+      idx.getMatching('world').length.should.equal(1);
+      idx.getMatching('bloup').length.should.equal(1);
+
+      idx.reset(newDocs);
+      idx.tree.getNumberOfKeys().should.equal(2);
+      idx.getMatching('hello').length.should.equal(0);
+      idx.getMatching('world').length.should.equal(0);
+      idx.getMatching('bloup').length.should.equal(0);
+      idx.getMatching('new')[0].a.should.equal(555);
+      idx.getMatching('again')[0].a.should.equal(666);
+    });
+
+    it('Resetting a sparse index resets the nonindexed docs array', function () {
+      var idx = new Index({ fieldName: 'tf', sparse: true})
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, no: 'world' }
+        , doc3 = { a: 2, no: 'bloup' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      idx.tree.getNumberOfKeys().should.equal(1);
+      idx.getMatching('hello').length.should.equal(1);
+      idx.nonindexedDocs.length.should.equal(2);
+
+      idx.reset();
+      idx.tree.getNumberOfKeys().should.equal(0);
+      idx.nonindexedDocs.length.should.equal(0);
+    });
+
+  });   // ==== End of 'Resetting' ==== //
+
 });
