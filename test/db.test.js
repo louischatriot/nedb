@@ -1220,6 +1220,14 @@ describe('Database', function () {
         });
       });
 
+      it.skip('Can initialize multiple indexes', function (done) {
+        done();
+      });
+
+      it.skip('If a unique constraint is not respected, database loading will not work and no data will be inserted', function (done) {
+        done();
+      });
+
     });   // ==== End of 'ensureIndex' ==== //
 
     describe('Indexing newly inserted documents', function () {
@@ -1235,6 +1243,28 @@ describe('Database', function () {
           d.insert({ a: 5, z: 'nope' }, function (err, newDoc) {
             d.indexes.z.tree.getNumberOfKeys().should.equal(2);
             assert.deepEqual(d.indexes.z.getMatching('nope'), [newDoc]);
+
+            done();
+          });
+        });
+      });
+
+      it('If multiple indexes are defined, the document is inserted in all of them', function (done) {
+        d.ensureIndex({ fieldName: 'z' });
+        d.ensureIndex({ fieldName: 'ya' });
+        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+
+        d.insert({ a: 2, z: 'yes', ya: 'indeed' }, function (err, newDoc) {
+          d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+          d.indexes.ya.tree.getNumberOfKeys().should.equal(1);
+          assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
+          assert.deepEqual(d.indexes.ya.getMatching('indeed'), [newDoc]);
+
+          d.insert({ a: 5, z: 'nope', ya: 'sure' }, function (err, newDoc2) {
+            d.indexes.z.tree.getNumberOfKeys().should.equal(2);
+            d.indexes.ya.tree.getNumberOfKeys().should.equal(2);
+            assert.deepEqual(d.indexes.z.getMatching('nope'), [newDoc2]);
+            assert.deepEqual(d.indexes.ya.getMatching('sure'), [newDoc2]);
 
             done();
           });
@@ -1258,7 +1288,39 @@ describe('Database', function () {
         });
       });
 
-    });   // ==== End of '' ==== //
+      it('If the index has a unique constraint, an error is thrown if it is violated', function (done) {
+        d.ensureIndex({ fieldName: 'z', unique: true });
+        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+
+        d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
+          d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+          assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
+
+          d.insert({ a: 5, z: 'yes' }, function (err) {
+            err.errorType.should.equal('uniqueViolated');
+            err.key.should.equal('yes');
+
+            // Index didn't change
+            d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+            assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
+
+            // Data didn't change
+            assert.deepEqual(d.data, [newDoc]);
+            d.loadDatabase(function () {
+              d.data.length.should.equal(1);
+              assert.deepEqual(d.data[0], newDoc);
+
+              done();
+            });
+          });
+        });
+      });
+
+      it.skip('If the index has a unique constraint, others cannot be modified when it raises an error', function (done) {
+        done();
+      });
+
+    });   // ==== End of 'Indexing newly inserted documents' ==== //
 
 
 
