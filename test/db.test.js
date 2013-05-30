@@ -1220,7 +1220,7 @@ describe('Database', function () {
         });
       });
 
-      it('Can initialize multiple indexes', function (done) {
+      it('Can initialize multiple indexes on a database load', function (done) {
         var now = new Date()
           , rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                       model.serialize({ _id: "bbb", z: "2", a: 'world' }) + '\n' +
@@ -1388,7 +1388,7 @@ describe('Database', function () {
         });
       });
 
-      it('If the index has a unique constraint, others cannot be modified when it raises an error', function (done) {
+      it('If an index has a unique constraint, others cannot be modified when it raises an error', function (done) {
         d.ensureIndex({ fieldName: 'nonu1' });
         d.ensureIndex({ fieldName: 'uni', unique: true });
         d.ensureIndex({ fieldName: 'nonu2' });
