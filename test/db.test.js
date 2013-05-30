@@ -1282,7 +1282,23 @@ describe('Database', function () {
         });
       });
 
-      it.skip('If a unique constraint is not respected, ensureIndex will return an error', function (done) {
+      it('If a unique constraint is not respected, ensureIndex will return an error', function (done) {
+        d.insert({ a: 1, b: 4 }, function () {
+          d.insert({ a: 2, b: 45 }, function () {
+            d.insert({ a: 1, b: 3 }, function () {
+              d.ensureIndex({ fieldName: 'b' }, function (err) {
+                assert.isUndefined(err);
+
+                d.ensureIndex({ fieldName: 'a', unique: true }, function (err) {
+                  err.errorType.should.equal('uniqueViolated');
+                  assert.deepEqual(Object.keys(d.indexes), ['b']);
+
+                  done();
+                });
+              });
+            });
+          });
+        });
       });
 
     });   // ==== End of 'ensureIndex' ==== //
