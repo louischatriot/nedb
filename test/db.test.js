@@ -291,12 +291,12 @@ describe('Database', function () {
       });
     });
 
-    it('If an _id is already given when we insert a document, use it and not the default uid', function (done) {
+    it('If an _id is already given when we insert a document, dont use it but use an automatic one', function (done) {
       d.insert({ _id: 'test', stuff: true }, function (err, newDoc) {
         if (err) { return done(err); }
 
         newDoc.stuff.should.equal(true);
-        newDoc._id.should.equal('test');
+        newDoc._id.should.not.equal('test');
 
         done();
       });
@@ -1109,15 +1109,15 @@ describe('Database', function () {
   });   // ==== End of 'Remove' ==== //
 
 
-  describe.only('Using indexes', function () {
+  describe('Using indexes', function () {
 
     describe('ensureIndex', function () {
 
       it('ensureIndex can be called right after a loadDatabase and be initialized and filled correctly', function (done) {
         var now = new Date()
-          , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-                      model.serialize({ _id: "2", hello: 'world' }) + '\n' +
-                      model.serialize({ _id: "3", nested: { today: now } })
+          , rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      model.serialize({ _id: "bbb", z: "2", hello: 'world' }) + '\n' +
+                      model.serialize({ _id: "ccc", z: "3", nested: { today: now } })
           ;
 
         d.data.length.should.equal(0);
@@ -1130,14 +1130,14 @@ describe('Database', function () {
 
             assert.deepEqual(d.indexes, {});
 
-            d.ensureIndex({ fieldName: '_id' });
-            d.indexes._id.fieldName.should.equal('_id');
-            d.indexes._id.unique.should.equal(false);
-            d.indexes._id.sparse.should.equal(false);
-            d.indexes._id.tree.getNumberOfKeys().should.equal(3);
-            d.indexes._id.tree.search('1')[0].should.equal(d.data[0]);
-            d.indexes._id.tree.search('2')[0].should.equal(d.data[1]);
-            d.indexes._id.tree.search('3')[0].should.equal(d.data[2]);
+            d.ensureIndex({ fieldName: 'z' });
+            d.indexes.z.fieldName.should.equal('z');
+            d.indexes.z.unique.should.equal(false);
+            d.indexes.z.sparse.should.equal(false);
+            d.indexes.z.tree.getNumberOfKeys().should.equal(3);
+            d.indexes.z.tree.search('1')[0].should.equal(d.data[0]);
+            d.indexes.z.tree.search('2')[0].should.equal(d.data[1]);
+            d.indexes.z.tree.search('3')[0].should.equal(d.data[2]);
 
             done();
           });
@@ -1145,8 +1145,8 @@ describe('Database', function () {
       });
 
       it('ensureIndex can be called after the data set was modified and still be correct', function (done) {
-        var rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-                      model.serialize({ _id: "2", hello: 'world' })
+        var rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      model.serialize({ _id: "bbb", z: "2", hello: 'world' })
           ;
 
         d.data.length.should.equal(0);
@@ -1159,26 +1159,26 @@ describe('Database', function () {
 
             assert.deepEqual(d.indexes, {});
 
-            d.insert({ _id: "12", yes: 'yes' }, function () {
-              d.insert({ _id: "14", nope: 'nope' }, function () {
-                d.remove({ _id: "2" }, {}, function () {
-                  d.update({ _id: "1" }, { $set: { 'yes': 'yep' } }, {}, function () {
+            d.insert({ z: "12", yes: 'yes' }, function (err, newDoc1) {
+              d.insert({ z: "14", nope: 'nope' }, function (err, newDoc2) {
+                d.remove({ z: "2" }, {}, function () {
+                  d.update({ z: "1" }, { $set: { 'yes': 'yep' } }, {}, function () {
                     assert.deepEqual(d.indexes, {});
 
-                    d.ensureIndex({ fieldName: '_id' });
-                    d.indexes._id.fieldName.should.equal('_id');
-                    d.indexes._id.unique.should.equal(false);
-                    d.indexes._id.sparse.should.equal(false);
-                    d.indexes._id.tree.getNumberOfKeys().should.equal(3);
+                    d.ensureIndex({ fieldName: 'z' });
+                    d.indexes.z.fieldName.should.equal('z');
+                    d.indexes.z.unique.should.equal(false);
+                    d.indexes.z.sparse.should.equal(false);
+                    d.indexes.z.tree.getNumberOfKeys().should.equal(3);
 
-                    d.indexes._id.tree.search('1')[0].should.equal(d.data[0]);
-                    assert.deepEqual(d.data[0], { _id: "1", a: 2, ages: [1, 5, 12], yes: 'yep' });
+                    d.indexes.z.tree.search('1')[0].should.equal(d.data[0]);
+                    assert.deepEqual(d.data[0], { _id: "aaa", z: "1", a: 2, ages: [1, 5, 12], yes: 'yep' });
 
-                    d.indexes._id.tree.search('12')[0].should.equal(d.data[1]);
-                    assert.deepEqual(d.data[1], { _id: "12", yes: 'yes' });
+                    d.indexes.z.tree.search('12')[0].should.equal(d.data[1]);
+                    assert.deepEqual(d.data[1], { _id: newDoc1._id, z: "12", yes: 'yes' });
 
-                    d.indexes._id.tree.search('14')[0].should.equal(d.data[2]);
-                    assert.deepEqual(d.data[2], { _id: "14", nope: 'nope' });
+                    d.indexes.z.tree.search('14')[0].should.equal(d.data[2]);
+                    assert.deepEqual(d.data[2], { _id: newDoc2._id, z: "14", nope: 'nope' });
 
                     done();
                   });
