@@ -1220,12 +1220,69 @@ describe('Database', function () {
         });
       });
 
-      it.skip('Can initialize multiple indexes', function (done) {
-        done();
+      it('Can initialize multiple indexes', function (done) {
+        var now = new Date()
+          , rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      model.serialize({ _id: "bbb", z: "2", a: 'world' }) + '\n' +
+                      model.serialize({ _id: "ccc", z: "3", a: { today: now } })
+          ;
+
+        d.data.length.should.equal(0);
+        d.datafileSize.should.equal(0);
+
+        d.ensureIndex({ fieldName: 'z' });
+        d.ensureIndex({ fieldName: 'a' });
+        d.indexes.a.tree.getNumberOfKeys().should.equal(0);
+        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+
+        fs.writeFile(testDb, rawData, 'utf8', function () {
+          d.loadDatabase(function () {
+            d.data.length.should.equal(3);
+            d.datafileSize.should.equal(3);
+
+            d.indexes.z.tree.getNumberOfKeys().should.equal(3);
+            d.indexes.z.tree.search('1')[0].should.equal(d.data[0]);
+            d.indexes.z.tree.search('2')[0].should.equal(d.data[1]);
+            d.indexes.z.tree.search('3')[0].should.equal(d.data[2]);
+
+            d.indexes.a.tree.getNumberOfKeys().should.equal(3);
+            d.indexes.a.tree.search(2)[0].should.equal(d.data[0]);
+            d.indexes.a.tree.search('world')[0].should.equal(d.data[1]);
+            d.indexes.a.tree.search({ today: now })[0].should.equal(d.data[2]);
+
+            done();
+          });
+        });
       });
 
-      it.skip('If a unique constraint is not respected, database loading will not work and no data will be inserted', function (done) {
-        done();
+      it('If a unique constraint is not respected, database loading will not work and no data will be inserted', function (done) {
+        var now = new Date()
+          , rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      model.serialize({ _id: "bbb", z: "2", a: 'world' }) + '\n' +
+                      model.serialize({ _id: "ccc", z: "1", a: { today: now } })
+          ;
+
+        d.data.length.should.equal(0);
+        d.datafileSize.should.equal(0);
+
+        d.ensureIndex({ fieldName: 'z', unique: true });
+        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+
+        fs.writeFile(testDb, rawData, 'utf8', function () {
+          d.loadDatabase(function (err) {
+            err.errorType.should.equal('uniqueViolated');
+            err.key.should.equal("1");
+            d.data.length.should.equal(0);
+            d.datafileSize.should.equal(0);
+
+            d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+
+            done();
+          });
+        });
+      });
+
+      it.skip('If a unique constraint is not respected, ensureIndex will return an error', function (done) {
       });
 
     });   // ==== End of 'ensureIndex' ==== //
