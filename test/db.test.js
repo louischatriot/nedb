@@ -1274,7 +1274,6 @@ describe('Database', function () {
             err.key.should.equal("1");
             d.data.length.should.equal(0);
             d.datafileSize.should.equal(0);
-
             d.indexes.z.tree.getNumberOfKeys().should.equal(0);
 
             done();
@@ -1282,7 +1281,7 @@ describe('Database', function () {
         });
       });
 
-      it('If a unique constraint is not respected, ensureIndex will return an error', function (done) {
+      it('If a unique constraint is not respected, ensureIndex will return an error and not create an index', function (done) {
         d.insert({ a: 1, b: 4 }, function () {
           d.insert({ a: 2, b: 45 }, function () {
             d.insert({ a: 1, b: 3 }, function () {
