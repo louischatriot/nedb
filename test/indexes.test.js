@@ -105,6 +105,25 @@ describe('Indexes', function () {
       assert.deepEqual(idx.tree.search('bloup'), [doc3]);
     });
 
+    it('When inserting an array of elements, if an error is thrown all inserts need to be rolled back', function () {
+      var idx = new Index({ fieldName: 'tf', unique: true })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc2b = { a: 84, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        ;
+
+      try {
+        idx.insert([doc1, doc2, doc2b, doc3]);
+      } catch (e) {
+        e.errorType.should.equal('uniqueViolated');
+      }
+      idx.tree.getNumberOfKeys().should.equal(0);
+      assert.deepEqual(idx.tree.search('hello'), []);
+      assert.deepEqual(idx.tree.search('world'), []);
+      assert.deepEqual(idx.tree.search('bloup'), []);
+    });
+
   });   // ==== End of 'Insertion' ==== //
 
 
