@@ -1109,7 +1109,7 @@ describe('Database', function () {
   });   // ==== End of 'Remove' ==== //
 
 
-  describe('Using indexes', function () {
+  describe.only('Using indexes', function () {
 
     describe('ensureIndex', function () {
 
@@ -1220,7 +1220,45 @@ describe('Database', function () {
         });
       });
 
-    });
+    });   // ==== End of 'ensureIndex' ==== //
+
+    describe('Indexing newly inserted documents', function () {
+
+      it('Newly inserted documents are indexed', function (done) {
+        d.ensureIndex({ fieldName: 'z' });
+        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+
+        d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
+          d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+          assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
+
+          d.insert({ a: 5, z: 'nope' }, function (err, newDoc) {
+            d.indexes.z.tree.getNumberOfKeys().should.equal(2);
+            assert.deepEqual(d.indexes.z.getMatching('nope'), [newDoc]);
+
+            done();
+          });
+        });
+      });
+
+      it('Can insert two docs at the same key for a non unique index', function (done) {
+        d.ensureIndex({ fieldName: 'z' });
+        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+
+        d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
+          d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+          assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
+
+          d.insert({ a: 5, z: 'yes' }, function (err, newDoc2) {
+            d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+            assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc, newDoc2]);
+
+            done();
+          });
+        });
+      });
+
+    });   // ==== End of '' ==== //
 
 
 
