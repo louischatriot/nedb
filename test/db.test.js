@@ -1109,7 +1109,7 @@ describe('Database', function () {
   });   // ==== End of 'Remove' ==== //
 
 
-  describe('Using indexes', function () {
+  describe.only('Using indexes', function () {
 
     describe('ensureIndex', function () {
 
@@ -1161,19 +1161,28 @@ describe('Database', function () {
 
             d.insert({ _id: "12", yes: 'yes' }, function () {
               d.insert({ _id: "14", nope: 'nope' }, function () {
-                assert.deepEqual(d.indexes, {});
+                d.remove({ _id: "2" }, {}, function () {
+                  d.update({ _id: "1" }, { $set: { 'yes': 'yep' } }, {}, function () {
+                    assert.deepEqual(d.indexes, {});
 
-                d.ensureIndex({ fieldName: '_id' });
-                d.indexes._id.fieldName.should.equal('_id');
-                d.indexes._id.unique.should.equal(false);
-                d.indexes._id.sparse.should.equal(false);
-                d.indexes._id.tree.getNumberOfKeys().should.equal(4);
-                d.indexes._id.tree.search('1')[0].should.equal(d.data[0]);
-                d.indexes._id.tree.search('2')[0].should.equal(d.data[1]);
-                d.indexes._id.tree.search('12')[0].should.equal(d.data[2]);
-                d.indexes._id.tree.search('14')[0].should.equal(d.data[3]);
+                    d.ensureIndex({ fieldName: '_id' });
+                    d.indexes._id.fieldName.should.equal('_id');
+                    d.indexes._id.unique.should.equal(false);
+                    d.indexes._id.sparse.should.equal(false);
+                    d.indexes._id.tree.getNumberOfKeys().should.equal(3);
 
-                done();
+                    d.indexes._id.tree.search('1')[0].should.equal(d.data[0]);
+                    assert.deepEqual(d.data[0], { _id: "1", a: 2, ages: [1, 5, 12], yes: 'yep' });
+
+                    d.indexes._id.tree.search('12')[0].should.equal(d.data[1]);
+                    assert.deepEqual(d.data[1], { _id: "12", yes: 'yes' });
+
+                    d.indexes._id.tree.search('14')[0].should.equal(d.data[2]);
+                    assert.deepEqual(d.data[2], { _id: "14", nope: 'nope' });
+
+                    done();
+                  });
+                });
               });
             });
           });
