@@ -535,7 +535,7 @@ describe('Database', function () {
   });   // ==== End of 'Find' ==== //
 
 
-  describe.only('Update', function () {
+  describe('Update', function () {
 
     it("If the query doesn't match anything, database is not modified", function (done) {
       async.waterfall([
@@ -1079,15 +1079,15 @@ describe('Database', function () {
         d.insert({ a: 3 }, function () {
           d.insert({ a: 5 }, function () {
             d.datafileSize.should.equal(3);
-            d.data.length.should.equal(3);
+            d.getAllData().length.should.equal(3);
 
             d.remove({ a: 3 }, {}, function () {
               d.datafileSize.should.equal(4);
-              d.data.length.should.equal(2);
+              d.getAllData().length.should.equal(2);
 
               d.remove({ a: { $in: [2, 5] } }, { multi: true }, function () {
                 d.datafileSize.should.equal(6);
-                d.data.length.should.equal(0);
+                d.getAllData().length.should.equal(0);
 
                 done();
               });
