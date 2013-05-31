@@ -40,7 +40,7 @@ describe('Database', function () {
   });
 
 
-  describe.only('Loading the database data from file and persistence', function () {
+  describe('Loading the database data from file and persistence', function () {
 
     it('Every line represents a document', function () {
       var now = new Date()
@@ -304,16 +304,16 @@ describe('Database', function () {
 
     it('datafileSize is incremented by 1 upon every insert', function (done) {
       d.datafileSize.should.equal(0);
-      d.data.length.should.equal(0);
+      d.getAllData().length.should.equal(0);
       d.insert({ a: 3 }, function () {
         d.datafileSize.should.equal(1);
-        d.data.length.should.equal(1);
+        d.getAllData().length.should.equal(1);
         d.insert({ a: 3 }, function () {
           d.datafileSize.should.equal(2);
-          d.data.length.should.equal(2);
+          d.getAllData().length.should.equal(2);
           d.insert({ a: 3 }, function () {
             d.datafileSize.should.equal(3);
-            d.data.length.should.equal(3);
+            d.getAllData().length.should.equal(3);
             done();
           });
         });
@@ -535,7 +535,7 @@ describe('Database', function () {
   });   // ==== End of 'Find' ==== //
 
 
-  describe('Update', function () {
+  describe.only('Update', function () {
 
     it("If the query doesn't match anything, database is not modified", function (done) {
       async.waterfall([
@@ -560,18 +560,10 @@ describe('Database', function () {
             docs.length.should.equal(3);
             assert.isUndefined(_.find(docs, function (d) { return d.newDoc === 'yes'; }));
 
-            Object.keys(doc1).length.should.equal(2);
-            doc1.somedata.should.equal('ok');
-            assert.isDefined(doc1._id);
+            assert.deepEqual(doc1, { _id: doc1._id, somedata: 'ok' });
+            assert.deepEqual(doc2, { _id: doc2._id, somedata: 'again', plus: 'additional data' });
+            assert.deepEqual(doc3, { _id: doc3._id, somedata: 'another' });
 
-            Object.keys(doc2).length.should.equal(3);
-            doc2.somedata.should.equal('again');
-            doc2.plus.should.equal('additional data');
-            assert.isDefined(doc2._id);
-
-            Object.keys(doc3).length.should.equal(2);
-            doc3.somedata.should.equal('another');
-            assert.isDefined(doc3._id);
             return cb();
           });
         });
@@ -622,7 +614,7 @@ describe('Database', function () {
           });
         });
       }
-      , function (cb) {   // Test with query that doesn't match anything
+      , function (cb) {
         d.update({ somedata: 'again' }, { newDoc: 'yes' }, { multi: true }, function (err, n) {
           assert.isNull(err);
           n.should.equal(2);
@@ -650,18 +642,17 @@ describe('Database', function () {
 
           docs.length.should.equal(3);
 
-          Object.keys(doc1).length.should.equal(2);
-          doc1.somedata.should.equal('ok');
-          doc1._id.should.equal(id1);
+          assert.deepEqual(doc1, { somedata: 'ok', _id: doc1._id });
 
-          Object.keys(doc2).length.should.equal(2);
-          doc2.newDoc.should.equal('yes');
-          doc2._id.should.equal(id2);
-
-          // Third object was not updated
-          Object.keys(doc3).length.should.equal(2);
-          doc3.somedata.should.equal('again');
-          doc3._id.should.equal(id3);
+          // doc2 or doc3 was modified. Since we sort on _id and it is random
+          // it can be either of two situations
+          try {
+            assert.deepEqual(doc2, { newDoc: 'yes', _id: doc2._id });
+            assert.deepEqual(doc3, { somedata: 'again', _id: doc3._id });
+          } catch (e) {
+            assert.deepEqual(doc2, { somedata: 'again', plus: 'additional data', _id: doc2._id });
+            assert.deepEqual(doc3, { newDoc: 'yes', _id: doc3._id });
+          }
 
           return cb();
         });
@@ -916,15 +907,15 @@ describe('Database', function () {
         d.insert({ a: 3 }, function () {
           d.insert({ a: 5 }, function () {
             d.datafileSize.should.equal(3);
-            d.data.length.should.equal(3);
+            d.getAllData().length.should.equal(3);
 
             d.update({ a: 3 }, { $set: { a: 4 } }, {}, function () {
               d.datafileSize.should.equal(4);
-              d.data.length.should.equal(3);
+              d.getAllData().length.should.equal(3);
 
               d.update({ a: { $in: [2, 4] } }, { $set: { a: 5 } }, { multi: true }, function () {
                 d.datafileSize.should.equal(6);
-                d.data.length.should.equal(3);
+                d.getAllData().length.should.equal(3);
 
                 done();
               });
