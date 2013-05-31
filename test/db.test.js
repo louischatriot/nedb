@@ -1100,7 +1100,7 @@ describe('Database', function () {
   });   // ==== End of 'Remove' ==== //
 
 
-  describe.skip('Using indexes', function () {
+  describe('Using indexes', function () {
 
     describe('ensureIndex and index initialization in database loading', function () {
 
@@ -1111,50 +1111,50 @@ describe('Database', function () {
                       model.serialize({ _id: "ccc", z: "3", nested: { today: now } })
           ;
 
-        d.data.length.should.equal(0);
+        d.getAllData().length.should.equal(0);
         d.datafileSize.should.equal(0);
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
-            d.data.length.should.equal(3);
+            d.getAllData().length.should.equal(3);
             d.datafileSize.should.equal(3);
 
-            assert.deepEqual(d.indexes, {});
+            assert.deepEqual(Object.keys(d.indexes), ['_id']);
 
             d.ensureIndex({ fieldName: 'z' });
             d.indexes.z.fieldName.should.equal('z');
             d.indexes.z.unique.should.equal(false);
             d.indexes.z.sparse.should.equal(false);
             d.indexes.z.tree.getNumberOfKeys().should.equal(3);
-            d.indexes.z.tree.search('1')[0].should.equal(d.data[0]);
-            d.indexes.z.tree.search('2')[0].should.equal(d.data[1]);
-            d.indexes.z.tree.search('3')[0].should.equal(d.data[2]);
+            d.indexes.z.tree.search('1')[0].should.equal(d.getAllData()[0]);
+            d.indexes.z.tree.search('2')[0].should.equal(d.getAllData()[1]);
+            d.indexes.z.tree.search('3')[0].should.equal(d.getAllData()[2]);
 
             done();
           });
         });
       });
 
-      it('ensureIndex can be called after the data set was modified and still be correct', function (done) {
+      it('ensureIndex can be called after the data set was modified and the index still be correct', function (done) {
         var rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                       model.serialize({ _id: "bbb", z: "2", hello: 'world' })
           ;
 
-        d.data.length.should.equal(0);
+        d.getAllData().length.should.equal(0);
         d.datafileSize.should.equal(0);
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
-            d.data.length.should.equal(2);
+            d.getAllData().length.should.equal(2);
             d.datafileSize.should.equal(2);
 
-            assert.deepEqual(d.indexes, {});
+            assert.deepEqual(Object.keys(d.indexes), ['_id']);
 
             d.insert({ z: "12", yes: 'yes' }, function (err, newDoc1) {
               d.insert({ z: "14", nope: 'nope' }, function (err, newDoc2) {
                 d.remove({ z: "2" }, {}, function () {
                   d.update({ z: "1" }, { $set: { 'yes': 'yep' } }, {}, function () {
-                    assert.deepEqual(d.indexes, {});
+                    assert.deepEqual(Object.keys(d.indexes), ['_id']);
 
                     d.ensureIndex({ fieldName: 'z' });
                     d.indexes.z.fieldName.should.equal('z');
@@ -1162,16 +1162,26 @@ describe('Database', function () {
                     d.indexes.z.sparse.should.equal(false);
                     d.indexes.z.tree.getNumberOfKeys().should.equal(3);
 
-                    d.indexes.z.tree.search('1')[0].should.equal(d.data[0]);
-                    assert.deepEqual(d.data[0], { _id: "aaa", z: "1", a: 2, ages: [1, 5, 12], yes: 'yep' });
+                    // The pointers in the _id and z indexes are the same
+                    d.indexes.z.tree.search('1')[0].should.equal(d.indexes._id.getMatching('aaa')[0]);
+                    d.indexes.z.tree.search('12')[0].should.equal(d.indexes._id.getMatching(newDoc1._id)[0]);
+                    d.indexes.z.tree.search('14')[0].should.equal(d.indexes._id.getMatching(newDoc2._id)[0]);
 
-                    d.indexes.z.tree.search('12')[0].should.equal(d.data[1]);
-                    assert.deepEqual(d.data[1], { _id: newDoc1._id, z: "12", yes: 'yes' });
+                    // The data in the z index is correct
+                    d.find({}, function (err, docs) {
+                      var doc0 = _.find(docs, function (doc) { return doc._id === 'aaa'; })
+                        , doc1 = _.find(docs, function (doc) { return doc._id === newDoc1._id; })
+                        , doc2 = _.find(docs, function (doc) { return doc._id === newDoc2._id; })
+                        ;
 
-                    d.indexes.z.tree.search('14')[0].should.equal(d.data[2]);
-                    assert.deepEqual(d.data[2], { _id: newDoc2._id, z: "14", nope: 'nope' });
+                      docs.length.should.equal(3);
 
-                    done();
+                      assert.deepEqual(doc0, { _id: "aaa", z: "1", a: 2, ages: [1, 5, 12], yes: 'yep' });
+                      assert.deepEqual(doc1, { _id: newDoc1._id, z: "12", yes: 'yes' });
+                      assert.deepEqual(doc2, { _id: newDoc2._id, z: "14", nope: 'nope' });
+
+                      done();
+                    });
                   });
                 });
               });
@@ -1187,7 +1197,7 @@ describe('Database', function () {
                       model.serialize({ _id: "ccc", z: "3", nested: { today: now } })
           ;
 
-        d.data.length.should.equal(0);
+        d.getAllData().length.should.equal(0);
         d.datafileSize.should.equal(0);
 
         d.ensureIndex({ fieldName: 'z' });
@@ -1198,13 +1208,18 @@ describe('Database', function () {
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
-            d.data.length.should.equal(3);
+            var doc1 = _.find(d.getAllData(), function (doc) { return doc.z === "1"; })
+              , doc2 = _.find(d.getAllData(), function (doc) { return doc.z === "2"; })
+              , doc3 = _.find(d.getAllData(), function (doc) { return doc.z === "3"; })
+              ;
+
+            d.getAllData().length.should.equal(3);
             d.datafileSize.should.equal(3);
 
             d.indexes.z.tree.getNumberOfKeys().should.equal(3);
-            d.indexes.z.tree.search('1')[0].should.equal(d.data[0]);
-            d.indexes.z.tree.search('2')[0].should.equal(d.data[1]);
-            d.indexes.z.tree.search('3')[0].should.equal(d.data[2]);
+            d.indexes.z.tree.search('1')[0].should.equal(doc1);
+            d.indexes.z.tree.search('2')[0].should.equal(doc2);
+            d.indexes.z.tree.search('3')[0].should.equal(doc3);
 
             done();
           });
@@ -1218,7 +1233,7 @@ describe('Database', function () {
                       model.serialize({ _id: "ccc", z: "3", a: { today: now } })
           ;
 
-        d.data.length.should.equal(0);
+        d.getAllData().length.should.equal(0);
         d.datafileSize.should.equal(0);
 
         d.ensureIndex({ fieldName: 'z' });
@@ -1228,18 +1243,23 @@ describe('Database', function () {
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
-            d.data.length.should.equal(3);
+            var doc1 = _.find(d.getAllData(), function (doc) { return doc.z === "1"; })
+              , doc2 = _.find(d.getAllData(), function (doc) { return doc.z === "2"; })
+              , doc3 = _.find(d.getAllData(), function (doc) { return doc.z === "3"; })
+              ;
+
+            d.getAllData().length.should.equal(3);
             d.datafileSize.should.equal(3);
 
             d.indexes.z.tree.getNumberOfKeys().should.equal(3);
-            d.indexes.z.tree.search('1')[0].should.equal(d.data[0]);
-            d.indexes.z.tree.search('2')[0].should.equal(d.data[1]);
-            d.indexes.z.tree.search('3')[0].should.equal(d.data[2]);
+            d.indexes.z.tree.search('1')[0].should.equal(doc1);
+            d.indexes.z.tree.search('2')[0].should.equal(doc2);
+            d.indexes.z.tree.search('3')[0].should.equal(doc3);
 
             d.indexes.a.tree.getNumberOfKeys().should.equal(3);
-            d.indexes.a.tree.search(2)[0].should.equal(d.data[0]);
-            d.indexes.a.tree.search('world')[0].should.equal(d.data[1]);
-            d.indexes.a.tree.search({ today: now })[0].should.equal(d.data[2]);
+            d.indexes.a.tree.search(2)[0].should.equal(doc1);
+            d.indexes.a.tree.search('world')[0].should.equal(doc2);
+            d.indexes.a.tree.search({ today: now })[0].should.equal(doc3);
 
             done();
           });
@@ -1253,7 +1273,7 @@ describe('Database', function () {
                       model.serialize({ _id: "ccc", z: "1", a: { today: now } })
           ;
 
-        d.data.length.should.equal(0);
+        d.getAllData().length.should.equal(0);
         d.datafileSize.should.equal(0);
 
         d.ensureIndex({ fieldName: 'z', unique: true });
@@ -1263,7 +1283,7 @@ describe('Database', function () {
           d.loadDatabase(function (err) {
             err.errorType.should.equal('uniqueViolated');
             err.key.should.equal("1");
-            d.data.length.should.equal(0);
+            d.getAllData().length.should.equal(0);
             d.datafileSize.should.equal(0);
             d.indexes.z.tree.getNumberOfKeys().should.equal(0);
 
@@ -1281,7 +1301,7 @@ describe('Database', function () {
 
                 d.ensureIndex({ fieldName: 'a', unique: true }, function (err) {
                   err.errorType.should.equal('uniqueViolated');
-                  assert.deepEqual(Object.keys(d.indexes), ['b']);
+                  assert.deepEqual(Object.keys(d.indexes), ['_id', 'b']);
 
                   done();
                 });
@@ -1368,10 +1388,10 @@ describe('Database', function () {
             assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
 
             // Data didn't change
-            assert.deepEqual(d.data, [newDoc]);
+            assert.deepEqual(d.getAllData(), [newDoc]);
             d.loadDatabase(function () {
-              d.data.length.should.equal(1);
-              assert.deepEqual(d.data[0], newDoc);
+              d.getAllData().length.should.equal(1);
+              assert.deepEqual(d.getAllData()[0], newDoc);
 
               done();
             });
@@ -1379,7 +1399,7 @@ describe('Database', function () {
         });
       });
 
-      it('If an index has a unique constraint, others cannot be modified when it raises an error', function (done) {
+      it('If an index has a unique constraint, other indexes cannot be modified when it raises an error', function (done) {
         d.ensureIndex({ fieldName: 'nonu1' });
         d.ensureIndex({ fieldName: 'uni', unique: true });
         d.ensureIndex({ fieldName: 'nonu2' });
@@ -1423,14 +1443,45 @@ describe('Database', function () {
         });
       });
 
-      it('The index data points to the db data', function (done) {
+      it('All indexes point to the same data as the main index on _id', function (done) {
         d.ensureIndex({ fieldName: 'a' });
 
         d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
           d.insert({ a: 2, b: 'si' }, function (err, doc2) {
             d.find({}, function (err, docs) {
-              d.data.indexOf(d.indexes.a.getMatching(1)[0]).should.not.equal(-1);
-              d.data.indexOf(d.indexes.a.getMatching(2)[0]).should.not.equal(-1);
+              docs.length.should.equal(2);
+              d.getAllData().length.should.equal(2);
+
+              d.indexes._id.getMatching(doc1._id).length.should.equal(1);
+              d.indexes.a.getMatching(1).length.should.equal(1);
+              d.indexes._id.getMatching(doc1._id)[0].should.equal(d.indexes.a.getMatching(1)[0]);
+
+              d.indexes._id.getMatching(doc2._id).length.should.equal(1);
+              d.indexes.a.getMatching(2).length.should.equal(1);
+              d.indexes._id.getMatching(doc2._id)[0].should.equal(d.indexes.a.getMatching(2)[0]);
+
+              done();
+            });
+          });
+        });
+      });
+
+      it('If a unique constraint is violated, no index is changed, including the main one', function (done) {
+        d.ensureIndex({ fieldName: 'a', unique: true });
+
+        d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
+          d.insert({ a: 1, b: 'si' }, function (err) {
+            assert.isDefined(err);
+
+            d.find({}, function (err, docs) {
+              docs.length.should.equal(1);
+              d.getAllData().length.should.equal(1);
+
+              d.indexes._id.getMatching(doc1._id).length.should.equal(1);
+              d.indexes.a.getMatching(1).length.should.equal(1);
+              d.indexes._id.getMatching(doc1._id)[0].should.equal(d.indexes.a.getMatching(1)[0]);
+
+              d.indexes.a.getMatching(2).length.should.equal(0);
 
               done();
             });
@@ -1440,7 +1491,7 @@ describe('Database', function () {
 
     });   // ==== End of 'Indexing newly inserted documents' ==== //
 
-    describe('Updating indexes upon document update', function () {
+    describe.only('Updating indexes upon document update', function () {
 
       it('Updating docs still works as before with an index', function (done) {
         d.ensureIndex({ fieldName: 'a' });
