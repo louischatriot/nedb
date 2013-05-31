@@ -31,7 +31,7 @@ describe('Database', function () {
         d.loadDatabase(function (err) {
           assert.isNull(err);
           d.datafileSize.should.equal(0);
-          d.data.length.should.equal(0);
+          d.getAllData().length.should.equal(0);
           return cb();
         });
       }
@@ -40,7 +40,7 @@ describe('Database', function () {
   });
 
 
-  describe('Loading the database data from file and persistence', function () {
+  describe.only('Loading the database data from file and persistence', function () {
 
     it('Every line represents a document', function () {
       var now = new Date()
@@ -163,12 +163,12 @@ describe('Database', function () {
                     model.serialize({ _id: "3", nested: { today: now } })
         ;
 
-      d.data.length.should.equal(0);
+      d.getAllData().length.should.equal(0);
       d.datafileSize.should.equal(0);
 
       fs.writeFile(testDb, rawData, 'utf8', function () {
         d.loadDatabase(function () {
-          d.data.length.should.equal(3);
+          d.getAllData().length.should.equal(3);
           d.datafileSize.should.equal(3);
 
           d.find({}, function (err, docs) {
