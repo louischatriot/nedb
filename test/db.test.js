@@ -1537,6 +1537,7 @@ describe('Database', function () {
 
         d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
           d.insert({ a: 2, b: 'si' }, function (err, doc2) {
+            // Simple update
             d.update({ a: 1 }, { $set: { a: 456, b: 'no' } }, {}, function (err, nr) {
               assert.isNull(err);
               nr.should.equal(1);
@@ -1549,7 +1550,17 @@ describe('Database', function () {
               d.indexes.b.getMatching('no')[0]._id.should.equal(doc1._id);
               d.indexes.b.getMatching('si')[0]._id.should.equal(doc2._id);
 
-              d.update({}, { $inc: { a: 10 }, $set: { b: 'same' } }, { multi: true }, function () {
+              // The same pointers are shared between all indexes
+              d.indexes.a.tree.getNumberOfKeys().should.equal(2);
+              d.indexes.b.tree.getNumberOfKeys().should.equal(2);
+              d.indexes._id.tree.getNumberOfKeys().should.equal(2);
+              d.indexes.a.getMatching(456)[0].should.equal(d.indexes._id.getMatching(doc1._id)[0]);
+              d.indexes.b.getMatching('no')[0].should.equal(d.indexes._id.getMatching(doc1._id)[0]);
+              d.indexes.a.getMatching(2)[0].should.equal(d.indexes._id.getMatching(doc2._id)[0]);
+              d.indexes.b.getMatching('si')[0].should.equal(d.indexes._id.getMatching(doc2._id)[0]);
+
+              // Multi update
+              d.update({}, { $inc: { a: 10 }, $set: { b: 'same' } }, { multi: true }, function (err, nr) {
                 assert.isNull(err);
                 nr.should.equal(2);
 
@@ -1558,8 +1569,18 @@ describe('Database', function () {
                 d.indexes.a.getMatching(12)[0]._id.should.equal(doc2._id);
 
                 d.indexes.b.tree.getNumberOfKeys().should.equal(1);
-                d.indexes.b.getMatching('same')[0]._id.should.equal(doc1._id);
-                d.indexes.b.getMatching('same')[1]._id.should.equal(doc2._id);
+                d.indexes.b.getMatching('same').length.should.equal(2);
+                _.pluck(d.indexes.b.getMatching('same'), '_id').should.contain(doc1._id);
+                _.pluck(d.indexes.b.getMatching('same'), '_id').should.contain(doc2._id);
+
+                // The same pointers are shared between all indexes
+                d.indexes.a.tree.getNumberOfKeys().should.equal(2);
+                d.indexes.b.tree.getNumberOfKeys().should.equal(1);
+                d.indexes.b.getAll().length.should.equal(2);
+                d.indexes._id.tree.getNumberOfKeys().should.equal(2);
+                d.indexes.a.getMatching(466)[0].should.equal(d.indexes._id.getMatching(doc1._id)[0]);
+                d.indexes.a.getMatching(12)[0].should.equal(d.indexes._id.getMatching(doc2._id)[0]);
+                // Can't test the pointers in b as their order is randomized, but it is the same as with a
 
                 done();
               });
