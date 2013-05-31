@@ -239,6 +239,36 @@ describe('Indexes', function () {
       assert.deepEqual(idx.tree.search('changed'), [doc5]);
     });
 
+    it('If a simple update violates a unique constraint, changes are rolled back and an error thrown', function () {
+      var idx = new Index({ fieldName: 'tf', unique: true })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        , bad = { a: 23, tf: 'world' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      assert.deepEqual(idx.tree.search('hello'), [doc1]);
+      assert.deepEqual(idx.tree.search('world'), [doc2]);
+      assert.deepEqual(idx.tree.search('bloup'), [doc3]);
+
+      try {
+        idx.update(doc3, bad);
+      } catch (e) {
+        e.errorType.should.equal('uniqueViolated');
+      }
+
+      // No change
+      idx.tree.getNumberOfKeys().should.equal(3);
+      assert.deepEqual(idx.tree.search('hello'), [doc1]);
+      assert.deepEqual(idx.tree.search('world'), [doc2]);
+      assert.deepEqual(idx.tree.search('bloup'), [doc3]);
+    });
+
     it('Can update an array of documents', function () {
       var idx = new Index({ fieldName: 'tf' })
         , doc1 = { a: 5, tf: 'hello' }

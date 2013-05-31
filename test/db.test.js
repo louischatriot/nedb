@@ -1491,7 +1491,7 @@ describe('Database', function () {
 
     });   // ==== End of 'Indexing newly inserted documents' ==== //
 
-    describe.only('Updating indexes upon document update', function () {
+    describe('Updating indexes upon document update', function () {
 
       it('Updating docs still works as before with indexing', function (done) {
         d.ensureIndex({ fieldName: 'a' });
@@ -1589,7 +1589,51 @@ describe('Database', function () {
         });
       });
 
-      it.skip('If an update violates a contraint, all changes are rolled back and an error is thrown', function (done) {
+      it('If a simple update violates a contraint, all changes are rolled back and an error is thrown', function (done) {
+        d.ensureIndex({ fieldName: 'a', unique: true });
+        d.ensureIndex({ fieldName: 'b', unique: true });
+        d.ensureIndex({ fieldName: 'c', unique: true });
+
+        d.insert({ a: 1, b: 10, c: 100 }, function (err, _doc1) {
+          d.insert({ a: 2, b: 20, c: 200 }, function (err, _doc2) {
+            d.insert({ a: 3, b: 30, c: 300 }, function (err, _doc3) {
+              // Will conflict with doc3
+              d.update({ a: 2 }, { $inc: { a: 10, c: 1000 }, $set: { b: 30 } }, {}, function (err) {
+                var data = d.getAllData()
+                  , doc1 = _.find(data, function (doc) { return doc._id === _doc1._id; })
+                  , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
+                  , doc3 = _.find(data, function (doc) { return doc._id === _doc3._id; })
+                  ;
+
+                err.errorType.should.equal('uniqueViolated');
+
+                // Data left unchanged
+                data.length.should.equal(3);
+                assert.deepEqual(doc1, { a: 1, b: 10, c: 100, _id: _doc1._id });
+                assert.deepEqual(doc2, { a: 2, b: 20, c: 200, _id: _doc2._id });
+                assert.deepEqual(doc3, { a: 3, b: 30, c: 300, _id: _doc3._id });
+
+                // All indexes left unchanged and pointing to the same docs
+                d.indexes.a.tree.getNumberOfKeys().should.equal(3);
+                d.indexes.a.getMatching(1)[0].should.equal(doc1);
+                d.indexes.a.getMatching(2)[0].should.equal(doc2);
+                d.indexes.a.getMatching(3)[0].should.equal(doc3);
+
+                d.indexes.b.tree.getNumberOfKeys().should.equal(3);
+                d.indexes.b.getMatching(10)[0].should.equal(doc1);
+                d.indexes.b.getMatching(20)[0].should.equal(doc2);
+                d.indexes.b.getMatching(30)[0].should.equal(doc3);
+
+                d.indexes.c.tree.getNumberOfKeys().should.equal(3);
+                d.indexes.c.getMatching(100)[0].should.equal(doc1);
+                d.indexes.c.getMatching(200)[0].should.equal(doc2);
+                d.indexes.c.getMatching(300)[0].should.equal(doc3);
+
+                done();
+              });
+            });
+          });
+        });
       });
 
     });   // ==== End of 'Updating indexes upon document update' ==== //
