@@ -239,6 +239,98 @@ describe('Indexes', function () {
       assert.deepEqual(idx.tree.search('changed'), [doc5]);
     });
 
+    it('Can update an array of documents', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        , doc1b = { a: 23, tf: 'world' }
+        , doc2b = { a: 1, tf: 'changed' }
+        , doc3b = { a: 44, tf: 'bloup' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.tree.getNumberOfKeys().should.equal(3);
+
+      idx.update([{ oldDoc: doc1, newDoc: doc1b }, { oldDoc: doc2, newDoc: doc2b }, { oldDoc: doc3, newDoc: doc3b }]);
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.getMatching('world').length.should.equal(1);
+      idx.getMatching('world')[0].should.equal(doc1b);
+      idx.getMatching('changed').length.should.equal(1);
+      idx.getMatching('changed')[0].should.equal(doc2b);
+      idx.getMatching('bloup').length.should.equal(1);
+      idx.getMatching('bloup')[0].should.equal(doc3b);
+    });
+
+    it('If a unique constraint is violated during an array-update, all changes are rolled back and an error thrown', function () {
+      var idx = new Index({ fieldName: 'tf', unique: true })
+        , doc0 = { a: 432, tf: 'notthistoo' }
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        , doc1b = { a: 23, tf: 'changed' }
+        , doc2b = { a: 1, tf: 'changed' }   // Will violate the constraint (first try)
+        , doc2c = { a: 1, tf: 'notthistoo' }   // Will violate the constraint (second try)
+        , doc3b = { a: 44, tf: 'alsochanged' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.tree.getNumberOfKeys().should.equal(3);
+
+      try {
+        idx.update([{ oldDoc: doc1, newDoc: doc1b }, { oldDoc: doc2, newDoc: doc2b }, { oldDoc: doc3, newDoc: doc3b }]);
+      } catch (e) {
+        e.errorType.should.equal('uniqueViolated');
+      }
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.getMatching('hello').length.should.equal(1);
+      idx.getMatching('hello')[0].should.equal(doc1);
+      idx.getMatching('world').length.should.equal(1);
+      idx.getMatching('world')[0].should.equal(doc2);
+      idx.getMatching('bloup').length.should.equal(1);
+      idx.getMatching('bloup')[0].should.equal(doc3);
+
+      try {
+        idx.update([{ oldDoc: doc1, newDoc: doc1b }, { oldDoc: doc2, newDoc: doc2b }, { oldDoc: doc3, newDoc: doc3b }]);
+      } catch (e) {
+        e.errorType.should.equal('uniqueViolated');
+      }
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.getMatching('hello').length.should.equal(1);
+      idx.getMatching('hello')[0].should.equal(doc1);
+      idx.getMatching('world').length.should.equal(1);
+      idx.getMatching('world')[0].should.equal(doc2);
+      idx.getMatching('bloup').length.should.equal(1);
+      idx.getMatching('bloup')[0].should.equal(doc3);
+    });
+
+    it('If an update doesnt change a document, the unique constraint is not violated', function () {
+      var idx = new Index({ fieldName: 'tf', unique: true })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        , noChange = { a: 8, tf: 'world' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.tree.getNumberOfKeys().should.equal(3);
+      assert.deepEqual(idx.tree.search('world'), [doc2]);
+
+      idx.update(doc2, noChange);   // No error thrown
+      idx.tree.getNumberOfKeys().should.equal(3);
+      assert.deepEqual(idx.tree.search('world'), [noChange]);
+    });
+
+
   });   // ==== End of 'Update' ==== //
 
 

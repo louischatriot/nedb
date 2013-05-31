@@ -1491,7 +1491,7 @@ describe('Database', function () {
 
     });   // ==== End of 'Indexing newly inserted documents' ==== //
 
-    describe.only('Updating indexes upon document update', function () {
+    describe.skip('Updating indexes upon document update', function () {
 
       it('Updating docs still works as before with an index', function (done) {
         d.ensureIndex({ fieldName: 'a' });
