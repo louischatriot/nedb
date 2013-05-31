@@ -363,4 +363,19 @@ describe('Indexes', function () {
 
   });   // ==== End of 'Resetting' ==== //
 
+  it('Get all elements in the index', function () {
+    var idx = new Index({ fieldName: 'a' })
+      , doc1 = { a: 5, tf: 'hello' }
+      , doc2 = { a: 8, tf: 'world' }
+      , doc3 = { a: 2, tf: 'bloup' }
+      ;
+
+    idx.insert(doc1);
+    idx.insert(doc2);
+    idx.insert(doc3);
+
+    assert.deepEqual(idx.getAll(), [{ a: 2, tf: 'bloup' }, { a: 5, tf: 'hello' }, { a: 8, tf: 'world' }]);
+  });
+
+
 });
