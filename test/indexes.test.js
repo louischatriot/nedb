@@ -330,7 +330,7 @@ describe('Indexes', function () {
       assert.deepEqual(idx.tree.search('world'), [noChange]);
     });
 
-    it('Can revert normal and batch updates', function () {
+    it('Can revert simple and batch updates', function () {
       var idx = new Index({ fieldName: 'tf' })
         , doc1 = { a: 5, tf: 'hello' }
         , doc2 = { a: 8, tf: 'world' }

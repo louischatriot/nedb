@@ -1491,24 +1491,38 @@ describe('Database', function () {
 
     });   // ==== End of 'Indexing newly inserted documents' ==== //
 
-    describe.skip('Updating indexes upon document update', function () {
+    describe.only('Updating indexes upon document update', function () {
 
-      it('Updating docs still works as before with an index', function (done) {
+      it('Updating docs still works as before with indexing', function (done) {
         d.ensureIndex({ fieldName: 'a' });
 
-        d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
-          d.insert({ a: 2, b: 'si' }, function (err, doc2) {
+        d.insert({ a: 1, b: 'hello' }, function (err, _doc1) {
+          d.insert({ a: 2, b: 'si' }, function (err, _doc2) {
             d.update({ a: 1 }, { $set: { a: 456, b: 'no' } }, {}, function (err, nr) {
+              var data = d.getAllData()
+                , doc1 = _.find(data, function (doc) { return doc._id === _doc1._id; })
+                , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
+                ;
+
               assert.isNull(err);
               nr.should.equal(1);
-              //console.log(d.data);
 
-              return done();
+              data.length.should.equal(2);
+              assert.deepEqual(doc1, { a: 456, b: 'no', _id: _doc1._id });
+              assert.deepEqual(doc2, { a: 2, b: 'si', _id: _doc2._id });
 
-              d.update({}, { $inc: { a: 10 }, $set: { b: 'same' } }, { multi: true }, function () {
+              d.update({}, { $inc: { a: 10 }, $set: { b: 'same' } }, { multi: true }, function (err, nr) {
+                var data = d.getAllData()
+                  , doc1 = _.find(data, function (doc) { return doc._id === _doc1._id; })
+                  , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
+                  ;
+
                 assert.isNull(err);
                 nr.should.equal(2);
 
+                data.length.should.equal(2);
+                assert.deepEqual(doc1, { a: 466, b: 'same', _id: _doc1._id });
+                assert.deepEqual(doc2, { a: 12, b: 'same', _id: _doc2._id });
 
                 done();
               });
@@ -1554,10 +1568,7 @@ describe('Database', function () {
         });
       });
 
-      it.skip('If an update violates a contraints, nothing is done', function (done) {
-      });
-
-      it.skip('Updates still work with indexing', function (done) {
+      it.skip('If an update violates a contraint, all changes are rolled back and an error is thrown', function (done) {
       });
 
     });   // ==== End of 'Updating indexes upon document update' ==== //
