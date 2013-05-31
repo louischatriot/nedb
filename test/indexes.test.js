@@ -330,6 +330,63 @@ describe('Indexes', function () {
       assert.deepEqual(idx.tree.search('world'), [noChange]);
     });
 
+    it('Can revert normal and batch updates', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        , doc1b = { a: 23, tf: 'world' }
+        , doc2b = { a: 1, tf: 'changed' }
+        , doc3b = { a: 44, tf: 'bloup' }
+        , batchUpdate = [{ oldDoc: doc1, newDoc: doc1b }, { oldDoc: doc2, newDoc: doc2b }, { oldDoc: doc3, newDoc: doc3b }]
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.tree.getNumberOfKeys().should.equal(3);
+
+      idx.update(batchUpdate);
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.getMatching('world').length.should.equal(1);
+      idx.getMatching('world')[0].should.equal(doc1b);
+      idx.getMatching('changed').length.should.equal(1);
+      idx.getMatching('changed')[0].should.equal(doc2b);
+      idx.getMatching('bloup').length.should.equal(1);
+      idx.getMatching('bloup')[0].should.equal(doc3b);
+
+      idx.revertUpdate(batchUpdate);
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.getMatching('hello').length.should.equal(1);
+      idx.getMatching('hello')[0].should.equal(doc1);
+      idx.getMatching('world').length.should.equal(1);
+      idx.getMatching('world')[0].should.equal(doc2);
+      idx.getMatching('bloup').length.should.equal(1);
+      idx.getMatching('bloup')[0].should.equal(doc3);
+
+      // Now a simple update
+      idx.update(doc2, doc2b);
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.getMatching('hello').length.should.equal(1);
+      idx.getMatching('hello')[0].should.equal(doc1);
+      idx.getMatching('changed').length.should.equal(1);
+      idx.getMatching('changed')[0].should.equal(doc2b);
+      idx.getMatching('bloup').length.should.equal(1);
+      idx.getMatching('bloup')[0].should.equal(doc3);
+
+      idx.revertUpdate(doc2, doc2b);
+
+      idx.tree.getNumberOfKeys().should.equal(3);
+      idx.getMatching('hello').length.should.equal(1);
+      idx.getMatching('hello')[0].should.equal(doc1);
+      idx.getMatching('world').length.should.equal(1);
+      idx.getMatching('world')[0].should.equal(doc2);
+      idx.getMatching('bloup').length.should.equal(1);
+      idx.getMatching('bloup')[0].should.equal(doc3);
+    });
 
   });   // ==== End of 'Update' ==== //
 
