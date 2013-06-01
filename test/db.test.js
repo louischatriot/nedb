@@ -1780,6 +1780,90 @@ describe('Database', function () {
 
     });   // ==== End of 'Updating indexes upon document update' ==== //
 
+    describe('Updating indexes upon document remove', function () {
+
+      it('Removing docs still works as before with indexing', function (done) {
+        d.ensureIndex({ fieldName: 'a' });
+
+        d.insert({ a: 1, b: 'hello' }, function (err, _doc1) {
+          d.insert({ a: 2, b: 'si' }, function (err, _doc2) {
+            d.insert({ a: 3, b: 'coin' }, function (err, _doc3) {
+              d.remove({ a: 1 }, {}, function (err, nr) {
+                var data = d.getAllData()
+                , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
+                , doc3 = _.find(data, function (doc) { return doc._id === _doc3._id; })
+                ;
+
+                assert.isNull(err);
+                nr.should.equal(1);
+
+                data.length.should.equal(2);
+                assert.deepEqual(doc2, { a: 2, b: 'si', _id: _doc2._id });
+                assert.deepEqual(doc3, { a: 3, b: 'coin', _id: _doc3._id });
+
+                d.remove({ a: { $in: [2, 3] } }, { multi: true }, function (err, nr) {
+                  var data = d.getAllData()
+                  ;
+
+                  assert.isNull(err);
+                  nr.should.equal(2);
+                  data.length.should.equal(0);
+
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+
+      it('Indexes get updated when a document (or multiple documents) is removed', function (done) {
+        d.ensureIndex({ fieldName: 'a' });
+        d.ensureIndex({ fieldName: 'b' });
+
+        d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
+          d.insert({ a: 2, b: 'si' }, function (err, doc2) {
+            d.insert({ a: 3, b: 'coin' }, function (err, doc3) {
+              // Simple remove
+              d.remove({ a: 1 }, {}, function (err, nr) {
+                assert.isNull(err);
+                nr.should.equal(1);
+
+                d.indexes.a.tree.getNumberOfKeys().should.equal(2);
+                d.indexes.a.getMatching(2)[0]._id.should.equal(doc2._id);
+                d.indexes.a.getMatching(3)[0]._id.should.equal(doc3._id);
+
+                d.indexes.b.tree.getNumberOfKeys().should.equal(2);
+                d.indexes.b.getMatching('si')[0]._id.should.equal(doc2._id);
+                d.indexes.b.getMatching('coin')[0]._id.should.equal(doc3._id);
+
+                // The same pointers are shared between all indexes
+                d.indexes.a.tree.getNumberOfKeys().should.equal(2);
+                d.indexes.b.tree.getNumberOfKeys().should.equal(2);
+                d.indexes._id.tree.getNumberOfKeys().should.equal(2);
+                d.indexes.a.getMatching(2)[0].should.equal(d.indexes._id.getMatching(doc2._id)[0]);
+                d.indexes.b.getMatching('si')[0].should.equal(d.indexes._id.getMatching(doc2._id)[0]);
+                d.indexes.a.getMatching(3)[0].should.equal(d.indexes._id.getMatching(doc3._id)[0]);
+                d.indexes.b.getMatching('coin')[0].should.equal(d.indexes._id.getMatching(doc3._id)[0]);
+
+                // Multi remove
+                d.remove({}, { multi: true }, function (err, nr) {
+                  assert.isNull(err);
+                  nr.should.equal(2);
+
+                  d.indexes.a.tree.getNumberOfKeys().should.equal(0);
+                  d.indexes.b.tree.getNumberOfKeys().should.equal(0);
+                  d.indexes._id.tree.getNumberOfKeys().should.equal(0);
+
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+
+    });   // ==== End of 'Removing indexes upon document update' ==== //
 
 
 
