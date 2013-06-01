@@ -184,6 +184,101 @@ describe('Database', function () {
       });
     });
 
+    it('Calling loadDatabase after the data was modified doesnt change its contents', function (done) {
+      d.loadDatabase(function () {
+        d.insert({ a: 1 }, function (err) {
+          assert.isNull(err);
+          d.insert({ a: 2 }, function (err) {
+            var data = d.getAllData()
+              , doc1 = _.find(data, function (doc) { return doc.a === 1; })
+              , doc2 = _.find(data, function (doc) { return doc.a === 2; })
+              ;
+            assert.isNull(err);
+            data.length.should.equal(2);
+            doc1.a.should.equal(1);
+            doc2.a.should.equal(2);
+
+            d.loadDatabase(function (err) {
+              var data = d.getAllData()
+                , doc1 = _.find(data, function (doc) { return doc.a === 1; })
+                , doc2 = _.find(data, function (doc) { return doc.a === 2; })
+                ;
+              assert.isNull(err);
+              data.length.should.equal(2);
+              doc1.a.should.equal(1);
+              doc2.a.should.equal(2);
+
+              done();
+            });
+          });
+        });
+      });
+    });
+
+    it('Calling loadDatabase after the datafile was removed with will reset the database', function (done) {
+      d.loadDatabase(function () {
+        d.insert({ a: 1 }, function (err) {
+          assert.isNull(err);
+          d.insert({ a: 2 }, function (err) {
+            var data = d.getAllData()
+              , doc1 = _.find(data, function (doc) { return doc.a === 1; })
+              , doc2 = _.find(data, function (doc) { return doc.a === 2; })
+              ;
+            assert.isNull(err);
+            data.length.should.equal(2);
+            doc1.a.should.equal(1);
+            doc2.a.should.equal(2);
+
+            fs.unlink(testDb, function (err) {
+              assert.isNull(err);
+              d.loadDatabase(function (err) {
+                assert.isNull(err);
+                d.getAllData().length.should.equal(0);
+
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it('Calling loadDatabase after the datafile was modified loads the new data', function (done) {
+      d.loadDatabase(function () {
+        d.insert({ a: 1 }, function (err) {
+          assert.isNull(err);
+          d.insert({ a: 2 }, function (err) {
+            var data = d.getAllData()
+              , doc1 = _.find(data, function (doc) { return doc.a === 1; })
+              , doc2 = _.find(data, function (doc) { return doc.a === 2; })
+              ;
+            assert.isNull(err);
+            data.length.should.equal(2);
+            doc1.a.should.equal(1);
+            doc2.a.should.equal(2);
+
+            fs.writeFile(testDb, '{"a":3,"_id":"aaa"}', 'utf8', function (err) {
+              assert.isNull(err);
+              d.loadDatabase(function (err) {
+                var data = d.getAllData()
+                , doc1 = _.find(data, function (doc) { return doc.a === 1; })
+                , doc2 = _.find(data, function (doc) { return doc.a === 2; })
+                , doc3 = _.find(data, function (doc) { return doc.a === 3; })
+                ;
+                assert.isNull(err);
+                data.length.should.equal(1);
+                doc3.a.should.equal(3);
+                assert.isUndefined(doc1);
+                assert.isUndefined(doc2);
+
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Loading the database data from file and persistence' ==== //
 
 
