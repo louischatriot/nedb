@@ -294,6 +294,16 @@ d.ensureIndex({ fieldName: 'somefield', unique: true }, function (err) {
 // The ensureIndex method can be called whenever you want: before or after a loadDatabase(),
 // after some data was inserted/modified/removed. It will fail to create the index if the
 // unique constraint is not satisfied
+
+// Format of the error message when the unique constraint is not met
+d.insert({ name: 'nedb' }, function (err) {
+  // err is null
+  d.insert({ name: 'nedb' }, function (err) {
+    // err is { errorType: 'uniqueViolated'
+    //        , key: 'name'
+    //        , message: 'Unique constraint violated for key nedb' }
+  });
+});
 ```
 
 
