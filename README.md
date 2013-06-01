@@ -301,10 +301,13 @@ d.insert({ name: 'nedb' }, function (err) {
   d.insert({ name: 'nedb' }, function (err) {
     // err is { errorType: 'uniqueViolated'
     //        , key: 'name'
-    //        , message: 'Unique constraint violated for key nedb' }
+    //        , message: 'Unique constraint violated for key name' }
   });
 });
 ```
+
+**Note: ** the ensureIndex creates the index synchronously, so it's best to use it at application startup. It's quite fast so it doesn't increase startup time much.
+
 
 
 ## Performance
