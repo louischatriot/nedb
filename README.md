@@ -273,10 +273,10 @@ db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
 As such, it was not designed for speed. That said, it is still pretty fast on the expected datasets (10,000
 documents). On my machine (3 years old, no SSD), with a collection
 containing 10,000 documents:  
-* An insert takes **0.14 ms** (or **0.16 ms** with indexing)
-* A read takes **6.4 ms** (or **0.02 ms** with indexing)
-* An update takes **9.2 ms** (or **0.2 ms** with indexing)
-* A deletion takes 8.1 ms (no speed boost with indexes currently due to the underlying data structure which I will change)  
+* An insert takes **0.14 ms** without indexing, **0.16 ms** with indexing
+* A read takes **6.4 ms** without indexing, **0.02 ms** with indexing
+* An update takes **11 ms** without indexing, **0.22 ms** with indexing
+* A deletion takes **10 ms** without indexing, **0.14ms** with indexing  
 
 You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. They all take an optional parameter which is the size of the dataset to use (default is 10,000).
 
