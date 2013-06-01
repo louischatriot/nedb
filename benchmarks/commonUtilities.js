@@ -186,9 +186,10 @@ module.exports.removeDocs = function (options, d, n, profiler, cb) {
     }
 
     d.remove({ docNumber: order[i] }, options, function (err, nr) {
+      if (err) { return cb(err); }
       if (nr !== 1) { return cb('One remove didnt work'); }
-      d.insert({ docNumber: order[i] }, function (err) {   // Reinserting just removed document so that the collection size doesn't change
-                                                           // Time is about 70x smaller for an insert so the impact on the results is minimal
+      d.insert({ docNumber: order[i] }, function (err) {   // We need to reinsert the doc so that we keep the collection's size at n
+                                                           // So actually we're calculating the average time taken by one insert + one remove
         executeAsap(function () {
           runFrom(i + 1);
         });
