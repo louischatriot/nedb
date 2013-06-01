@@ -33,7 +33,7 @@ async.waterfall([
 , function (cb) {
     var i;
 
-    profiler.step('Begin calling ensureIndex ' + n + ' docs');
+    profiler.step('Begin calling ensureIndex ' + n + ' times');
 
     for (i = 0; i < n; i += 1) {
       d.ensureIndex({ fieldName: 'docNumber' });
