@@ -16,7 +16,14 @@ make test   // You'll need the dev dependencies to test it
 ```
 
 ## API
-It's a subset of MongoDB's API (the most used operations). The current API will not change, but I will add operations as they are needed.
+It's a subset of MongoDB's API (the most used operations). The current API will not change, but I will add operations as they are needed. Summary of the API:  
+
+* <a href="#creatingloading-a-database">Creating/loading a database</a>
+* <a href="#inserting-documents">Inserting documents</a>
+* <a href="#finding-documents">Finding documents</a>
+* <a href="#updating-documents">Updating documents</a>
+* <a href="#removing-documents">Removing documents</a>
+* <a href="#indexing">Indexing</a>
 
 ### Creating/loading a database
 ```javascript
