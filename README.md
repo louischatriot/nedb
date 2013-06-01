@@ -26,13 +26,23 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 * <a href="#indexing">Indexing</a>
 
 ### Creating/loading a database
+You can use NeDB as an in-memory only datastore or as a persistent datastore.
+
 ```javascript
+// In-memory only datastore
+var Datastore = require('nedb')
+  , db = new Datastore();   // Call the constructor without any argument
+// No need to call loadDatabase(), you can begin inserting data and query it right away
+
+
+// Persistent datastore
 var Datastore = require('nedb')
   , db = new Datastore('path/to/datafile');
   
 db.loadDatabase(function (err) {    // Callback is optional
   // err is the error, if any
 });
+
 
 // Of course you can create multiple datastores if you need several
 // collections. For example:
