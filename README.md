@@ -273,7 +273,28 @@ db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
 ```
 
 ### Indexing
-Indexing is almost ready (I just need to write tests for indexed removal). It provides a huge performance boost.
+NeDB supports indexing. It gives a very nice speed boost and can be used to enforce a unique constraint on a field. You can index any field, including fields in nested documents using the dot notation. For now, indexes are only used for value equality, but I am planning on adding value comparison soon.
+
+Also note that if you use a unique constraint on a field, you will only be able to save one document in which is `undefined`. The second time you do that, the index will reject the document since there is already one with the `undefined` value. I am working on a "sparse" option just like the MongoDB one, enabling indexes to check uniqueness only when the field is defined.  
+
+Finally, the `_id` is always indexed with a unique constraint, so queries specifying a value for it are very fast.
+
+
+```javascript
+// The syntax is close, but not identical to MongoDB's
+// fieldName is of course required
+d.ensureIndex({ fieldName: 'somefield' }, function (err) {
+  // If there was an error, err is not null
+});
+
+// Using a unique constraint with the index
+d.ensureIndex({ fieldName: 'somefield', unique: true }, function (err) {
+});
+
+// The ensureIndex method can be called whenever you want: before or after a loadDatabase(),
+// after some data was inserted/modified/removed. It will fail to create the index if the
+// unique constraint is not satisfied
+```
 
 
 ## Performance
