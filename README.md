@@ -306,7 +306,7 @@ d.insert({ name: 'nedb' }, function (err) {
 });
 ```
 
-**Note:** the `ensureIndex` function creates the index synchronously, so it's best to use it at application startup. It's quite fast so it doesn't increase startup time much.
+**Note:** the `ensureIndex` function creates the index synchronously, so it's best to use it at application startup. It's quite fast so it doesn't increase startup time much (35 ms for a collection containing 10,000 documents).
 
 
 
