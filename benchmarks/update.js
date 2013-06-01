@@ -37,6 +37,8 @@ async.waterfall([
 , function (cb) { profiler.beginProfiling(); return cb(); }
 , async.apply(commonUtilities.insertDocs, d, n, profiler)
 
+// CHECK THAT MULTIPLE LOAD DATABASE DONT SCREW INDEXES
+
 // Test with update only one document
 , function (cb) { profiler.step('MULTI: FALSE'); return cb(); }
 , async.apply(commonUtilities.updateDocs, { multi: false }, d, n, profiler)
