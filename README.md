@@ -272,6 +272,9 @@ db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
 });
 ```
 
+### Indexing
+Indexing is almost ready (I just need to write tests for indexed removal). It provides a huge performance boost.
+
 
 ## Performance
 ### Speed
