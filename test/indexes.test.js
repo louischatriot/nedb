@@ -7,7 +7,7 @@ var Index = require('../lib/indexes')
   , model = require('../lib/model')
   ;
 
-describe('Indexes', function () {
+describe.only('Indexes', function () {
 
   describe('Insertion', function () {
 
@@ -64,9 +64,6 @@ describe('Indexes', function () {
       idx.insert(doc1);
       idx.insert(doc2);
       idx.tree.getNumberOfKeys().should.equal(0);   // Docs are not indexed
-      assert.deepEqual(idx.nonindexedDocs, [doc1, doc2]);   // Pointers are stored in the non indexed documents
-      idx.nonindexedDocs[1].a = 12;
-      doc2.a.should.equal(12);
     });
 
     it('Works with dot notation', function () {
@@ -153,7 +150,7 @@ describe('Indexes', function () {
       idx.tree.search('world')[0].should.equal(doc4);
     });
 
-    it('If we have a sparse index, we remove the doc from the nonindexedDocs array', function () {
+    it('If we have a sparse index, removing a non indexed doc has no effect', function () {
       var idx = new Index({ fieldName: 'nope', sparse: true })
         , doc1 = { a: 5, tf: 'hello' }
         , doc2 = { a: 5, tf: 'world' }
@@ -162,11 +159,9 @@ describe('Indexes', function () {
       idx.insert(doc1);
       idx.insert(doc2);
       idx.tree.getNumberOfKeys().should.equal(0);
-      assert.deepEqual(idx.nonindexedDocs, [doc1, doc2]);
 
       idx.remove(doc1);
       idx.tree.getNumberOfKeys().should.equal(0);
-      assert.deepEqual(idx.nonindexedDocs, [doc2]);
     });
 
     it('Works with dot notation', function () {
@@ -518,26 +513,6 @@ describe('Indexes', function () {
       idx.getMatching('bloup').length.should.equal(0);
       idx.getMatching('new')[0].a.should.equal(555);
       idx.getMatching('again')[0].a.should.equal(666);
-    });
-
-    it('Resetting a sparse index resets the nonindexed docs array', function () {
-      var idx = new Index({ fieldName: 'tf', sparse: true})
-        , doc1 = { a: 5, tf: 'hello' }
-        , doc2 = { a: 8, no: 'world' }
-        , doc3 = { a: 2, no: 'bloup' }
-        ;
-
-      idx.insert(doc1);
-      idx.insert(doc2);
-      idx.insert(doc3);
-
-      idx.tree.getNumberOfKeys().should.equal(1);
-      idx.getMatching('hello').length.should.equal(1);
-      idx.nonindexedDocs.length.should.equal(2);
-
-      idx.reset();
-      idx.tree.getNumberOfKeys().should.equal(0);
-      idx.nonindexedDocs.length.should.equal(0);
     });
 
   });   // ==== End of 'Resetting' ==== //
