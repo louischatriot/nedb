@@ -1466,7 +1466,7 @@ describe('Database', function () {
         });
       });
 
-      it('If the index has a unique constraint, an error is thrown if it is violated and the data didnt change', function (done) {
+      it('If the index has a unique constraint, an error is thrown if it is violated and the data is not modified', function (done) {
         d.ensureIndex({ fieldName: 'z', unique: true });
         d.indexes.z.tree.getNumberOfKeys().should.equal(0);
 
@@ -1518,6 +1518,31 @@ describe('Database', function () {
             assert.deepEqual(d.indexes.nonu2.getMatching('yes2'), [newDoc]);
 
             done();
+          });
+        });
+      });
+
+      it('Unique indexes prevent you from inserting two docs where the field is undefined except if theyre sparse', function (done) {
+        d.ensureIndex({ fieldName: 'zzz', unique: true });
+        d.indexes.zzz.tree.getNumberOfKeys().should.equal(0);
+
+        d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
+          d.indexes.zzz.tree.getNumberOfKeys().should.equal(1);
+          assert.deepEqual(d.indexes.zzz.getMatching(undefined), [newDoc]);
+
+          d.insert({ a: 5, z: 'other' }, function (err) {
+            err.errorType.should.equal('uniqueViolated');
+            assert.isUndefined(err.key);
+
+            d.ensureIndex({ fieldName: 'yyy', unique: true, sparse: true });
+
+            d.insert({ a: 5, z: 'other', zzz: 'set' }, function (err) {
+              assert.isNull(err);
+              d.indexes.yyy.getAll().length.should.equal(0);   // Nothing indexed
+              d.indexes.zzz.getAll().length.should.equal(2);
+
+              done();
+            });
           });
         });
       });
