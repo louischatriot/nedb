@@ -289,41 +289,36 @@ To create an index, use `datastore.ensureIndex(options, cb)`, where callback is 
 
 * **fieldName** (required): name of the field to index. Use the dot notation to index a field in a nested document.
 * **unique** (optional, defaults to `false`): enforce field uniqueness. Note that a unique index will raise an error if you try to index two documents for which the field is not defined.
-* **sparse** (optional, defaults to `false`): don't index documents for which the field is not defined. Use this option along with "unique" if you want to ensure field values are unique when defined but can accept multiple documents for which it is not defined
+* **sparse** (optional, defaults to `false`): don't index documents for which the field is not defined. Use this option along with "unique" if you want to accept multiple documents for which it is not defined.
 
 Notes:  
-* The `_id` is always indexed with a unique constraint, so queries specifying a value for it are very fast.
+* The `_id` is automatically indexed with a unique constraint, so queries specifying a value for it are very fast.
 * Currently, indexes are implemented as binary search trees. I will use self-balancing binary search trees in the future to guarantee a consistent performance (the index on `_id` is already balanced since the `_id` is randomly generated).
 
 
 ```javascript
-// The syntax is close, but not identical to MongoDB's
-// The ensureIndex method can be called whenever you want: before or after a loadDatabase(),
-// after some data was inserted/modified/removed. It will fail to create the index if the
-// unique constraint is not satisfied
-// fieldName is the only required option
-d.ensureIndex({ fieldName: 'somefield' }, function (err) {
+db.ensureIndex({ fieldName: 'somefield' }, function (err) {
   // If there was an error, err is not null
 });
 
 // Using a unique constraint with the index
-d.ensureIndex({ fieldName: 'somefield', unique: true }, function (err) {
+db.ensureIndex({ fieldName: 'somefield', unique: true }, function (err) {
+});
+
+// Using a sparse unique index
+db.ensureIndex({ fieldName: 'somefield', unique: true, sparse: true }, function (err) {
 });
 
 
-
 // Format of the error message when the unique constraint is not met
-d.insert({ name: 'nedb' }, function (err) {
+db.insert({ somefield: 'nedb' }, function (err) {
   // err is null
-  d.insert({ name: 'nedb' }, function (err) {
+  db.insert({ somefiled: 'nedb' }, function (err) {
     // err is { errorType: 'uniqueViolated'
     //        , key: 'name'
     //        , message: 'Unique constraint violated for key name' }
   });
 });
-
-//
-
 ```
 
 **Note:** the `ensureIndex` function creates the index synchronously, so it's best to use it at application startup. It's quite fast so it doesn't increase startup time much (35 ms for a collection containing 10,000 documents).
