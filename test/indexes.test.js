@@ -436,6 +436,62 @@ describe.only('Indexes', function () {
       assert.deepEqual(idx.getMatching('nope'), []);
     });
 
+    it('Can get all documents for a given key in a unique index', function () {
+      var idx = new Index({ fieldName: 'tf', unique: true })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 8, tf: 'world' }
+        , doc3 = { a: 2, tf: 'bloup' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      assert.deepEqual(idx.getMatching('bloup'), [doc3]);
+      assert.deepEqual(idx.getMatching('world'), [doc2]);
+      assert.deepEqual(idx.getMatching('nope'), []);
+    });
+
+    it('Can get all documents for which a field is undefined', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 2, nottf: 'bloup' }
+        , doc3 = { a: 8, tf: 'world' }
+        , doc4 = { a: 7, nottf: 'yes' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.insert(doc4);
+
+      assert.deepEqual(idx.getMatching('bloup'), []);
+      assert.deepEqual(idx.getMatching('hello'), [doc1]);
+      assert.deepEqual(idx.getMatching('world'), [doc3]);
+      assert.deepEqual(idx.getMatching('yes'), []);
+      assert.deepEqual(idx.getMatching(undefined), [doc2, doc4]);
+    });
+
+    it('Can get all documents for a given key in a sparse index, but not unindexed docs (= field undefined)', function () {
+      var idx = new Index({ fieldName: 'tf', sparse: true })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 2, nottf: 'bloup' }
+        , doc3 = { a: 8, tf: 'world' }
+        , doc4 = { a: 7, nottf: 'yes' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.insert(doc4);
+
+      assert.deepEqual(idx.getMatching('bloup'), []);
+      assert.deepEqual(idx.getMatching('hello'), [doc1]);
+      assert.deepEqual(idx.getMatching('world'), [doc3]);
+      assert.deepEqual(idx.getMatching('yes'), []);
+      assert.deepEqual(idx.getMatching(undefined), []);
+    });
+
   });   // ==== End of 'Get matching documents' ==== //
 
 
