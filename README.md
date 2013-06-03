@@ -285,15 +285,23 @@ db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
 ### Indexing
 NeDB supports indexing. It gives a very nice speed boost and can be used to enforce a unique constraint on a field. You can index any field, including fields in nested documents using the dot notation. For now, indexes are only used for value equality, but I am planning on adding value comparison soon.
 
+To create an index, use `datastore.ensureIndex(options, cb)`, where callback is optional and get passed an error if any. The options are:  
+
+* **fieldName** (required): name of the field to index. Use the dot notation to index a field in a nested document.
+* **unique** (optional, defaults to `false`): enforce field uniqueness. Note that a unique index will raise an error if you try to index two documents for which the field is not defined.
+* **sparse** (optional, defaults to `false`): don't index documents for which the field is not defined. Use this option along with "unique" if you want to ensure field values are unique when defined but can accept multiple documents for which it is not defined
+
 Notes:  
-* If you use a unique constraint on a field, you will only be able to save one document in which is `undefined`. The second time you do that, the index will reject the document since there is already one with the `undefined` value. I am working on a "sparse" option just like the MongoDB one, enabling indexes to check uniqueness only when the field is defined.
 * The `_id` is always indexed with a unique constraint, so queries specifying a value for it are very fast.
-* Currently, indexes are implemented as binary search trees. I will use self-balancing binary search trees in the future to guarantee a consistent performance.
+* Currently, indexes are implemented as binary search trees. I will use self-balancing binary search trees in the future to guarantee a consistent performance (the index on `_id` is already balanced since the `_id` is randomly generated).
 
 
 ```javascript
 // The syntax is close, but not identical to MongoDB's
-// fieldName is of course required
+// The ensureIndex method can be called whenever you want: before or after a loadDatabase(),
+// after some data was inserted/modified/removed. It will fail to create the index if the
+// unique constraint is not satisfied
+// fieldName is the only required option
 d.ensureIndex({ fieldName: 'somefield' }, function (err) {
   // If there was an error, err is not null
 });
@@ -302,9 +310,7 @@ d.ensureIndex({ fieldName: 'somefield' }, function (err) {
 d.ensureIndex({ fieldName: 'somefield', unique: true }, function (err) {
 });
 
-// The ensureIndex method can be called whenever you want: before or after a loadDatabase(),
-// after some data was inserted/modified/removed. It will fail to create the index if the
-// unique constraint is not satisfied
+
 
 // Format of the error message when the unique constraint is not met
 d.insert({ name: 'nedb' }, function (err) {
@@ -315,6 +321,9 @@ d.insert({ name: 'nedb' }, function (err) {
     //        , message: 'Unique constraint violated for key name' }
   });
 });
+
+//
+
 ```
 
 **Note:** the `ensureIndex` function creates the index synchronously, so it's best to use it at application startup. It's quite fast so it doesn't increase startup time much (35 ms for a collection containing 10,000 documents).
