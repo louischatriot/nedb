@@ -4,7 +4,7 @@
 
 **Embedded persistent database for Node.js, written in Javascript, with no dependency** (except npm
 modules of course). You can **think of it as a SQLite for Node.js projects**, which
-can be used with a simple `require` statement. The API is a subset of MongoDB's.
+can be used with a simple `require` statement. The API is a subset of MongoDB's. You can also use it as a persistent or an in-memory only datastore.
 
 
 ## Installation, tests
