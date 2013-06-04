@@ -4,14 +4,15 @@ var Datastore = require('../lib/datastore')
   , commonUtilities = require('./commonUtilities')
   , execTime = require('exec-time')
   , profiler = new execTime('INSERT BENCH')
-  , d = new Datastore(benchDb)
+  , d
   , program = require('commander')
   , n
   ;
 
 program
   .option('-n --number [number]', 'Size of the collection to test on', parseInt)
-  .option('-i --with-index', 'Test with an index')
+  .option('-i --with-index', 'Use an index')
+  .option('-p --with-pipeline', 'Use pipelining')
   .parse(process.argv);
 
 n = program.number || 10000;
@@ -19,7 +20,10 @@ n = program.number || 10000;
 console.log("----------------------------");
 console.log("Test with " + n + " documents");
 console.log(program.withIndex ? "Use an index" : "Don't use an index");
+console.log(program.withPipeline ? "Use an pipelining" : "Don't use pipelining");
 console.log("----------------------------");
+
+d = new Datastore({ filename: benchDb, pipeline: program.withPipeline });
 
 async.waterfall([
   async.apply(commonUtilities.prepareDb, benchDb)
