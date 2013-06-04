@@ -26,18 +26,19 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 * <a href="#indexing">Indexing</a>
 
 ### Creating/loading a database
-You can use NeDB as an in-memory only datastore or as a persistent datastore.
+You can use NeDB as an in-memory only datastore or as a persistent datastore. One datastore is the equivalent of a MongoDB collection. The constructor is used as follows `new Datastore(options)` where `options` is an object with the following fields:  
+
+* `filename` (optional): path to the file where the data is persisted. If left blank, the datastore is automatically considered in-memory only.
+* `inMemoryOnly` (optional, defaults to false): as the name implies.
+* `pipeline` (optional, defaults to false): use pipelining. This is an experimental feature that speeds up writes (about 2x) but can sometime increase read times.
 
 ```javascript
 // In-memory only datastore
 var Datastore = require('nedb')
-  , db = new Datastore();   // Call the constructor without any argument
-// No need to call loadDatabase(), you can begin inserting data and query it right away
-
 
 // Persistent datastore
 var Datastore = require('nedb')
-  , db = new Datastore('path/to/datafile');
+  , db = new Datastore({ filename: 'path/to/datafile' });
   
 db.loadDatabase(function (err) {    // Callback is optional
   // err is the error, if any
