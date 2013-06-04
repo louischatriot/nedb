@@ -30,7 +30,7 @@ You can use NeDB as an in-memory only datastore or as a persistent datastore. On
 
 * `filename` (optional): path to the file where the data is persisted. If left blank, the datastore is automatically considered in-memory only.
 * `inMemoryOnly` (optional, defaults to false): as the name implies.
-* `pipeline` (optional, defaults to false): use pipelining. This is an experimental feature that speeds up writes (about 2x) but can sometime increase read times.
+* `pipeline` (optional, defaults to false): use pipelining. This is an experimental feature that speeds up writes (about 2x) but can sometime increase read times. You probably shouldn't use it yet.
 
 ```javascript
 // In-memory only datastore
@@ -331,11 +331,11 @@ db.insert({ somefield: 'nedb' }, function (err) {
 **NeDB is not intended to be a replacement of large-scale databases such as MongoDB!** Its goal is to provide you with a clean and easy way to query data and persist it to disk, for web applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a> and desktop applications built with <a href="https://github.com/rogerwang/node-webkit" target="_blank">Node Webkit</a>.
 
 As such, it was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On my machine (3 years old, no SSD), with a collection
-containing 10,000 documents, with indexing:  
-* Insert: 6,180 ops/s 
-* Find: 42,370 ops/s
-* Update: 4,730 ops/s
-* Remove: 3,750 ops/s
+containing 10,000 documents, with indexing and no pipelining:  
+* Insert: **6,180 ops/s**
+* Find: **42,370 ops/s**
+* Update: **4,730 ops/s**
+* Remove: **3,750 ops/s**  
 
 You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. Run them with the `--help` flag to see how they work.
 
