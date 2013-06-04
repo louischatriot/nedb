@@ -1939,6 +1939,40 @@ describe('Database', function () {
               treatedData.sort(function (a, b) { return a.f - b.f; });
               treatedData.length.should.equal(3);
               assert.deepEqual(treatedData[0], doc5);
+              assert.deepEqual(treatedData[1], doc12);
+              assert.deepEqual(treatedData[2], doc31);
+
+              done();
+            }, 50);
+          });
+        });
+      });
+    });
+
+    it('Can remove documents in persistence file too', function (done) {
+      d = new Datastore({ filename: testDb, pipeline: true });
+      d.filename.should.equal(testDb);
+      d.pipeline.should.equal(true);
+      d.inMemoryOnly.should.equal(false);
+      assert.isDefined(d.persistenceExecutor);
+
+      d.insert({ f: 12 }, function (err, doc12) {
+        assert.isNull(err);
+        d.insert({ f: 5 }, function (err, doc5) {
+          assert.isNull(err);
+          d.remove({ f: 12 }, {}, function (err, doc31) {
+            assert.isNull(err);
+
+            // Need to wait a bit for persistence pipeline to be taken care of
+            // 2ms is enough but let's use 50 to be really sure tests don't fail for a bad reason
+            setTimeout(function () {
+              var rawData = fs.readFileSync(testDb, 'utf8')
+                , treatedData = Datastore.treatRawData(rawData)
+                ;
+
+              treatedData.sort(function (a, b) { return a.f - b.f; });
+              treatedData.length.should.equal(2);
+              assert.deepEqual(treatedData[0], doc5);
 
               done();
             }, 50);
