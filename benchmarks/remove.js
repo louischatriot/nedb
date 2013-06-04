@@ -28,8 +28,7 @@ async.waterfall([
 , async.apply(commonUtilities.removeDocs, { multi: false }, d, n, profiler)
 
 // Test with multiple documents
-, async.apply(commonUtilities.prepareDb, benchDb)
-, function (cb) { d.loadDatabase(cb); }
+, function (cb) { d.remove({}, { multi: true }, function () { return cb(); }); }
 , async.apply(commonUtilities.insertDocs, d, n, profiler)
 , function (cb) { profiler.step('MULTI: TRUE'); return cb(); }
 , async.apply(commonUtilities.removeDocs, { multi: true }, d, n, profiler)
