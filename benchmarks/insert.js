@@ -1,36 +1,20 @@
 var Datastore = require('../lib/datastore')
   , benchDb = 'workspace/insert.bench.db'
   , async = require('async')
-  , commonUtilities = require('./commonUtilities')
   , execTime = require('exec-time')
   , profiler = new execTime('INSERT BENCH')
-  , d
-  , program = require('commander')
-  , n
+  , commonUtilities = require('./commonUtilities')
+  , config = commonUtilities.getConfiguration(benchDb)
+  , d = config.d
+  , n = config.n
   ;
-
-program
-  .option('-n --number [number]', 'Size of the collection to test on', parseInt)
-  .option('-i --with-index', 'Use an index')
-  .option('-p --with-pipeline', 'Use pipelining')
-  .parse(process.argv);
-
-n = program.number || 10000;
-
-console.log("----------------------------");
-console.log("Test with " + n + " documents");
-console.log(program.withIndex ? "Use an index" : "Don't use an index");
-console.log(program.withPipeline ? "Use an pipelining" : "Don't use pipelining");
-console.log("----------------------------");
-
-d = new Datastore({ filename: benchDb, pipeline: program.withPipeline });
 
 async.waterfall([
   async.apply(commonUtilities.prepareDb, benchDb)
 , function (cb) {
     d.loadDatabase(function (err) {
       if (err) { return cb(err); }
-      if (program.withIndex) {
+      if (config.program.withIndex) {
         d.ensureIndex({ fieldName: 'docNumber' });
         n = 2 * n;   // We will actually insert twice as many documents
                      // because the index is slower when the collection is already

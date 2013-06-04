@@ -5,6 +5,7 @@
 var customUtils = require('../lib/customUtils')
   , fs = require('fs')
   , path = require('path')
+  , Datastore = require('../lib/datastore')
   , executeAsap   // process.nextTick or setImmediate depending on your Node version
   ;
 
@@ -16,7 +17,40 @@ try {
 
 
 /**
- * Ensure the workspace exists and the db is empty
+ * Configure the benchmark
+ */
+module.exports.getConfiguration = function (benchDb) {
+  var d, n
+    , program = require('commander')
+    ;
+
+  program
+    .option('-n --number [number]', 'Size of the collection to test on', parseInt)
+    .option('-i --with-index', 'Use an index')
+    .option('-p --with-pipeline', 'Use pipelining')
+    .option('-m --in-memory', 'Test with an in-memory only store')
+    .parse(process.argv);
+
+  n = program.number || 10000;
+
+  console.log("----------------------------");
+  console.log("Test with " + n + " documents");
+  console.log(program.withIndex ? "Use an index" : "Don't use an index");
+  console.log(program.withPipeline ? "Use an pipelining" : "Don't use pipelining");
+  console.log(program.inMemory ? "Use an in-memory datastore" : "Use a persistent datastore");
+  console.log("----------------------------");
+
+  d = new Datastore({ filename: benchDb
+                    , pipeline: program.withPipeline
+                    , inMemoryOnly: program.inMemory
+                    });
+
+  return { n: n, d: d, program: program };
+}
+
+
+/**
+ * Ensure the workspace exists and the db datafile is empty
  */
 module.exports.prepareDb = function (filename, cb) {
   customUtils.ensureDirectoryExists(path.dirname(filename), function () {
