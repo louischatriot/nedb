@@ -65,7 +65,7 @@ module.exports.insertDocs = function (d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("Average time for one insert: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      console.log("===== RESULT (insert) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
       profiler.step('Finished inserting ' + n + ' docs');
       return cb();
     }
@@ -92,7 +92,7 @@ module.exports.findDocs = function (d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("Average time for one find in a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      console.log("===== RESULT (find) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
       profiler.step('Finished finding ' + n + ' docs');
       return cb();
     }
@@ -120,7 +120,7 @@ module.exports.findOneDocs = function (d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("Average time for one findOne in a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      console.log("===== RESULT (findOne) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
       profiler.step('Finished finding ' + n + ' docs');
       return cb();
     }
@@ -149,7 +149,7 @@ module.exports.updateDocs = function (options, d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("Average time for one update in a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      console.log("===== RESULT (update) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
       profiler.step('Finished updating ' + n + ' docs');
       return cb();
     }
@@ -180,7 +180,7 @@ module.exports.removeDocs = function (options, d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("Average time for one remove and one insert in a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      console.log("===== RESULT (remove) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
       profiler.step('Finished removing ' + n + ' docs');
       return cb();
     }
@@ -212,7 +212,7 @@ module.exports.loadDatabase = function (d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("Average time for one loadDatabse for a collection of " + n + " docs: " + (profiler.elapsedSinceLastStep() / n) + "ms");
+      console.log("===== RESULT ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
       profiler.step('Finished loading a database' + n + ' times');
       return cb();
     }
