@@ -1,12 +1,12 @@
-var Datastore = require('../lib/datastore')
+var should = require('chai').should()
+  , assert = require('chai').assert
   , testDb = 'workspace/test.db'
   , fs = require('fs')
   , path = require('path')
-  , customUtils = require('../lib/customUtils')
-  , should = require('chai').should()
-  , assert = require('chai').assert
   , _ = require('underscore')
   , async = require('async')
+  , Datastore = require('../lib/datastore')
+  , customUtils = require('../lib/customUtils')
   , model = require('../lib/model')
   ;
 
