@@ -292,9 +292,7 @@ To create an index, use `datastore.ensureIndex(options, cb)`, where callback is 
 * **unique** (optional, defaults to `false`): enforce field uniqueness. Note that a unique index will raise an error if you try to index two documents for which the field is not defined.
 * **sparse** (optional, defaults to `false`): don't index documents for which the field is not defined. Use this option along with "unique" if you want to accept multiple documents for which it is not defined.
 
-Notes:  
-* The `_id` is automatically indexed with a unique constraint, so queries specifying a value for it are very fast.
-* Currently, indexes are implemented as binary search trees. I will use self-balancing binary search trees in the future to guarantee a consistent performance (the index on `_id` is already balanced since the `_id` is randomly generated).
+Note: the `_id` is automatically indexed with a unique constraint, no need to call `ensureIndex` on it.
 
 
 ```javascript
@@ -332,10 +330,10 @@ db.insert({ somefield: 'nedb' }, function (err) {
 
 As such, it was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On my machine (3 years old, no SSD), with a collection
 containing 10,000 documents, with indexing and no pipelining:  
-* Insert: **6,180 ops/s**
-* Find: **42,370 ops/s**
-* Update: **4,730 ops/s**
-* Remove: **3,750 ops/s**  
+* Insert: **5,950 ops/s**
+* Find: **41,320 ops/s**
+* Update: **4,490 ops/s**
+* Remove: **3,220 ops/s**  
 
 You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. Run them with the `--help` flag to see how they work.
 
