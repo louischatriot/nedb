@@ -22,7 +22,7 @@
   "dependencies": {
     "async": "~0.2.8",
     "underscore": "~1.4.4",
-    "binary-search-tree": "0.2.1"
+    "binary-search-tree": "0.2.2"
   },
   "devDependencies": {
     "chai": "1.0.x",
