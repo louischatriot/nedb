@@ -548,6 +548,26 @@ describe('Indexes', function () {
       assert.deepEqual(idx.getMatching(['nope', 'no']), []);
     });
 
+    it('Can get all documents whose key is between certain bounds', function () {
+      var idx = new Index({ fieldName: 'a' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 2, tf: 'bloup' }
+        , doc3 = { a: 8, tf: 'world' }
+        , doc4 = { a: 7, tf: 'yes' }
+        , doc5 = { a: 10, tf: 'yes' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.insert(doc4);
+      idx.insert(doc5);
+
+      assert.deepEqual(idx.getBetweenBounds({ $lt: 10, $gte: 5 }), [ doc1, doc4, doc3 ]);
+      assert.deepEqual(idx.getBetweenBounds({ $lte: 8 }), [ doc2, doc1, doc4, doc3 ]);
+      assert.deepEqual(idx.getBetweenBounds({ $gt: 7 }), [ doc3, doc5 ]);
+    });
+
   });   // ==== End of 'Get matching documents' ==== //
 
 
