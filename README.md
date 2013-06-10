@@ -284,7 +284,7 @@ db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
 ```
 
 ### Indexing
-NeDB supports indexing. It gives a very nice speed boost and can be used to enforce a unique constraint on a field. You can index any field, including fields in nested documents using the dot notation. For now, indexes are only used to speed up basic and $in queries, but I am planning on adding value comparison soon.
+NeDB supports indexing. It gives a very nice speed boost and can be used to enforce a unique constraint on a field. You can index any field, including fields in nested documents using the dot notation. For now, indexes are only used to speed up basic queries and queries using `$in`, `$lt`, `$lte`, `$gt` and `$gte`.
 
 To create an index, use `datastore.ensureIndex(options, cb)`, where callback is optional and get passed an error if any. The options are:  
 
