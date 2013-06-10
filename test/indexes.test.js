@@ -526,6 +526,28 @@ describe('Indexes', function () {
       assert.deepEqual(idx.getMatching(undefined), []);
     });
 
+    it('Can get all documents whose key is in an array of keys', function () {
+      var idx = new Index({ fieldName: 'tf' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 2, tf: 'bloup' }
+        , doc3 = { a: 8, tf: 'world' }
+        , doc4 = { a: 7, tf: 'yes' }
+        , doc5 = { a: 7, tf: 'yes' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.insert(doc4);
+      idx.insert(doc5);
+
+      assert.deepEqual(idx.getMatching([]), []);
+      assert.deepEqual(idx.getMatching(['bloup']), [doc2]);
+      assert.deepEqual(idx.getMatching(['bloup', 'yes']), [doc2, doc4, doc5]);
+      assert.deepEqual(idx.getMatching(['hello', 'no']), [doc1]);
+      assert.deepEqual(idx.getMatching(['nope', 'no']), []);
+    });
+
   });   // ==== End of 'Get matching documents' ==== //
 
 
