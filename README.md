@@ -6,6 +6,8 @@
 modules of course). You can **think of it as a SQLite for Node.js projects**, which
 can be used with a simple `require` statement. The API is a subset of MongoDB's. You can use it as a persistent or an in-memory only datastore.
 
+**NeDB is not intended to be a replacement of large-scale databases such as MongoDB!** Its goal is to provide you with a clean and easy way to query data and persist it to disk, for web applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a> and desktop applications built with <a href="https://github.com/rogerwang/node-webkit" target="_blank">Node Webkit</a>.
+
 
 ## Installation, tests
 Module name on npm is `nedb`.
