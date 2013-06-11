@@ -328,10 +328,7 @@ db.insert({ somefield: 'nedb' }, function (err) {
 
 ## Performance
 ### Speed
-**NeDB is not intended to be a replacement of large-scale databases such as MongoDB!** Its goal is to provide you with a clean and easy way to query data and persist it to disk, for web applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a> and desktop applications built with <a href="https://github.com/rogerwang/node-webkit" target="_blank">Node Webkit</a>.
-
-As such, it was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On my machine (3 years old, no SSD), with a collection
-containing 10,000 documents, with indexing and no pipelining:  
+NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On my machine (3 years old, no SSD), with a collection containing 10,000 documents, with indexing and no pipelining:  
 * Insert: **5,950 ops/s**
 * Find: **41,320 ops/s**
 * Update: **4,490 ops/s**
