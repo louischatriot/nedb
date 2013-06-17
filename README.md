@@ -332,7 +332,7 @@ NeDB is not intended to be a replacement of large-scale databases such as MongoD
 * Insert: **5,950 ops/s**
 * Find: **41,320 ops/s**
 * Update: **4,490 ops/s**
-* Remove: **3,220 ops/s**  
+* Remove: **6,620 ops/s**  
 
 You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. Run them with the `--help` flag to see how they work.
 
