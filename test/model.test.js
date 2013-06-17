@@ -159,6 +159,12 @@ describe('Model', function () {
       // Recursive behaviour testing done in the above test on $ signs
     });
 
+    it('Properties with a null value dont trigger an error', function () {
+      var obj = { prop: null };
+
+      model.checkObject(obj);
+    });
+
   });   // ==== End of 'Object checking' ==== //
 
 
