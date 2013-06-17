@@ -1,6 +1,6 @@
 {
   "name": "nedb",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "author": {
     "name": "tldr.io",
     "email": "hello@tldr.io"
@@ -22,7 +22,8 @@
   "dependencies": {
     "async": "~0.2.8",
     "underscore": "~1.4.4",
-    "binary-search-tree": "0.2.3"
+    "binary-search-tree": "0.2.3",
+    "mkdirp": "~0.3.5"
   },
   "devDependencies": {
     "chai": "1.0.x",
