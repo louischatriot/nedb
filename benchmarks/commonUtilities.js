@@ -214,7 +214,10 @@ module.exports.removeDocs = function (options, d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("===== RESULT (remove) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
+      console.log("===== RESULT (1 remove + 1 insert) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
+      console.log("====== IMPORTANT: Please note that this is the time that was needed to perform " + n + " removes and " + n + " inserts");
+      console.log("====== The extra inserts are needed to keep collection size at " + n + " items for the benchmark to make sense");
+      console.log("====== Use the insert speed logged above to calculate the actual remove speed, which is higher (should be significantly so if you use indexing)");
       profiler.step('Finished removing ' + n + ' docs');
       return cb();
     }
