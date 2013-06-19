@@ -201,7 +201,7 @@ describe('Model', function () {
   });   // ==== End of 'Deep copying' ==== //
 
 
-  describe('Modifying documents', function () {
+  describe.only('Modifying documents', function () {
 
     it('Queries not containing any modifier just replace the document by the contents of the query but keep its _id', function () {
       var obj = { some: 'thing', _id: 'keepit' }
@@ -294,7 +294,7 @@ describe('Model', function () {
 
         _.isEqual(modified, { yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } }).should.equal(true);
       });
-    });
+    });   // End of '$set modifier'
 
     describe('$inc modifier', function () {
       it('Throw an error if you try to use it with a non-number or on a non number field', function () {
@@ -330,7 +330,53 @@ describe('Model', function () {
         modified = model.modify(obj, { $inc: { "nay.nope": -2, "blip.blop": 123 } });
         _.isEqual(modified, { some: 'thing', nay: { nope: 38 }, blip: { blop: 123 } }).should.equal(true);
       });
-    });
+    });   // End of '$inc modifier'
+
+    describe('$push modifier', function () {
+
+      it('Can push an element to the end of an array', function () {
+        var obj = { arr: ['hello'] }
+          , modified;
+
+        modified = model.modify(obj, { $push: { arr: 'world' } });
+        assert.deepEqual(modified, { arr: ['hello', 'world'] });
+      });
+
+      it('Can push an element to a non-existent field and will create the array', function () {
+        var obj = { arr: [] }
+          , modified;
+
+        modified = model.modify(obj, { $push: { arr: 'world' } });
+        assert.deepEqual(modified, { arr: ['world'] });
+      });
+
+      it('Can push on nested fields', function () {
+        var obj = { arr: { nested: ['hello'] } }
+          , modified;
+
+        modified = model.modify(obj, { $push: { "arr.nested": 'world' } });
+        assert.deepEqual(modified, { arr: { nested: ['hello', 'world'] } });
+
+        obj = { arr: { a: 2 }};
+        modified = model.modify(obj, { $push: { "arr.nested": 'world' } });
+        assert.deepEqual(modified, { arr: { a: 2, nested: ['world'] } });
+      });
+
+      it('Throw if we try to push to a non-array', function () {
+        var obj = { arr: 'hello' }
+          , modified;
+
+        (function () {
+          modified = model.modify(obj, { $push: { arr: 'world' } });
+        }).should.throw();
+
+        obj = { arr: { nested: 45 } };
+        (function () {
+          modified = model.modify(obj, { $push: { "arr.nested": 'world' } });
+        }).should.throw();
+      });
+
+    });   // End of '$push modifier'
 
   });   // ==== End of 'Modifying documents' ==== //
 
