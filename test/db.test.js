@@ -1024,6 +1024,21 @@ describe('Database', function () {
       });
     });
 
+    it('If an error is thrown by a modifier, the database state is not changed', function (done) {
+      d.insert({ hello: 'world' }, function (err, newDoc) {
+        d.update({}, { $inc: { hello: 4 } }, {}, function (err, nr) {
+          assert.isDefined(err);
+          assert.isUndefined(nr);
+
+          d.find({}, function (err, docs) {
+            assert.deepEqual(docs, [ { _id: newDoc._id, hello: 'world' } ]);
+
+            done();
+          });
+        });
+      });
+    });
+
     it('Cant change the _id of a document', function (done) {
       d.insert({ a: 2 }, function (err, newDoc) {
         d.update({ a: 2 }, { a: 2, _id: 'nope' }, {}, function (err) {
