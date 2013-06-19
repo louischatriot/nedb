@@ -201,7 +201,7 @@ describe('Model', function () {
   });   // ==== End of 'Deep copying' ==== //
 
 
-  describe.only('Modifying documents', function () {
+  describe('Modifying documents', function () {
 
     it('Queries not containing any modifier just replace the document by the contents of the query but keep its _id', function () {
       var obj = { some: 'thing', _id: 'keepit' }
