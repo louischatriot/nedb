@@ -16,7 +16,7 @@ Module name on npm is `nedb`.
 ```javascript
 npm install nedb --save   // Put latest version in your package.json
 
-make test   // You'll need the dev dependencies to test it
+npm test   // You'll need the dev dependencies to test it
 ```
 
 ## API
