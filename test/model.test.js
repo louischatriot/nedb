@@ -378,6 +378,39 @@ describe('Model', function () {
 
     });   // End of '$push modifier'
 
+    describe('$addToSet modifier', function () {
+
+      it('Can add an element to a set', function () {
+        var obj = { arr: ['hello'] }
+          , modified;
+
+        modified = model.modify(obj, { $addToSet: { arr: 'world' } });
+        assert.deepEqual(modified, { arr: ['hello', 'world'] });
+
+        obj = { arr: ['hello'] };
+        modified = model.modify(obj, { $addToSet: { arr: 'hello' } });
+        assert.deepEqual(modified, { arr: ['hello'] });
+      });
+
+      it('Can add an element to a non-existent set and will create the array', function () {
+        var obj = { arr: [] }
+          , modified;
+
+        modified = model.modify(obj, { $addToSet: { arr: 'world' } });
+        assert.deepEqual(modified, { arr: ['world'] });
+      });
+
+      it('Throw if we try to addToSet to a non-array', function () {
+        var obj = { arr: 'hello' }
+          , modified;
+
+        (function () {
+          modified = model.modify(obj, { $addToSet: { arr: 'world' } });
+        }).should.throw();
+      });
+
+    });   // End of '$addToSet modifier'
+
   });   // ==== End of 'Modifying documents' ==== //
 
 
