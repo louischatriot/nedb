@@ -411,6 +411,49 @@ describe('Model', function () {
 
     });   // End of '$addToSet modifier'
 
+    describe('$pop modifier', function () {
+
+      it('Throw if called on a non array, a non defined field or a non integer', function () {
+        var obj = { arr: 'hello' }
+          , modified;
+
+        (function () {
+          modified = model.modify(obj, { $pop: { arr: 1 } });
+        }).should.throw();
+
+        obj = { bloup: 'nope' };
+        (function () {
+          modified = model.modify(obj, { $pop: { arr: 1 } });
+        }).should.throw();
+
+        obj = { arr: [1, 4, 8] };
+        (function () {
+          modified = model.modify(obj, { $pop: { arr: true } });
+        }).should.throw();
+      });
+
+      it('Can remove the first and last element of an array', function () {
+        var obj
+          , modified;
+
+        obj = { arr: [1, 4, 8] };
+        modified = model.modify(obj, { $pop: { arr: 1 } });
+        assert.deepEqual(modified, { arr: [1, 4] });
+
+        obj = { arr: [1, 4, 8] };
+        modified = model.modify(obj, { $pop: { arr: -1 } });
+        assert.deepEqual(modified, { arr: [4, 8] });
+
+        // Empty arrays are not changed
+        obj = { arr: [] };
+        modified = model.modify(obj, { $pop: { arr: 1 } });
+        assert.deepEqual(modified, { arr: [] });
+        modified = model.modify(obj, { $pop: { arr: -1 } });
+        assert.deepEqual(modified, { arr: [] });
+      });
+
+    });   // End of '$pop modifier'
+
   });   // ==== End of 'Modifying documents' ==== //
 
 
