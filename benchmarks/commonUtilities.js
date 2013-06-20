@@ -46,7 +46,7 @@ module.exports.getConfiguration = function (benchDb) {
                     });
 
   return { n: n, d: d, program: program };
-}
+};
 
 
 /**
