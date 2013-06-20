@@ -33,6 +33,7 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 You can use NeDB as an in-memory only datastore or as a persistent datastore. One datastore is the equivalent of a MongoDB collection. The constructor is used as follows `new Datastore(options)` where `options` is an object with the following fields:  
 
 * `filename` (optional): path to the file where the data is persisted. If left blank, the datastore is automatically considered in-memory only.
+* `nodeWebkitAppName` (optional): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.)
 * `inMemoryOnly` (optional, defaults to false): as the name implies.
 * `pipeline` (optional, defaults to false): use pipelining. This is an experimental feature that speeds up writes (about 2x) but can sometime increase read times. You probably shouldn't use it yet.
 
@@ -43,7 +44,13 @@ var Datastore = require('nedb')
 // Persistent datastore
 var Datastore = require('nedb')
   , db = new Datastore({ filename: 'path/to/datafile' });
-  
+
+// Persistent datastore for a Node Webkit app called 'nwtest'
+// For example on Linux, the datafile will be ~/.config/nwtest/nedb-data/something.db
+var Datastore = require('nedb')
+  , db = new Datastore({ filename: 'something.db', nodeWebkitAppName: 'nwtest' });
+
+
 db.loadDatabase(function (err) {    // Callback is optional
   // err is the error, if any
 });
