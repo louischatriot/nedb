@@ -344,7 +344,7 @@ describe('Model', function () {
       });
 
       it('Can push an element to a non-existent field and will create the array', function () {
-        var obj = { arr: [] }
+        var obj = {}
           , modified;
 
         modified = model.modify(obj, { $push: { arr: 'world' } });
@@ -374,6 +374,22 @@ describe('Model', function () {
         obj = { arr: { nested: 45 } };
         (function () {
           modified = model.modify(obj, { $push: { "arr.nested": 'world' } });
+        }).should.throw();
+      });
+
+      it('Can use the $each modifier to add multiple values to an array at once', function () {
+        var obj = { arr: ['hello'] }
+          , modified;
+
+        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'] } } });
+        assert.deepEqual(modified, { arr: ['hello', 'world', 'earth', 'everything'] });
+
+        (function () {
+          modified = model.modify(obj, { $push: { arr: { $each: 45 } } });
+        }).should.throw();
+
+        (function () {
+          modified = model.modify(obj, { $push: { arr: { $each: ['world'], unauthorized: true } } });
         }).should.throw();
       });
 
