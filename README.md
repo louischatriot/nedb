@@ -8,7 +8,7 @@ can be used with a simple `require` statement. The API is a subset of MongoDB's.
 
 NeDB is not intended to be a replacement of large-scale databases such as MongoDB! Its goal is to provide you with a clean and easy way to query data and persist it to disk, for web applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a> and desktop applications built with <a href="https://github.com/rogerwang/node-webkit" target="_blank">Node Webkit</a>.
 
-I recently benchmarked NeDB against the popular client-side database <a href="http://www.taffydb.com/" target="_blank">TaffyDB</a> and <a href="https://github.com/louischatriot/taffydb-benchmark" target="_blank">NeDB is much, much faster</a>, so I'm considering porting it to browsers. Please comment on <a href="https://github.com/louischatriot/nedb/issues/23">this issue</a> if you want it.
+I recently benchmarked NeDB against the popular client-side database <a href="http://www.taffydb.com/" target="_blank">TaffyDB</a> and <a href="https://github.com/louischatriot/taffydb-benchmark" target="_blank">NeDB is much, much faster</a>, so I will port it to browsers. Please comment on <a href="https://github.com/louischatriot/nedb/issues/23">this issue</a> if you have any ideas/requirements.
 
 
 ## Installation, tests
