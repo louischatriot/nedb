@@ -3,6 +3,7 @@ var model = require('../lib/model')
   , assert = require('chai').assert
   , _ = require('underscore')
   , async = require('async')
+  , util = require('util')
   ;
 
 
@@ -79,7 +80,7 @@ describe('Model', function () {
       b = model.serialize(a);
       c = model.deserialize(b);
       b.indexOf('\n').should.equal(-1);
-      c.test.constructor.name.should.equal('Date');
+      util.isDate(c.test).should.equal(true);
       c.test.getTime().should.equal(d.getTime());
     });
 
