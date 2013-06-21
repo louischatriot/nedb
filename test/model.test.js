@@ -410,6 +410,18 @@ describe('Model', function () {
         }).should.throw();
       });
 
+      it('Use deep-equality to check whether we can add a value to a set', function () {
+        var obj = { arr: [ { b: 2 } ] }
+          , modified;
+
+        modified = model.modify(obj, { $addToSet: { arr: { b: 3 } } });
+        assert.deepEqual(modified, { arr: [{ b: 2 }, { b: 3 }] });
+
+        obj = { arr: [ { b: 2 } ] }
+        modified = model.modify(obj, { $addToSet: { arr: { b: 2 } } });
+        assert.deepEqual(modified, { arr: [{ b: 2 }] });
+      });
+
     });   // End of '$addToSet modifier'
 
     describe('$pop modifier', function () {
