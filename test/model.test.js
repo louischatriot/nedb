@@ -438,6 +438,22 @@ describe('Model', function () {
         assert.deepEqual(modified, { arr: [{ b: 2 }] });
       });
 
+      it('Can use the $each modifier to add multiple values to a set at once', function () {
+        var obj = { arr: ['hello'] }
+          , modified;
+
+        modified = model.modify(obj, { $addToSet: { arr: { $each: ['world', 'earth', 'hello', 'earth'] } } });
+        assert.deepEqual(modified, { arr: ['hello', 'world', 'earth'] });
+
+        (function () {
+          modified = model.modify(obj, { $addToSet: { arr: { $each: 45 } } });
+        }).should.throw();
+
+        (function () {
+          modified = model.modify(obj, { $addToSet: { arr: { $each: ['world'], unauthorized: true } } });
+        }).should.throw();
+      });
+
     });   // End of '$addToSet modifier'
 
     describe('$pop modifier', function () {
