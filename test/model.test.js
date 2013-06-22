@@ -770,7 +770,7 @@ describe('Model', function () {
 
 
     // General behaviour is tested in the block about $lt. Here we just test operators work
-    describe('Other comparison operators: $lte, $gt, $gte, $ne, $in', function () {
+    describe('Other comparison operators: $lte, $gt, $gte, $ne, $in, $exists', function () {
 
       it('$lte', function () {
         model.match({ a: 5 }, { a: { $lte: 6 } }).should.equal(true);
@@ -817,6 +817,24 @@ describe('Model', function () {
         model.match({ a: 9 }, { b: { $nin: [6, 8, 9] } }).should.equal(true);
 
         (function () { model.match({ a: 5 }, { a: { $in: 5 } }); }).should.throw();
+      });
+
+      it('$exists', function () {
+        model.match({ a: 5 }, { a: { $exists: 1 } }).should.equal(true);
+        model.match({ a: 5 }, { a: { $exists: true } }).should.equal(true);
+        model.match({ a: 5 }, { a: { $exists: new Date() } }).should.equal(true);
+        model.match({ a: 5 }, { a: { $exists: '' } }).should.equal(true);
+        model.match({ a: 5 }, { a: { $exists: [] } }).should.equal(true);
+        model.match({ a: 5 }, { a: { $exists: {} } }).should.equal(true);
+
+        model.match({ a: 5 }, { a: { $exists: 0 } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $exists: false } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $exists: null } }).should.equal(false);
+        model.match({ a: 5 }, { a: { $exists: undefined } }).should.equal(false);
+
+        model.match({ a: 5 }, { b: { $exists: true } }).should.equal(false);
+
+        model.match({ a: 5 }, { b: { $exists: false } }).should.equal(true);
       });
 
     });
