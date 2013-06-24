@@ -138,13 +138,14 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 });
 ```
 
-#### Comparison operators ($lt, $lte, $gt, $gte, $in, $nin, $ne)
+#### Operators ($lt, $lte, $gt, $gte, $in, $nin, $ne, $exists)
 The syntax is `{ field: { $op: value } }` where `$op` is any comparison operator:  
 
 * `$lt`, `$lte`: less than, less than or equal
 * `$gt`, `$gte`: greater than, greater than or equal
 * `$in`: member of. `value` must be an array of values
 * `$ne`, `$nin`: not equal, not a member of
+* `$exists`: checks whether the document posses the property `field`. `value` should be true or false
 
 ```javascript
 // $lt, $lte, $gt and $gte work on numbers and strings
@@ -160,6 +161,11 @@ db.find({ planet: { $gt: 'Mercury' }}, function (err, docs) {
 // Using $in. $nin is used in the same way
 db.find({ planet: { $in: ['Earth', 'Jupiter'] }}, function (err, docs) {
   // docs contains Earth and Jupiter
+});
+
+// Using $exists
+db.find({ satellites: { $exists: true } }, function (err, docs) {
+  // docs contains only Mars
 });
 ```
 
