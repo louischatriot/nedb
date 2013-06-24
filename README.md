@@ -39,7 +39,8 @@ You can use NeDB as an in-memory only datastore or as a persistent datastore. On
 
 ```javascript
 // In-memory only datastore
-var Datastore = require('nedb')
+var Datastore = require('nedb'),
+  , db = new Datastore();
 
 // Persistent datastore
 var Datastore = require('nedb')
