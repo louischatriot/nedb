@@ -1528,7 +1528,7 @@ describe('Database', function () {
           d.insert({ a: 2, b: 45 }, function () {
             d.insert({ a: 1, b: 3 }, function () {
               d.ensureIndex({ fieldName: 'b' }, function (err) {
-                assert.isUndefined(err);
+                assert.isNull(err);
 
                 d.ensureIndex({ fieldName: 'a', unique: true }, function (err) {
                   err.errorType.should.equal('uniqueViolated');
