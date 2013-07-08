@@ -36,40 +36,38 @@ You can use NeDB as an in-memory only datastore or as a persistent datastore. On
 * `inMemoryOnly` (optional, defaults to false): as the name implies.
 * `autoload` (optional, defaults to false): if used, the database will
   automatically be loaded from the datafile upon creation (you don't
-need to call `loadDatabase` - see below). Any command
+need to call `loadDatabase`). Any command
 issued before load is finished is buffered and will be executed when
 load is done.
 * `nodeWebkitAppName` (optional): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows.
 
-You need to call `loadDatabase` if you use a persistent datastore
-without the `autoload` option. This function fetches the data from
-datafile and prepares the database. **This is important!** If you use a persistent datastore, no command
- (insert, find, update, remove) will be executed before `loadDatabase`
+If you use a persistent datastore without the `autoload` option, you need to call `loadDatabase` manually.
+This function fetches the data from datafile and prepares the database. **Don't forget it!** If you use a
+persistent datastore, no command (insert, find, update, remove) will be executed before `loadDatabase`
 is called, so make sure to call it yourself or use the `autoload`
 option.
 
 ```javascript
-// In-memory only datastore (no need to load the database)
+// Type 1: In-memory only datastore (no need to load the database)
 var Datastore = require('nedb')
   , db = new Datastore();
 
 
-// Persistent datastore with manual loading
+// Type 2: Persistent datastore with manual loading
 var Datastore = require('nedb')
   , db = new Datastore({ filename: 'path/to/datafile' });
-
 db.loadDatabase(function (err) {    // Callback is optional
   // Now commands will be executed
 });
 
 
-// Persistent datastore with automatic loading
+// Type 3: Persistent datastore with automatic loading
 var Datastore = require('nedb')
   , db = new Datastore({ filename: 'path/to/datafile', autoload: true });
 // You can issue commands right away
 
 
-// Persistent datastore for a Node Webkit app called 'nwtest'
+// Type 4: Persistent datastore for a Node Webkit app called 'nwtest'
 // For example on Linux, the datafile will be ~/.config/nwtest/nedb-data/something.db
 var Datastore = require('nedb')
   , db = new Datastore({ filename: 'something.db', nodeWebkitAppName: 'nwtest' });
