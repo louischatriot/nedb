@@ -17,7 +17,6 @@ describe('Database', function () {
   beforeEach(function (done) {
     d = new Datastore({ filename: testDb });
     d.filename.should.equal(testDb);
-    d.pipeline.should.equal(false);
     d.inMemoryOnly.should.equal(false);
 
     async.waterfall([
@@ -45,17 +44,14 @@ describe('Database', function () {
   it('Constructor compatibility with v0.6-', function () {
     var dbef = new Datastore('somefile');
     dbef.filename.should.equal('somefile');
-    dbef.pipeline.should.equal(false);
     dbef.inMemoryOnly.should.equal(false);
 
     var dbef = new Datastore('');
     assert.isNull(dbef.filename);
-    dbef.pipeline.should.equal(false);
     dbef.inMemoryOnly.should.equal(true);
 
     var dbef = new Datastore();
     assert.isNull(dbef.filename);
-    dbef.pipeline.should.equal(false);
     dbef.inMemoryOnly.should.equal(true);
   });
 
@@ -304,7 +300,7 @@ describe('Database', function () {
 
   describe('Insert', function () {
 
-    it('Able to insert a document in the database, setting an _id if none provided, and retrieve it even after a reload', function (done) {
+    it.only('Able to insert a document in the database, setting an _id if none provided, and retrieve it even after a reload', function (done) {
       d.find({}, function (err, docs) {
         docs.length.should.equal(0);
 
@@ -2027,110 +2023,6 @@ describe('Database', function () {
     });   // ==== End of 'Removing indexes upon document update' ==== //
 
   });   // ==== End of 'Using indexes' ==== //
-
-
-  describe('Pipelining', function () {
-
-    it('Can insert documents and persist them', function (done) {
-      d = new Datastore({ filename: testDb, pipeline: true });
-      d.filename.should.equal(testDb);
-      d.pipeline.should.equal(true);
-      d.inMemoryOnly.should.equal(false);
-      assert.isDefined(d.persistenceExecutor);
-
-      d.insert({ f: 12 }, function (err, doc12) {
-        assert.isNull(err);
-        d.insert({ f: 5 }, function (err, doc5) {
-          assert.isNull(err);
-          d.insert({ f: 31 }, function (err, doc31) {
-            assert.isNull(err);
-
-            // Need to wait a bit for persistence pipeline to be taken care of
-            // 2ms is enough but let's use 50 to be really sure tests don't fail for a bad reason
-            setTimeout(function () {
-              var rawData = fs.readFileSync(testDb, 'utf8')
-                , treatedData = Datastore.treatRawData(rawData)
-                ;
-
-              treatedData.sort(function (a, b) { return a.f - b.f; });
-              treatedData.length.should.equal(3);
-              assert.deepEqual(treatedData[0], doc5);
-              assert.deepEqual(treatedData[1], doc12);
-              assert.deepEqual(treatedData[2], doc31);
-
-              done();
-            }, 50);
-          });
-        });
-      });
-    });
-
-    it('Can remove documents in persistence file too', function (done) {
-      d = new Datastore({ filename: testDb, pipeline: true });
-      d.filename.should.equal(testDb);
-      d.pipeline.should.equal(true);
-      d.inMemoryOnly.should.equal(false);
-      assert.isDefined(d.persistenceExecutor);
-
-      d.insert({ f: 12 }, function (err, doc12) {
-        assert.isNull(err);
-        d.insert({ f: 5 }, function (err, doc5) {
-          assert.isNull(err);
-          d.remove({ f: 12 }, {}, function (err, doc31) {
-            assert.isNull(err);
-
-            // Need to wait a bit for persistence pipeline to be taken care of
-            // 2ms is enough but let's use 50 to be really sure tests don't fail for a bad reason
-            setTimeout(function () {
-              var rawData = fs.readFileSync(testDb, 'utf8')
-                , treatedData = Datastore.treatRawData(rawData)
-                ;
-
-              treatedData.sort(function (a, b) { return a.f - b.f; });
-              treatedData.length.should.equal(1);
-              assert.deepEqual(treatedData[0], doc5);
-
-              done();
-            }, 50);
-          });
-        });
-      });
-    });
-
-    it('Can update documents in persistence file too', function (done) {
-      d = new Datastore({ filename: testDb, pipeline: true });
-      d.filename.should.equal(testDb);
-      d.pipeline.should.equal(true);
-      d.inMemoryOnly.should.equal(false);
-      assert.isDefined(d.persistenceExecutor);
-
-      d.insert({ f: 12 }, function (err, doc12) {
-        assert.isNull(err);
-        d.insert({ f: 5 }, function (err, doc5) {
-          assert.isNull(err);
-          d.update({ f: 12 }, { $set: { f: 555 } }, {}, function (err) {
-            assert.isNull(err);
-
-            // Need to wait a bit for persistence pipeline to be taken care of
-            // 2ms is enough but let's use 50 to be really sure tests don't fail for a bad reason
-            setTimeout(function () {
-              var rawData = fs.readFileSync(testDb, 'utf8')
-                , treatedData = Datastore.treatRawData(rawData)
-                ;
-
-              treatedData.sort(function (a, b) { return a.f - b.f; });
-              treatedData.length.should.equal(2);
-              assert.deepEqual(treatedData[0], doc5);
-              assert.deepEqual(treatedData[1], { f: 555, _id: doc12._id });
-
-              done();
-            }, 50);
-          });
-        });
-      });
-    });
-
-  });   // ==== End of 'Pipelining' ==== //
 
 
 });
