@@ -27,7 +27,6 @@ module.exports.getConfiguration = function (benchDb) {
   program
     .option('-n --number [number]', 'Size of the collection to test on', parseInt)
     .option('-i --with-index', 'Use an index')
-    .option('-p --with-pipeline', 'Use pipelining')
     .option('-m --in-memory', 'Test with an in-memory only store')
     .parse(process.argv);
 
@@ -36,12 +35,10 @@ module.exports.getConfiguration = function (benchDb) {
   console.log("----------------------------");
   console.log("Test with " + n + " documents");
   console.log(program.withIndex ? "Use an index" : "Don't use an index");
-  console.log(program.withPipeline ? "Use an pipelining" : "Don't use pipelining");
   console.log(program.inMemory ? "Use an in-memory datastore" : "Use a persistent datastore");
   console.log("----------------------------");
 
   d = new Datastore({ filename: benchDb
-                    , pipeline: program.withPipeline
                     , inMemoryOnly: program.inMemory
                     });
 

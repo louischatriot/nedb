@@ -35,7 +35,6 @@ You can use NeDB as an in-memory only datastore or as a persistent datastore. On
 * `filename` (optional): path to the file where the data is persisted. If left blank, the datastore is automatically considered in-memory only.
 * `nodeWebkitAppName` (optional): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows.
 * `inMemoryOnly` (optional, defaults to false): as the name implies.
-* `pipeline` (optional, defaults to false): use pipelining. This is an experimental feature that speeds up writes (about 2x) but can sometime increase read times. You probably shouldn't use it yet.
 
 ```javascript
 // In-memory only datastore
@@ -372,7 +371,7 @@ db.insert({ somefield: 'nedb' }, function (err) {
 
 ## Performance
 ### Speed
-NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On my machine (3 years old, no SSD), with a collection containing 10,000 documents, with indexing and no pipelining:  
+NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On my machine (3 years old, no SSD), with a collection containing 10,000 documents, with indexing:  
 * Insert: **5,950 ops/s**
 * Find: **41,320 ops/s**
 * Update: **4,490 ops/s**
