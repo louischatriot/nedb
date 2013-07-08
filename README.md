@@ -33,27 +33,46 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 You can use NeDB as an in-memory only datastore or as a persistent datastore. One datastore is the equivalent of a MongoDB collection. The constructor is used as follows `new Datastore(options)` where `options` is an object with the following fields:  
 
 * `filename` (optional): path to the file where the data is persisted. If left blank, the datastore is automatically considered in-memory only.
-* `nodeWebkitAppName` (optional): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows.
 * `inMemoryOnly` (optional, defaults to false): as the name implies.
+* `autoload` (optional, defaults to false): if used, the database will
+  automatically be loaded from the datafile upon creation (you don't
+need to call `loadDatabase` - see below). Any command
+issued before load is finished is buffered and will be executed when
+load is done.
+* `nodeWebkitAppName` (optional): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows.
+
+You need to call `loadDatabase` if you use a persistent datastore
+without the `autoload` option. This function fetches the data from
+datafile and prepares the database. **This is important!** If you use a persistent datastore, no command
+ (insert, find, update, remove) will be executed before `loadDatabase`
+is called, so make sure to call it yourself or use the `autoload`
+option.
 
 ```javascript
-// In-memory only datastore
+// In-memory only datastore (no need to load the database)
 var Datastore = require('nedb')
   , db = new Datastore();
 
-// Persistent datastore
+
+// Persistent datastore with manual loading
 var Datastore = require('nedb')
   , db = new Datastore({ filename: 'path/to/datafile' });
+
+db.loadDatabase(function (err) {    // Callback is optional
+  // Now commands will be executed
+});
+
+
+// Persistent datastore with automatic loading
+var Datastore = require('nedb')
+  , db = new Datastore({ filename: 'path/to/datafile', autoload: true });
+// You can issue commands right away
+
 
 // Persistent datastore for a Node Webkit app called 'nwtest'
 // For example on Linux, the datafile will be ~/.config/nwtest/nedb-data/something.db
 var Datastore = require('nedb')
   , db = new Datastore({ filename: 'something.db', nodeWebkitAppName: 'nwtest' });
-
-
-db.loadDatabase(function (err) {    // Callback is optional
-  // err is the error, if any
-});
 
 
 // Of course you can create multiple datastores if you need several
@@ -373,7 +392,7 @@ db.insert({ somefield: 'nedb' }, function (err) {
 ### Speed
 NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On my machine (3 years old, no SSD), with a collection containing 10,000 documents, with indexing:  
 * Insert: **5,950 ops/s**
-* Find: **41,320 ops/s**
+* Find: **25,440 ops/s**
 * Update: **4,490 ops/s**
 * Remove: **6,620 ops/s**  
 
