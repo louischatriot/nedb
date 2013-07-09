@@ -45,14 +45,17 @@ describe('Database', function () {
     var dbef = new Datastore('somefile');
     dbef.filename.should.equal('somefile');
     dbef.inMemoryOnly.should.equal(false);
+    dbef.idField.should.equal("_id");
 
     var dbef = new Datastore('');
     assert.isNull(dbef.filename);
     dbef.inMemoryOnly.should.equal(true);
+    dbef.idField.should.equal("_id");
 
     var dbef = new Datastore();
     assert.isNull(dbef.filename);
     dbef.inMemoryOnly.should.equal(true);
+    dbef.idField.should.equal("_id");
   });
 
 
@@ -438,6 +441,27 @@ describe('Database', function () {
         d.findOne({ a: 2 }, function (err, doc) {
           doc.hello.should.equal('world');
           done();
+        });
+      });
+    });
+
+    it('Able to insert a document in the database with a custom identifier field name, and retrieve it', function (done) {
+      var idField = "_foobar";
+      d = new Datastore({idField: idField});
+      d.find({}, function (err, docs) {
+        docs.length.should.equal(0);
+
+        d.insert({ somedata: 'ok' }, function (err, inserted) {
+          // The data was correctly updated
+          d.find({}, function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(1);
+            Object.keys(docs[0]).length.should.equal(2);
+            docs[0].somedata.should.equal('ok');
+            assert.isDefined(docs[0][idField]);
+            docs[0][idField].should.equal(inserted[idField]);
+            done();
+          });
         });
       });
     });
