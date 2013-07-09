@@ -270,7 +270,7 @@ db.update({ planet: 'Mars' }, { $set: { "data.satellites": 2, "data.red": true }
   //                      }
   // Not that to set fields in subdocuments, you HAVE to use dot-notation
   // Using object-notation will just replace the top-level field
-  db.update({ planet: 'Mars' }, { $set: { date: { satellites: 3 } } }, {}, function () {
+  db.update({ planet: 'Mars' }, { $set: { data: { satellites: 3 } } }, {}, function () {
     // Mars document now is { _id: 'id1', system: 'solar', inhabited: false
     //                      , data: { satellites: 3 }
     //                      }
