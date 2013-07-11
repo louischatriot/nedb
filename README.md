@@ -113,9 +113,12 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 ```
 
 ### Finding documents
-Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
+Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality, regular expression matching or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
+
+**Note:** when you need a regular expression, use basic querying (see below). MongoDB's `$regex` operator is not supported, but everything that can be done with it can be done more easily with basic querying.
 
 #### Basic querying
+Basic querying means are looking for documents whose fields match the ones you specify. You can use regular expression to match strings.
 
 ```javascript
 // Let's say our datastore contains the following collection
@@ -128,6 +131,11 @@ Use `find` to look for multiple documents matching you query, or `findOne` to lo
 db.find({ system: 'solar' }, function (err, docs) {
   // docs is an array containing documents Mars, Earth, Jupiter
   // If no document is found, docs is equal to []
+});
+
+// Finding all planets whose name contain the substring 'ar' using a regular expression
+db.find({ planet: /ar/ }, function (err, docs) {
+  // docs contains Mars and Earth
 });
 
 // Finding all inhabited planets in the solar system
