@@ -729,6 +729,33 @@ describe('Model', function () {
     });
 
 
+    describe('Regular expression matching', function () {
+
+      it('Matching a non-string to a regular expression always yields false', function () {
+        var d = new Date()
+          , r = new RegExp(d.getTime());
+
+        model.match({ test: true }, { test: /true/ }).should.equal(false);
+        model.match({ test: null }, { test: /null/ }).should.equal(false);
+        model.match({ test: 42 }, { test: /42/ }).should.equal(false);
+        model.match({ test: d }, { test: r }).should.equal(false);
+      });
+
+      it('Can match strings', function () {
+        model.match({ test: 'true' }, { test: /true/ }).should.equal(true);
+        model.match({ test: 'babaaaar' }, { test: /aba+r/ }).should.equal(true);
+        model.match({ test: 'babaaaar' }, { test: /^aba+r/ }).should.equal(false);
+        model.match({ test: 'true' }, { test: /t[ru]e/ }).should.equal(false);
+      });
+
+      it('Can use dot-notation', function () {
+        model.match({ test: { nested: 'true' } }, { 'test.nested': /true/ }).should.equal(true);
+        model.match({ test: { nested: 'babaaaar' } }, { 'test.nested': /^aba+r/ }).should.equal(false);
+      });
+
+    });
+
+
     describe('$lt', function () {
 
       it('Cannot compare a field to an object, an array, null or a boolean, it will return false', function () {
