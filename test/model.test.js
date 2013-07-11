@@ -741,16 +741,41 @@ describe('Model', function () {
         model.match({ test: d }, { test: r }).should.equal(false);
       });
 
-      it('Can match strings', function () {
+      it('Can match strings using basic querying', function () {
         model.match({ test: 'true' }, { test: /true/ }).should.equal(true);
         model.match({ test: 'babaaaar' }, { test: /aba+r/ }).should.equal(true);
         model.match({ test: 'babaaaar' }, { test: /^aba+r/ }).should.equal(false);
         model.match({ test: 'true' }, { test: /t[ru]e/ }).should.equal(false);
       });
 
+      it('Can match strings using the $regex operator', function () {
+        model.match({ test: 'true' }, { test: { $regex: /true/ } }).should.equal(true);
+        model.match({ test: 'babaaaar' }, { test: { $regex: /aba+r/ } }).should.equal(true);
+        model.match({ test: 'babaaaar' }, { test: { $regex: /^aba+r/ } }).should.equal(false);
+        model.match({ test: 'true' }, { test: { $regex: /t[ru]e/ } }).should.equal(false);
+      });
+
+      it('Will throw if $regex operator is used with a non regex value', function () {
+        (function () {
+          model.match({ test: 'true' }, { test: { $regex: 42 } })
+        }).should.throw();
+
+        (function () {
+          model.match({ test: 'true' }, { test: { $regex: 'true' } })
+        }).should.throw();
+      });
+
+      it('Can use the $regex operator in cunjunction with other operators', function () {
+        model.match({ test: 'helLo' }, { test: { $regex: /ll/i, $nin: ['helL', 'helLop'] } }).should.equal(true);
+        model.match({ test: 'helLo' }, { test: { $regex: /ll/i, $nin: ['helLo', 'helLop'] } }).should.equal(false);
+      });
+
       it('Can use dot-notation', function () {
         model.match({ test: { nested: 'true' } }, { 'test.nested': /true/ }).should.equal(true);
         model.match({ test: { nested: 'babaaaar' } }, { 'test.nested': /^aba+r/ }).should.equal(false);
+
+        model.match({ test: { nested: 'true' } }, { 'test.nested': { $regex: /true/ } }).should.equal(true);
+        model.match({ test: { nested: 'babaaaar' } }, { 'test.nested': { $regex: /^aba+r/ } }).should.equal(false);
       });
 
     });
