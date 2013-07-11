@@ -10,7 +10,7 @@ NeDB is not intended to be a replacement of large-scale databases such as MongoD
 
 I recently benchmarked NeDB against the popular client-side database <a href="http://www.taffydb.com/" target="_blank">TaffyDB</a> and <a href="https://github.com/louischatriot/taffydb-benchmark" target="_blank">NeDB is much, much faster</a>, so I will port it to browsers. Please comment on <a href="https://github.com/louischatriot/nedb/issues/23">this issue</a> if you have any ideas/requirements.
 
-Check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log</a> if you think nedb doesn't behaves as the documentation describes! Most of the issues I get are due to non-latest version NeDBs.
+Check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log in the wiki</a> if you think nedb doesn't behaves as the documentation describes! Most of the issues I get are due to non-latest version NeDBs.
 
 
 ## Installation, tests
