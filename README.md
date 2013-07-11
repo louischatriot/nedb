@@ -113,9 +113,9 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 ```
 
 ### Finding documents
-Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality, regular expression matching or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
+Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
 
-**Note:** when you need a regular expression, use basic querying (see below). MongoDB's `$regex` operator is not supported, but everything that can be done with it can be done more easily with basic querying.
+You can use regular expressions in two ways: in basic querying in place of a string, or with the `$regex` operator.
 
 #### Basic querying
 Basic querying means are looking for documents whose fields match the ones you specify. You can use regular expression to match strings.
@@ -164,7 +164,7 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 });
 ```
 
-#### Operators ($lt, $lte, $gt, $gte, $in, $nin, $ne, $exists)
+#### Operators ($lt, $lte, $gt, $gte, $in, $nin, $ne, $exists, $regex)
 The syntax is `{ field: { $op: value } }` where `$op` is any comparison operator:  
 
 * `$lt`, `$lte`: less than, less than or equal
@@ -172,6 +172,7 @@ The syntax is `{ field: { $op: value } }` where `$op` is any comparison operator
 * `$in`: member of. `value` must be an array of values
 * `$ne`, `$nin`: not equal, not a member of
 * `$exists`: checks whether the document posses the property `field`. `value` should be true or false
+* `$regex`: checks whether a string is matched by the regular expression. Contrary to MongoDB, the use of `$options` with `$regex` is not supported, because it doesn't give you more power than regex flags. Basic queries are more readable so only use the `$regex` when you need to use another operator with it (see example below)
 
 ```javascript
 // $lt, $lte, $gt and $gte work on numbers and strings
@@ -192,6 +193,11 @@ db.find({ planet: { $in: ['Earth', 'Jupiter'] }}, function (err, docs) {
 // Using $exists
 db.find({ satellites: { $exists: true } }, function (err, docs) {
   // docs contains only Mars
+});
+
+// Using $regex with another operator
+db.find({ planet: { $regex: /ar/, $nin: ['Jupiter', 'Earth'] } }, function (err, docs) {
+  // docs only contains Mars because Earth was excluded from the match by $nin
 });
 ```
 
