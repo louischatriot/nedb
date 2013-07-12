@@ -32,7 +32,7 @@ describe('Persistence', function () {
     , function (cb) {
         d.loadDatabase(function (err) {
           assert.isNull(err);
-          d.datafileSize.should.equal(0);
+          d.persistence.datafileSize.should.equal(0);
           d.getAllData().length.should.equal(0);
           return cb();
         });
@@ -162,12 +162,12 @@ describe('Persistence', function () {
       ;
 
     d.getAllData().length.should.equal(0);
-    d.datafileSize.should.equal(0);
+    d.persistence.datafileSize.should.equal(0);
 
     fs.writeFile(testDb, rawData, 'utf8', function () {
       d.loadDatabase(function () {
         d.getAllData().length.should.equal(3);
-        d.datafileSize.should.equal(3);
+        d.persistence.datafileSize.should.equal(3);
 
         d.find({}, function (err, docs) {
           docs.sort(function (a, b) { return a._id - b._id; });
