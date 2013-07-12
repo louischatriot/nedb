@@ -6,7 +6,6 @@ var should = require('chai').should()
   , _ = require('underscore')
   , async = require('async')
   , Datastore = require('../lib/datastore')
-  , customUtils = require('../lib/customUtils')
   , model = require('../lib/model')
   , Persistence = require('../lib/persistence')
   ;
