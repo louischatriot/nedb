@@ -8,6 +8,7 @@ var should = require('chai').should()
   , Datastore = require('../lib/datastore')
   , customUtils = require('../lib/customUtils')
   , model = require('../lib/model')
+  , Persistence = require('../lib/persistence')
   ;
 
 
@@ -21,7 +22,7 @@ describe('Database', function () {
 
     async.waterfall([
       function (cb) {
-        customUtils.ensureDirectoryExists(path.dirname(testDb), function () {
+        Persistence.ensureDirectoryExists(path.dirname(testDb), function () {
           fs.exists(testDb, function (exists) {
             if (exists) {
               fs.unlink(testDb, cb);

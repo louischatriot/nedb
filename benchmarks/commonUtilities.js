@@ -6,6 +6,7 @@ var customUtils = require('../lib/customUtils')
   , fs = require('fs')
   , path = require('path')
   , Datastore = require('../lib/datastore')
+  , Persistence = require('../lib/persistence')
   , executeAsap   // process.nextTick or setImmediate depending on your Node version
   ;
 
@@ -50,7 +51,7 @@ module.exports.getConfiguration = function (benchDb) {
  * Ensure the workspace exists and the db datafile is empty
  */
 module.exports.prepareDb = function (filename, cb) {
-  customUtils.ensureDirectoryExists(path.dirname(filename), function () {
+  Persistence.ensureDirectoryExists(path.dirname(filename), function () {
     fs.exists(filename, function (exists) {
       if (exists) {
         fs.unlink(filename, cb);
