@@ -8,7 +8,7 @@ can be used with a simple `require` statement. The API is a subset of MongoDB's.
 
 NeDB is not intended to be a replacement of large-scale databases such as MongoDB! Its goal is to provide you with a clean and easy way to query data and persist it to disk, for web applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a> and desktop applications built with <a href="https://github.com/rogerwang/node-webkit" target="_blank">Node Webkit</a>.
 
-I recently benchmarked NeDB against the popular client-side database <a href="http://www.taffydb.com/" target="_blank">TaffyDB</a> and <a href="https://github.com/louischatriot/taffydb-benchmark" target="_blank">NeDB is much, much faster</a>, so I will port it to browsers. Please comment on <a href="https://github.com/louischatriot/nedb/issues/23">this issue</a> if you have any ideas/requirements.
+I recently benchmarked NeDB against the popular client-side database <a href="http://www.taffydb.com/" target="_blank">TaffyDB</a> and <a href="https://github.com/louischatriot/taffydb-benchmark" target="_blank">NeDB is much, much faster</a>. That's why I created <a href="#browser-version">a browser version</a>.
 
 Check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log in the wiki</a> if you think nedb doesn't behaves as the documentation describes! Most of the issues I get are due to non-latest version NeDBs.
 
@@ -400,6 +400,11 @@ db.insert({ somefield: 'nedb' }, function (err) {
 
 **Note:** the `ensureIndex` function creates the index synchronously, so it's best to use it at application startup. It's quite fast so it doesn't increase startup time much (35 ms for a collection containing 10,000 documents).
 
+
+## Browser version
+As of v0.8.0, you can use NeDB in the browser! You can find it and its minified version in the repository, in the `browser-version/out` directory. You can also build it from the sources if you want, the build script is `browser-version/build.js`.
+
+**The browser version is still young!** For now you can only use it as an in-memory database in browser environments, I'll implement persistence using indexeddb and localstorage later. Also, I've only tested it in Chrome yet, I may need to change the code a bit to have better browser support.
 
 
 ## Performance
