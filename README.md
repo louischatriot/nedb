@@ -390,7 +390,7 @@ db.ensureIndex({ fieldName: 'somefield', unique: true, sparse: true }, function 
 // Format of the error message when the unique constraint is not met
 db.insert({ somefield: 'nedb' }, function (err) {
   // err is null
-  db.insert({ somefiled: 'nedb' }, function (err) {
+  db.insert({ somefield: 'nedb' }, function (err) {
     // err is { errorType: 'uniqueViolated'
     //        , key: 'name'
     //        , message: 'Unique constraint violated for key name' }
