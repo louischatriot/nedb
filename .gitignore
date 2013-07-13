@@ -16,3 +16,4 @@ workspace
 node_modules
 
 browser-version/src
+browser-version/node_modules
