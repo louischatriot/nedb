@@ -27,8 +27,8 @@ ensureDirExists('src');
 
 // Installing build dependencies and require them
 console.log("Installing build dependencies");
-//child_process.exec('npm install fs-extra async uglify-js browserify', function (err, stdout, stderr) {
-  //if (err) { console.log("Error reinstalling dependencies"); process.exit(1); }
+child_process.exec('npm install fs-extra async uglify-js browserify', function (err, stdout, stderr) {
+  if (err) { console.log("Error reinstalling dependencies"); process.exit(1); }
 
   fs = require('fs-extra');
   async = require('async');
@@ -36,28 +36,28 @@ console.log("Installing build dependencies");
   uglify = require('uglify-js');
 
   async.waterfall([
-  //function (cb) {
-    //console.log("Removing contents of the src directory");
+  function (cb) {
+    console.log("Removing contents of the src directory");
 
-    //async.eachSeries(fs.readdirSync(path.join(__dirname, 'src')), function (item, _cb) {
-      //fs.remove(path.join(__dirname, 'src', item), _cb);
-    //}, cb);
-  //}
-  //, function (cb) {
-    //console.log("Copying source files");
+    async.eachSeries(fs.readdirSync(path.join(__dirname, 'src')), function (item, _cb) {
+      fs.remove(path.join(__dirname, 'src', item), _cb);
+    }, cb);
+  }
+  , function (cb) {
+    console.log("Copying source files");
 
-    //async.eachSeries(toCopy, function (item, _cb) {
-      //fs.copy(path.join(__dirname, '..', item), path.join(__dirname, 'src', item), _cb);
-    //}, cb);
-  //}
-  //, function (cb) {
-    //console.log("Copying browser specific files to replace their server-specific counterparts");
+    async.eachSeries(toCopy, function (item, _cb) {
+      fs.copy(path.join(__dirname, '..', item), path.join(__dirname, 'src', item), _cb);
+    }, cb);
+  }
+  , function (cb) {
+    console.log("Copying browser specific files to replace their server-specific counterparts");
 
-    //async.eachSeries(fs.readdirSync(path.join(__dirname, 'browser-specific')), function (item, _cb) {
-      //fs.copy(path.join(__dirname, 'browser-specific', item), path.join(__dirname, 'src', item), _cb);
-    //}, cb);
-  //}
-    function (cb) {
+    async.eachSeries(fs.readdirSync(path.join(__dirname, 'browser-specific')), function (item, _cb) {
+      fs.copy(path.join(__dirname, 'browser-specific', item), path.join(__dirname, 'src', item), _cb);
+    }, cb);
+  }
+  , function (cb) {
     console.log("Browserifying the code");
 
     var b = browserify()
@@ -89,7 +89,7 @@ console.log("Installing build dependencies");
       console.log("Build finished with success");
     }
   });
-//});
+});
 
 
 
