@@ -402,7 +402,24 @@ db.insert({ somefield: 'nedb' }, function (err) {
 
 
 ## Browser version
-As of v0.8.0, you can use NeDB in the browser! You can find it and its minified version in the repository, in the `browser-version/out` directory. You can also build it from the sources if you want, the build script is `browser-version/build.js`.
+As of v0.8.0, you can use NeDB in the browser! You can find it and its minified version in the repository, in the `browser-version/out` directory. You only need to require `nedb.js` or `nedb.min.js` in your HTML file and the global object `Nedb` can be used right away, with the same API as the server version:
+
+```
+<script src="nedb.min.js"></script>
+<script>
+  var db = new Nedb();   // Create an in-memory only datastore
+  
+  db.insert({ planet: 'Earth' });
+  db.insert({ planet: 'Mars' });
+
+  db.find({}, function (err, docs) {
+    // docs contains the two planets Earth and Mars
+  });
+</script>
+```
+
+
+If you fork and modify nedb, you can build the browser version from the sources, the build script is `browser-version/build.js`.
 
 **The browser version is still young!** For now you can only use it as an in-memory database in browser environments, I'll implement persistence using indexeddb and localstorage later. Also, I've only tested it in Chrome yet, I may need to change the code a bit to have better browser support.
 
