@@ -38,6 +38,11 @@ child_process.exec('npm install fs-extra async uglify-js browserify', { cwd: __d
 
   async.waterfall([
   function (cb) {
+    console.log("Installing source dependencies if needed");
+
+    child_process.exec('npm install', { cwd: path.join(__dirname, '..') }, function (err) { return cb(err); });
+  }
+  , function (cb) {
     console.log("Removing contents of the src directory");
 
     async.eachSeries(fs.readdirSync(path.join(__dirname, 'src')), function (item, _cb) {
