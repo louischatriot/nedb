@@ -27,7 +27,7 @@ ensureDirExists('src');
 
 // Installing build dependencies and require them
 console.log("Installing build dependencies");
-child_process.exec('npm install fs-extra async uglify-js browserify', function (err, stdout, stderr) {
+child_process.exec('npm install fs-extra async uglify-js browserify', { cwd: __dirname }, function (err, stdout, stderr) {
   if (err) { console.log("Error reinstalling dependencies"); process.exit(1); }
 
   fs = require('fs-extra');
