@@ -9,7 +9,7 @@ var fs = require('fs')
   , async, browserify, uglify
   ;
 
-// Ensuring the node_modules, src and out directories exist
+// Ensuring both node_modules (the source one and build one), src and out directories exist
 function ensureDirExists (name) {
   try {
     fs.mkdirSync(path.join(__dirname, name));
@@ -20,6 +20,7 @@ function ensureDirExists (name) {
     }
   }
 }
+ensureDirExists('../node_modules');
 ensureDirExists('node_modules');
 ensureDirExists('out');
 ensureDirExists('src');
