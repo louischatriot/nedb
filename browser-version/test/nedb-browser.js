@@ -271,6 +271,25 @@ describe('Indexing', function () {
     });
   });
 
+  it('Can use indexes to enforce a unique constraint', function (done) {
+    var db = new Nedb();
+
+    db.ensureIndex({ fieldName: 'u', unique: true });
+
+    db.insert({ u : 5 }, function (err) {
+      assert.isNull(err);
+
+      db.insert({ u : 98 }, function (err) {
+        assert.isNull(err);
+
+        db.insert({ u : 5 }, function (err) {
+          err.errorType.should.equal('uniqueViolated');
+
+          done();
+        });
+      });
+    });
+  });
 
 });   // ==== End of 'Indexing' ==== //
 
