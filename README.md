@@ -418,7 +418,7 @@ As of v0.8.0, you can use NeDB in the browser! You can find it and its minified 
 </script>
 ```
 
-It has been tested and is compatible with Chrome, Safari, Firefox, IE 10, IE 9. Please open an issue if you need compatibility with IE 8/IE 7, I think it will need some work.
+It has been tested and is compatible with Chrome, Safari, Firefox, IE 10, IE 9. Please open an issue if you need compatibility with IE 8/IE 7, I think it will need some work. To launch the tests, simply open the file `browser-version/test/index.html` in a browser and you'll see the results of the tests for this browser.
 
 If you fork and modify nedb, you can build the browser version from the sources, the build script is `browser-version/build.js`.
 
