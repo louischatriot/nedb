@@ -155,4 +155,91 @@ describe('Basic CRUD functionality', function () {
     });
   });
 
+  it('Updating documents: special modifiers', function (done) {
+    var db = new Nedb();
+
+    db.insert({ planet: 'Earth' }, function (err, newDoc1) {
+      // Pushing to an array
+      db.update({}, { $push: { satellites: 'Phobos' } }, {}, function (err, nr) {
+        assert.isNull(err);
+        nr.should.equal(1);
+
+        db.findOne({}, function (err, doc) {
+          assert.deepEqual(doc, { planet: 'Earth', _id: newDoc1._id, satellites: ['Phobos'] });
+
+          db.update({}, { $push: { satellites: 'Deimos' } }, {}, function (err, nr) {
+            assert.isNull(err);
+            nr.should.equal(1);
+
+            db.findOne({}, function (err, doc) {
+              assert.deepEqual(doc, { planet: 'Earth', _id: newDoc1._id, satellites: ['Phobos', 'Deimos'] });
+
+              done();
+            });
+          });
+        });
+      });
+    });
+  });
+
+  it('Upserts', function (done) {
+    var db = new Nedb();
+
+    db.update({ a: 4 }, { $inc: { b: 1 } }, { upsert: true }, function (err, nr, upsert) {
+      assert.isNull(err);
+      upsert.should.equal(true);
+      nr.should.equal(1);
+
+      db.find({}, function (err, docs) {
+        docs.length.should.equal(1);
+        docs[0].a.should.equal(4);
+        docs[0].b.should.equal(1);
+
+        done();
+      });
+    });
+  });
+
+  it('Removing documents', function (done) {
+    var db = new Nedb();
+
+    db.insert({ a: 2 });
+    db.insert({ a: 5 });
+    db.insert({ a: 7 });
+
+    // Multi remove
+    db.remove({ a: { $in: [ 5, 7 ] } }, { multi: true }, function (err, nr) {
+      assert.isNull(err);
+      nr.should.equal(2);
+
+      db.find({}, function (err, docs) {
+        docs.length.should.equal(1);
+        docs[0].a.should.equal(2);
+
+        // Remove with no match
+        db.remove({ b: { $exists: true } }, { multi: true }, function (err, nr) {
+          assert.isNull(err);
+          nr.should.equal(0);
+
+          db.find({}, function (err, docs) {
+            docs.length.should.equal(1);
+            docs[0].a.should.equal(2);
+
+            // Simple remove
+            db.remove({ a: { $exists: true } }, { multi: true }, function (err, nr) {
+              assert.isNull(err);
+              nr.should.equal(1);
+
+              db.find({}, function (err, docs) {
+                docs.length.should.equal(0);
+
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+
 });
