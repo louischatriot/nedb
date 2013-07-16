@@ -242,4 +242,37 @@ describe('Basic CRUD functionality', function () {
     });
   });
 
-});
+});   // ==== End of 'Basic CRUD functionality' ==== //
+
+
+describe('Indexing', function () {
+
+  it('getCandidates works as expected', function (done) {
+    var db = new Nedb();
+
+    db.insert({ a: 4 }, function () {
+      db.insert({ a: 6 }, function () {
+        db.insert({ a: 7 }, function () {
+          var candidates = db.getCandidates({ a: 6 })
+          candidates.length.should.equal(3);
+          assert.isDefined(_.find(candidates, function (doc) { return doc.a === 4; }));
+          assert.isDefined(_.find(candidates, function (doc) { return doc.a === 6; }));
+          assert.isDefined(_.find(candidates, function (doc) { return doc.a === 7; }));
+
+          db.ensureIndex({ fieldName: 'a' });
+
+          candidates = db.getCandidates({ a: 6 })
+          candidates.length.should.equal(1);
+          assert.isDefined(_.find(candidates, function (doc) { return doc.a === 6; }));
+
+          done();
+        });
+      });
+    });
+  });
+
+
+});   // ==== End of 'Indexing' ==== //
+
+
+
