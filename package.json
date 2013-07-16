@@ -20,7 +20,7 @@
     "url": "git@github.com:louischatriot/node-embedded-db.git"
   },
   "dependencies": {
-    "async": "~0.2.8",
+    "async": "0.2.9",
     "underscore": "~1.4.4",
     "binary-search-tree": "0.2.3",
     "mkdirp": "~0.3.5"
