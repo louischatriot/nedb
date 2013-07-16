@@ -421,7 +421,7 @@ As of v0.8.0, you can use NeDB in the browser! You can find it and its minified 
 
 If you fork and modify nedb, you can build the browser version from the sources, the build script is `browser-version/build.js`.
 
-**The browser version is still young!** For now you can only use it as an in-memory database in browser environments, I'll implement persistence using indexeddb and localstorage later. Also, only the master version works with IE yet (no npm-published one does). That's due to a bug in <a href="https://github.com/caolan/async">async</a> for which I've sent a PR. I'll `npm publish` an IE-compatible version when it is merged and version is bumped.
+**The browser version is still young!** For now you can only use it as an in-memory database in browser environments, I'll implement persistence using indexeddb and localstorage later. Also, only the master version works with IE yet (no npm-published one does). That's due to a bug in <a href="https://github.com/caolan/async" target="_blank">async</a> for which I've sent a PR. I'll `npm publish` an IE-compatible version when it is merged and version is bumped.
 
 
 ## Performance
