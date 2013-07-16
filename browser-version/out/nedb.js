@@ -2253,7 +2253,10 @@ module.exports = Persistence;
     else {
         async.nextTick = process.nextTick;
         if (typeof setImmediate !== 'undefined') {
-            async.setImmediate = setImmediate;
+            async.setImmediate = function (fn) {
+              // not a direct alias for IE10 compatibility
+              setImmediate(fn);
+            };
         }
         else {
             async.setImmediate = async.nextTick;
