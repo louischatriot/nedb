@@ -32,7 +32,6 @@ describe('Database', function () {
     , function (cb) {
         d.loadDatabase(function (err) {
           assert.isNull(err);
-          d.persistence.datafileSize.should.equal(0);
           d.getAllData().length.should.equal(0);
           return cb();
         });
@@ -167,24 +166,6 @@ describe('Database', function () {
         newDoc._id.should.not.equal('test');
 
         done();
-      });
-    });
-
-    it('datafileSize is incremented by 1 upon every insert', function (done) {
-      d.persistence.datafileSize.should.equal(0);
-      d.getAllData().length.should.equal(0);
-      d.insert({ a: 3 }, function () {
-        d.persistence.datafileSize.should.equal(1);
-        d.getAllData().length.should.equal(1);
-        d.insert({ a: 3 }, function () {
-          d.persistence.datafileSize.should.equal(2);
-          d.getAllData().length.should.equal(2);
-          d.insert({ a: 3 }, function () {
-            d.persistence.datafileSize.should.equal(3);
-            d.getAllData().length.should.equal(3);
-            done();
-          });
-        });
       });
     });
 
@@ -886,29 +867,6 @@ describe('Database', function () {
       });
     });
 
-    it('datafileSize stays correct upon updates', function (done) {
-      d.insert({ a: 2 }, function () {
-        d.insert({ a: 3 }, function () {
-          d.insert({ a: 5 }, function () {
-            d.persistence.datafileSize.should.equal(3);
-            d.getAllData().length.should.equal(3);
-
-            d.update({ a: 3 }, { $set: { a: 4 } }, {}, function () {
-              d.persistence.datafileSize.should.equal(4);
-              d.getAllData().length.should.equal(3);
-
-              d.update({ a: { $in: [2, 4] } }, { $set: { a: 5 } }, { multi: true }, function () {
-                d.persistence.datafileSize.should.equal(6);
-                d.getAllData().length.should.equal(3);
-
-                done();
-              });
-            });
-          });
-        });
-      });
-    });
-
   });   // ==== End of 'Update' ==== //
 
 
@@ -1058,29 +1016,6 @@ describe('Database', function () {
       });
     });
 
-    it('datafileSize stays correct upon removes', function (done) {
-      d.insert({ a: 2 }, function () {
-        d.insert({ a: 3 }, function () {
-          d.insert({ a: 5 }, function () {
-            d.persistence.datafileSize.should.equal(3);
-            d.getAllData().length.should.equal(3);
-
-            d.remove({ a: 3 }, {}, function () {
-              d.persistence.datafileSize.should.equal(4);
-              d.getAllData().length.should.equal(2);
-
-              d.remove({ a: { $in: [2, 5] } }, { multi: true }, function () {
-                d.persistence.datafileSize.should.equal(6);
-                d.getAllData().length.should.equal(0);
-
-                done();
-              });
-            });
-          });
-        });
-      });
-    });
-
   });   // ==== End of 'Remove' ==== //
 
 
@@ -1096,12 +1031,10 @@ describe('Database', function () {
           ;
 
         d.getAllData().length.should.equal(0);
-        d.persistence.datafileSize.should.equal(0);
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
             d.getAllData().length.should.equal(3);
-            d.persistence.datafileSize.should.equal(3);
 
             assert.deepEqual(Object.keys(d.indexes), ['_id']);
 
@@ -1125,12 +1058,10 @@ describe('Database', function () {
           ;
 
         d.getAllData().length.should.equal(0);
-        d.persistence.datafileSize.should.equal(0);
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
             d.getAllData().length.should.equal(2);
-            d.persistence.datafileSize.should.equal(2);
 
             assert.deepEqual(Object.keys(d.indexes), ['_id']);
 
@@ -1182,7 +1113,6 @@ describe('Database', function () {
           ;
 
         d.getAllData().length.should.equal(0);
-        d.persistence.datafileSize.should.equal(0);
 
         d.ensureIndex({ fieldName: 'z' });
         d.indexes.z.fieldName.should.equal('z');
@@ -1198,7 +1128,6 @@ describe('Database', function () {
               ;
 
             d.getAllData().length.should.equal(3);
-            d.persistence.datafileSize.should.equal(3);
 
             d.indexes.z.tree.getNumberOfKeys().should.equal(3);
             d.indexes.z.tree.search('1')[0].should.equal(doc1);
@@ -1218,7 +1147,6 @@ describe('Database', function () {
           ;
 
         d.getAllData().length.should.equal(0);
-        d.persistence.datafileSize.should.equal(0);
 
         d.ensureIndex({ fieldName: 'z' });
         d.ensureIndex({ fieldName: 'a' });
@@ -1233,7 +1161,6 @@ describe('Database', function () {
               ;
 
             d.getAllData().length.should.equal(3);
-            d.persistence.datafileSize.should.equal(3);
 
             d.indexes.z.tree.getNumberOfKeys().should.equal(3);
             d.indexes.z.tree.search('1')[0].should.equal(doc1);
@@ -1258,7 +1185,6 @@ describe('Database', function () {
           ;
 
         d.getAllData().length.should.equal(0);
-        d.persistence.datafileSize.should.equal(0);
 
         d.ensureIndex({ fieldName: 'z', unique: true });
         d.indexes.z.tree.getNumberOfKeys().should.equal(0);
@@ -1268,7 +1194,6 @@ describe('Database', function () {
             err.errorType.should.equal('uniqueViolated');
             err.key.should.equal("1");
             d.getAllData().length.should.equal(0);
-            d.persistence.datafileSize.should.equal(0);
             d.indexes.z.tree.getNumberOfKeys().should.equal(0);
 
             done();

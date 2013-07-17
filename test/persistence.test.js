@@ -32,7 +32,6 @@ describe('Persistence', function () {
     , function (cb) {
         d.loadDatabase(function (err) {
           assert.isNull(err);
-          d.persistence.datafileSize.should.equal(0);
           d.getAllData().length.should.equal(0);
           return cb();
         });
@@ -150,34 +149,6 @@ describe('Persistence', function () {
             done();
           });
         })
-      });
-    });
-  });
-
-  it('datafileSize is the size of the dataset upon a databaseLoad', function (done) {
-    var now = new Date()
-      , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-                  model.serialize({ _id: "2", hello: 'world' }) + '\n' +
-                  model.serialize({ _id: "3", nested: { today: now } })
-      ;
-
-    d.getAllData().length.should.equal(0);
-    d.persistence.datafileSize.should.equal(0);
-
-    fs.writeFile(testDb, rawData, 'utf8', function () {
-      d.loadDatabase(function () {
-        d.getAllData().length.should.equal(3);
-        d.persistence.datafileSize.should.equal(3);
-
-        d.find({}, function (err, docs) {
-          docs.sort(function (a, b) { return a._id - b._id; });
-          docs.length.should.equal(3);
-          _.isEqual(docs[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-          _.isEqual(docs[1], { _id: "2", hello: 'world' }).should.equal(true);
-          _.isEqual(docs[2], { _id: "3", nested: { today: now } }).should.equal(true);
-
-          done();
-        });
       });
     });
   });
