@@ -164,6 +164,19 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 });
 ```
 
+#### Counting objects
+Similar to `find`, you can count the number of matching documents by calling `count`. For example
+
+```javascript
+// Using same datastore as above
+
+// Count all planets in the solar system
+db.count({ system: 'solar' }, function (err, count) {
+  // count equals to 3
+  // If no document is found, count is 0
+});
+```
+
 #### Operators ($lt, $lte, $gt, $gte, $in, $nin, $ne, $exists, $regex)
 The syntax is `{ field: { $op: value } }` where `$op` is any comparison operator:  
 

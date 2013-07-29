@@ -484,6 +484,90 @@ describe('Database', function () {
 
   });   // ==== End of 'Find' ==== //
 
+  describe('Count', function() {
+
+    it('Count all documents if an empty query is used', function (done) {
+      async.waterfall([
+      function (cb) {
+        d.insert({ somedata: 'ok' }, function (err) {
+          d.insert({ somedata: 'another', plus: 'additional data' }, function (err) {
+            d.insert({ somedata: 'again' }, function (err) { return cb(err); });
+          });
+        });
+      }
+      , function (cb) {   // Test with empty object
+        d.count({}, function (err, docs) {
+          assert.isNull(err);
+          docs.should.equal(3);
+          return cb();
+        });
+      }
+      ], done);
+    });
+
+    it('Count all documents matching a basic query', function (done) {
+      async.waterfall([
+      function (cb) {
+        d.insert({ somedata: 'ok' }, function (err) {
+          d.insert({ somedata: 'again', plus: 'additional data' }, function (err) {
+            d.insert({ somedata: 'again' }, function (err) { return cb(err); });
+          });
+        });
+      }
+      , function (cb) {   // Test with query that will return docs
+        d.count({ somedata: 'again' }, function (err, docs) {
+          assert.isNull(err);
+          docs.should.equal(2);
+          return cb();
+        });
+      }
+      , function (cb) {   // Test with query that doesn't match anything
+        d.count({ somedata: 'nope' }, function (err, docs) {
+          assert.isNull(err);
+          docs.should.equal(0);
+          return cb();
+        });
+      }
+      ], done);
+    });
+
+    it('Array fields match if any element matches', function (done) {
+      d.insert({ fruits: ['pear', 'apple', 'banana'] }, function (err, doc1) {
+        d.insert({ fruits: ['coconut', 'orange', 'pear'] }, function (err, doc2) {
+          d.insert({ fruits: ['banana'] }, function (err, doc3) {
+            d.count({ fruits: 'pear' }, function (err, docs) {
+              assert.isNull(err);
+              docs.should.equal(2);
+
+              d.count({ fruits: 'banana' }, function (err, docs) {
+                assert.isNull(err);
+                docs.should.equal(2);
+
+                d.count({ fruits: 'doesntexist' }, function (err, docs) {
+                  assert.isNull(err);
+                  docs.should.equal(0);
+
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it('Returns an error if the query is not well formed', function (done) {
+      d.insert({ hello: 'world' }, function () {
+        d.count({ $or: { hello: 'world' } }, function (err, docs) {
+          assert.isDefined(err);
+          assert.isUndefined(docs);
+
+	  done();
+        });
+      });
+    });
+
+  }); 
 
   describe('Update', function () {
 
