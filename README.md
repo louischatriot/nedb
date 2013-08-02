@@ -27,6 +27,7 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 * <a href="#creatingloading-a-database">Creating/loading a database</a>
 * <a href="#inserting-documents">Inserting documents</a>
 * <a href="#finding-documents">Finding documents</a>
+* <a href="#counting-documents">Counting documents</a>
 * <a href="#updating-documents">Updating documents</a>
 * <a href="#removing-documents">Removing documents</a>
 * <a href="#indexing">Indexing</a>
@@ -164,19 +165,6 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 });
 ```
 
-#### Counting objects
-Similar to `find`, you can count the number of matching documents by calling `count`. For example
-
-```javascript
-// Using same datastore as above
-
-// Count all planets in the solar system
-db.count({ system: 'solar' }, function (err, count) {
-  // count equals to 3
-  // If no document is found, count is 0
-});
-```
-
 #### Operators ($lt, $lte, $gt, $gte, $in, $nin, $ne, $exists, $regex)
 The syntax is `{ field: { $op: value } }` where `$op` is any comparison operator:  
 
@@ -254,6 +242,21 @@ db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }], inhabited: true }, fun
   // docs contains Earth
 });
 
+```
+
+### Counting documents
+With the same syntax as `find`, you can count the number of matching documents by using `count`. For example:
+
+```javascript
+// Count all planets in the solar system
+db.count({ system: 'solar' }, function (err, count) {
+  // count equals to 3
+});
+
+// Count all documents in the datastore
+db.count({}, function (err, count) {
+  // count equals to 4
+});
 ```
 
 ### Updating documents
