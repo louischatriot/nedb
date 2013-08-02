@@ -245,7 +245,7 @@ db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }], inhabited: true }, fun
 ```
 
 ### Counting documents
-With the same syntax as `find`, you can count the number of matching documents by using `count`. For example:
+You can use `count` to count documents. It has the same syntax as `find`. For example:
 
 ```javascript
 // Count all planets in the solar system
