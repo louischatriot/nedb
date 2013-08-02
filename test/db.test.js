@@ -562,7 +562,7 @@ describe('Database', function () {
           assert.isDefined(err);
           assert.isUndefined(docs);
 
-	  done();
+	      done();
         });
       });
     });
