@@ -296,6 +296,48 @@ describe('Model', function () {
         _.isEqual(modified, { yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } }).should.equal(true);
       });
     });   // End of '$set modifier'
+	
+	describe('$unset modifier', function () {
+	
+	  it('Can delete a field, not throwing an error if the field doesnt exist', function () {
+		var obj, updateQuery, modified;
+	  
+        obj = { yup: 'yes', other: 'also' }
+        updateQuery = { $unset: { yup: true } }
+        modified = model.modify(obj, updateQuery);
+		assert.deepEqual(modified, { other: 'also' });
+
+        obj = { yup: 'yes', other: 'also' }
+        updateQuery = { $unset: { nope: true } }
+        modified = model.modify(obj, updateQuery);
+		assert.deepEqual(modified, obj);
+		
+        obj = { yup: 'yes', other: 'also' }
+        updateQuery = { $unset: { nope: true, other: true } }
+        modified = model.modify(obj, updateQuery);
+		assert.deepEqual(modified, { yup: 'yes' });
+	  });
+	  
+      it('Can unset sub-fields and entire nested documents', function () {
+		var obj, updateQuery, modified;
+	  
+        obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
+        updateQuery = { $unset: { nested: true } }
+        modified = model.modify(obj, updateQuery);
+		assert.deepEqual(modified, { yup: 'yes' });
+	  
+        obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
+        updateQuery = { $unset: { 'nested.a': true } }
+        modified = model.modify(obj, updateQuery);
+		assert.deepEqual(modified, { yup: 'yes', nested: { b: 'yeah' } });
+	  
+        obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
+        updateQuery = { $unset: { 'nested.a': true, 'nested.b': true } }
+        modified = model.modify(obj, updateQuery);
+		assert.deepEqual(modified, { yup: 'yes', nested: {} });
+      });
+	  
+	});   // End of '$unset modifier'
 
     describe('$inc modifier', function () {
       it('Throw an error if you try to use it with a non-number or on a non number field', function () {
