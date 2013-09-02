@@ -1004,7 +1004,7 @@ describe('Database', function () {
       });
     });
     
-    it.skip('If an index constraint is violated by an update, all changes should be rolled back', function (done) {
+    it('If an index constraint is violated by an update, all changes should be rolled back', function (done) {
       d.ensureIndex({ fieldName: 'a', unique: true });
       d.insert({ a: 4 }, function (err, doc1) {
         d.insert({ a: 5 }, function (err, doc2) {
@@ -1016,8 +1016,8 @@ describe('Database', function () {
               var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
                 , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
                 ;
-				
-              // All changes rollbacked, including those that didn't trigger an error
+
+              // All changes rolled back, including those that didn't trigger an error
               d1.a.should.equal(4);
               d2.a.should.equal(5);
 
