@@ -562,14 +562,14 @@ describe('Database', function () {
           assert.isDefined(err);
           assert.isUndefined(docs);
 
-	      done();
+          done();
         });
       });
     });
 
   }); 
 
-  describe.only('Update', function () {
+  describe('Update', function () {
 
     it("If the query doesn't match anything, database is not modified", function (done) {
       async.waterfall([
@@ -950,41 +950,83 @@ describe('Database', function () {
         });
       });
     });
-	
-	it('Can update without the options arg (will use defaults then)', function (done) {
+    
+    it('Can update without the options arg (will use defaults then)', function (done) {
       d.insert({ a:1, hello: 'world' }, function (err, doc1) {
         d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
           d.insert({ a:5, hello: 'pluton' }, function (err, doc3) {
-			d.update({ a: 2 }, { $inc: { a: 10 } }, function (err, nr) {
-			  assert.isNull(err);
-			  nr.should.equal(1);
-			  d.find({}, function (err, docs) {
-				var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
-				  , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
-				  , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
-				  ;
-				  
-				d1.a.should.equal(1);
-				d2.a.should.equal(12);
-				d3.a.should.equal(5);
-				
-				done();
-			  });
-			});
+            d.update({ a: 2 }, { $inc: { a: 10 } }, function (err, nr) {
+              assert.isNull(err);
+              nr.should.equal(1);
+              d.find({}, function (err, docs) {
+                var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
+                  , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
+                  , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
+                  ;
+                  
+                d1.a.should.equal(1);
+                d2.a.should.equal(12);
+                d3.a.should.equal(5);
+                
+                done();
+              });
+            });
           });
         });
       });
-	});
+    });
 
-	it('If a multi update fails on one document, previous updates should be rolled back', function (done) {
-	  throw 'TODO';
-	  done();
-	});
-	
-	it('If an index constraint is violated by an update, all changes should be rolled back', function (done) {
-	  throw 'TODO';
-	  done();
-	});
+    it('If a multi update fails on one document, previous updates should be rolled back', function (done) {
+      d.ensureIndex({ fieldName: 'a' });
+      d.insert({ a: 4 }, function (err, doc1) {
+        d.insert({ a: 5 }, function (err, doc2) {
+          d.insert({ a: 'abc' }, function (err, doc3) {
+            // With this query, candidates are always returned in the order 4, 5, 'abc' so it's always the last one which fails
+            d.update({ a: { $in: [4, 5, 'abc'] } }, { $inc: { a: 10 } }, { multi: true }, function (err) {
+              assert.isDefined(err);
+              
+              d.find({}, function (err, docs) {
+                var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
+                  , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
+                  , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
+                  ;
+
+                // All changes rollbacked, including those that didn't trigger an error
+                d1.a.should.equal(4);
+                d2.a.should.equal(5);
+                d3.a.should.equal('abc');
+
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+    
+    it.only('If an index constraint is violated by an update, all changes should be rolled back', function (done) {
+      d.ensureIndex({ fieldName: 'a', unique: true });
+      d.insert({ a: 4 }, function (err, doc1) {
+        d.insert({ a: 5 }, function (err, doc2) {
+          // With this query, candidates are always returned in the order 4, 5, 'abc' so it's always the last one which fails
+           d.update({ a: { $in: [4, 5, 'abc'] } }, { $set: { a: 10 } }, { multi: true }, function (err) {
+            assert.isDefined(err);
+              
+            d.find({}, function (err, docs) {
+              var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
+                , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
+                ;
+				
+              // All changes rollbacked, including those that didn't trigger an error
+              d1.a.should.equal(4);
+              d2.a.should.equal(5);
+
+              done();
+            });
+          });
+        });
+      });
+    });
 
   });   // ==== End of 'Update' ==== //
 
@@ -1134,31 +1176,31 @@ describe('Database', function () {
         });
       });
     });
-	
-	it('Can remove without the options arg (will use defaults then)', function (done) {
+    
+    it('Can remove without the options arg (will use defaults then)', function (done) {
       d.insert({ a:1, hello: 'world' }, function (err, doc1) {
         d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
           d.insert({ a:5, hello: 'pluton' }, function (err, doc3) {
-			d.remove({ a: 2 }, function (err, nr) {
-			  assert.isNull(err);
-			  nr.should.equal(1);
-			  d.find({}, function (err, docs) {
-				var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
-				  , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
-				  , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
-				  ;
-				  
-				d1.a.should.equal(1);
-				assert.isUndefined(d2);
-				d3.a.should.equal(5);
-				
-				done();
-			  });
-			});
+            d.remove({ a: 2 }, function (err, nr) {
+              assert.isNull(err);
+              nr.should.equal(1);
+              d.find({}, function (err, docs) {
+                var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
+                  , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
+                  , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
+                  ;
+                  
+                d1.a.should.equal(1);
+                assert.isUndefined(d2);
+                d3.a.should.equal(5);
+                
+                done();
+              });
+            });
           });
         });
       });
-	});
+    });
 
   });   // ==== End of 'Remove' ==== //
 
