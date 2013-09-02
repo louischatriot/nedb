@@ -950,6 +950,31 @@ describe('Database', function () {
         });
       });
     });
+	
+	it('Can update without the options arg (will use defaults then)', function (done) {
+      d.insert({ a:1, hello: 'world' }, function (err, doc1) {
+        d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
+          d.insert({ a:5, hello: 'pluton' }, function (err, doc3) {
+			d.update({ a: 2 }, { $inc: { a: 10 } }, function (err, nr) {
+			  assert.isNull(err);
+			  nr.should.equal(1);
+			  d.find({}, function (err, docs) {
+				var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
+				  , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
+				  , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
+				  ;
+				  
+				d1.a.should.equal(1);
+				d2.a.should.equal(12);
+				d3.a.should.equal(5);
+				
+				done();
+			  });
+			});
+          });
+        });
+      });
+	});
 
   });   // ==== End of 'Update' ==== //
 
