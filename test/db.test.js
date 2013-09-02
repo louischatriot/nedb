@@ -979,7 +979,7 @@ describe('Database', function () {
   });   // ==== End of 'Update' ==== //
 
 
-  describe('Remove', function () {
+  describe.only('Remove', function () {
 
     it('Can remove multiple documents', function (done) {
       var id1, id2, id3;
