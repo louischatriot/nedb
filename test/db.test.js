@@ -984,20 +984,22 @@ describe('Database', function () {
             // With this query, candidates are always returned in the order 4, 5, 'abc' so it's always the last one which fails
             d.update({ a: { $in: [4, 5, 'abc'] } }, { $inc: { a: 10 } }, { multi: true }, function (err) {
               assert.isDefined(err);
-              
-              d.find({}, function (err, docs) {
-                var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
+
+              // No index modified
+              _.each(d.indexes, function (index) {
+                var docs = index.getAll()
+                  , d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
                   , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
                   , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
                   ;
 
-                // All changes rollbacked, including those that didn't trigger an error
+                // All changes rolled back, including those that didn't trigger an error
                 d1.a.should.equal(4);
                 d2.a.should.equal(5);
                 d3.a.should.equal('abc');
-
-                done();
               });
+ 
+              done();
             });
           });
         });
@@ -1011,18 +1013,19 @@ describe('Database', function () {
           // With this query, candidates are always returned in the order 4, 5, 'abc' so it's always the last one which fails
            d.update({ a: { $in: [4, 5, 'abc'] } }, { $set: { a: 10 } }, { multi: true }, function (err) {
             assert.isDefined(err);
-              
-            d.find({}, function (err, docs) {
-              var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
-                , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
-                ;
-
-              // All changes rolled back, including those that didn't trigger an error
+			
+            // Check that no index was modified
+            _.each(d.indexes, function (index) {
+              var docs = index.getAll()
+              , d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
+              , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
+              ;
+			  
               d1.a.should.equal(4);
               d2.a.should.equal(5);
-
-              done();
             });
+            
+            done();
           });
         });
       });
