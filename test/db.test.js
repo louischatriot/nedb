@@ -569,7 +569,7 @@ describe('Database', function () {
 
   }); 
 
-  describe('Update', function () {
+  describe.only('Update', function () {
 
     it("If the query doesn't match anything, database is not modified", function (done) {
       async.waterfall([
@@ -974,6 +974,16 @@ describe('Database', function () {
           });
         });
       });
+	});
+
+	it('If a multi update fails on one document, previous updates should be rolled back', function (done) {
+	  throw 'TODO';
+	  done();
+	});
+	
+	it('If an index constraint is violated by an update, all changes should be rolled back', function (done) {
+	  throw 'TODO';
+	  done();
 	});
 
   });   // ==== End of 'Update' ==== //
