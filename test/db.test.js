@@ -1004,7 +1004,7 @@ describe('Database', function () {
       });
     });
     
-    it.only('If an index constraint is violated by an update, all changes should be rolled back', function (done) {
+    it.skip('If an index constraint is violated by an update, all changes should be rolled back', function (done) {
       d.ensureIndex({ fieldName: 'a', unique: true });
       d.insert({ a: 4 }, function (err, doc1) {
         d.insert({ a: 5 }, function (err, doc2) {
