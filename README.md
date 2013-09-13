@@ -264,7 +264,7 @@ db.count({}, function (err, count) {
 * `query` is the same kind of finding query you use with `find` and `findOne`
 * `update` specifies how the documents should be modified. It is either a new document or a set of modifiers (you cannot use both together, it doesn't make sense!)
   * A new document will replace the matched docs
-  * The modifiers create the fields they need to modify if they don't exist, and you can apply them to subdocs. Available field modifiers are `$set` to change a field's value, `$unset` to delete a field and `$inc` to increment a field's value. To work on arrays, you have `$push`, `$pop`, `$addToSet`, and the special `$each`. See examples below for the syntax.
+  * The modifiers create the fields they need to modify if they don't exist, and you can apply them to subdocs. Available field modifiers are `$set` to change a field's value, `$unset` to delete a field and `$inc` to increment a field's value. To work on arrays, you have `$push`, `$pop`, `$addToSet`, `$pull`, and the special `$each`. See examples below for the syntax.
 * `options` is an object with two possible parameters
   * `multi` (defaults to `false`) which allows the modification of several documents if set to true
   * `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything
@@ -348,6 +348,12 @@ db.update({ _id: 'id6' }, { $pop: { fruits: 1 } }, {}, function () {
 db.update({ _id: 'id6' }, { $addToSet: { fruits: 'apple' } }, {}, function () {
   // The fruits array didn't change
   // If we had used a fruit not in the array, e.g. 'banana', it would have been added to the array
+});
+
+// $pull removes all instances of a value from an existing array
+// Equality is deep-checked
+db.update({ _id: 'id6' }, { $pull: { fruits: 'apple' } }, {}, function () {
+  // Now the fruits array is ['orange', 'pear']
 });
 
 // $each can be used to $push or $addToSet multiple values at once
