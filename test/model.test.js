@@ -541,6 +541,51 @@ describe('Model', function () {
 
     });   // End of '$pop modifier'
 
+    describe('$pull modifier', function () {
+
+      it('Can remove an element from a set', function () {
+        var obj = { arr: ['hello', 'world'] }
+          , modified;
+
+        modified = model.modify(obj, { $pull: { arr: 'world' } });
+        assert.deepEqual(modified, { arr: ['hello'] });
+
+        obj = { arr: ['hello'] };
+        modified = model.modify(obj, { $pull: { arr: 'world' } });
+        assert.deepEqual(modified, { arr: ['hello'] });
+      });
+
+      it('Can remove multiple matching elements', function () {
+        var obj = { arr: ['hello', 'world', 'hello', 'world'] }
+          , modified;
+
+        modified = model.modify(obj, { $pull: { arr: 'world' } });
+        assert.deepEqual(modified, { arr: ['hello', 'hello'] });
+      });
+
+      it('Throw if we try to pull from a non-array', function () {
+        var obj = { arr: 'hello' }
+          , modified;
+
+        (function () {
+          modified = model.modify(obj, { $pull: { arr: 'world' } });
+        }).should.throw();
+      });
+
+      it('Use deep-equality to check whether we can remove a value from a set', function () {
+        var obj = { arr: [{ b: 2 }, { b: 3 }] }
+          , modified;
+
+        modified = model.modify(obj, { $pull: { arr: { b: 3 } } });
+        assert.deepEqual(modified, { arr: [ { b: 2 } ] });
+
+        obj = { arr: [ { b: 2 } ] }
+        modified = model.modify(obj, { $pull: { arr: { b: 3 } } });
+        assert.deepEqual(modified, { arr: [{ b: 2 }] });
+      });
+
+    });   // End of '$pull modifier'
+
   });   // ==== End of 'Modifying documents' ==== //
 
 
