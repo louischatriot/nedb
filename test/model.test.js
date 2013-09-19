@@ -165,6 +165,10 @@ describe('Model', function () {
 
       model.checkObject(obj);
     });
+	
+	it.only('Can check if an object is a primitive or not', function () {
+	
+	});
 
   });   // ==== End of 'Object checking' ==== //
 
@@ -200,7 +204,7 @@ describe('Model', function () {
     });
 
   });   // ==== End of 'Deep copying' ==== //
-
+  
 
   describe('Modifying documents', function () {
 
