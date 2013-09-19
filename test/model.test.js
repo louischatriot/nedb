@@ -541,7 +541,7 @@ describe('Model', function () {
 
     });   // End of '$pop modifier'
 
-    describe('$pull modifier', function () {
+    describe.skip('$pull modifier', function () {
 
       it('Can remove an element from a set', function () {
         var obj = { arr: ['hello', 'world'] }
@@ -583,6 +583,19 @@ describe('Model', function () {
         modified = model.modify(obj, { $pull: { arr: { b: 3 } } });
         assert.deepEqual(modified, { arr: [{ b: 2 }] });
       });
+	  
+	  it('Can use any kind of nedb query with $pull', function () {
+		var obj = { arr: [4, 7, 12, 2], other: 'yup' }
+		  , modified
+		  ;
+	  
+//        modified = model.modify(obj, { $pull: { arr: { $gte: 5 } } });
+//        assert.deepEqual(modified, { arr: [4, 2], other: 'yup' });
+		
+//		obj = { arr: [{ b: 4 }, { b: 7 }, { b: 1 }], other: 'yeah' };
+//        modified = model.modify(obj, { $pull: { arr: { b: { $gte: 5} } } });
+//        assert.deepEqual(modified, { arr: [{ b: 4 }, { b: 1 }], other: 'yeah' });
+	  });
 
     });   // End of '$pull modifier'
 
