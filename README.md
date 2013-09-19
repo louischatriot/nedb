@@ -350,11 +350,15 @@ db.update({ _id: 'id6' }, { $addToSet: { fruits: 'apple' } }, {}, function () {
   // If we had used a fruit not in the array, e.g. 'banana', it would have been added to the array
 });
 
-// $pull removes all instances of a value from an existing array
-// Equality is deep-checked
+// $pull removes all values matching a value or even any NeDB query from the array
 db.update({ _id: 'id6' }, { $pull: { fruits: 'apple' } }, {}, function () {
   // Now the fruits array is ['orange', 'pear']
 });
+db.update({ _id: 'id6' }, { $pull: { fruits: $in: ['apple', 'pear'] } }, {}, function () {
+  // Now the fruits array is ['orange']
+});
+
+
 
 // $each can be used to $push or $addToSet multiple values at once
 // This example works the same way with $addToSet

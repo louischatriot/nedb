@@ -165,10 +165,21 @@ describe('Model', function () {
 
       model.checkObject(obj);
     });
-	
-	it.only('Can check if an object is a primitive or not', function () {
-	
-	});
+    
+    it('Can check if an object is a primitive or not', function () {
+      model.isPrimitiveType(5).should.equal(true);
+      model.isPrimitiveType('sdsfdfs').should.equal(true);
+      model.isPrimitiveType(0).should.equal(true);
+      model.isPrimitiveType(true).should.equal(true);
+      model.isPrimitiveType(false).should.equal(true);
+      model.isPrimitiveType(new Date()).should.equal(true);
+      model.isPrimitiveType([]).should.equal(true);
+      model.isPrimitiveType([3, 'try']).should.equal(true);
+      model.isPrimitiveType(null).should.equal(true);
+
+      model.isPrimitiveType({}).should.equal(false);
+      model.isPrimitiveType({ a: 42 }).should.equal(false);
+    });
 
   });   // ==== End of 'Object checking' ==== //
 
@@ -300,48 +311,48 @@ describe('Model', function () {
         _.isEqual(modified, { yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } }).should.equal(true);
       });
     });   // End of '$set modifier'
-	
-	describe('$unset modifier', function () {
-	
-	  it('Can delete a field, not throwing an error if the field doesnt exist', function () {
-		var obj, updateQuery, modified;
-	  
+    
+    describe('$unset modifier', function () {
+    
+      it('Can delete a field, not throwing an error if the field doesnt exist', function () {
+        var obj, updateQuery, modified;
+      
         obj = { yup: 'yes', other: 'also' }
         updateQuery = { $unset: { yup: true } }
         modified = model.modify(obj, updateQuery);
-		assert.deepEqual(modified, { other: 'also' });
+        assert.deepEqual(modified, { other: 'also' });
 
         obj = { yup: 'yes', other: 'also' }
         updateQuery = { $unset: { nope: true } }
         modified = model.modify(obj, updateQuery);
-		assert.deepEqual(modified, obj);
-		
+        assert.deepEqual(modified, obj);
+        
         obj = { yup: 'yes', other: 'also' }
         updateQuery = { $unset: { nope: true, other: true } }
         modified = model.modify(obj, updateQuery);
-		assert.deepEqual(modified, { yup: 'yes' });
-	  });
-	  
+        assert.deepEqual(modified, { yup: 'yes' });
+      });
+      
       it('Can unset sub-fields and entire nested documents', function () {
-		var obj, updateQuery, modified;
-	  
+        var obj, updateQuery, modified;
+      
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { nested: true } }
         modified = model.modify(obj, updateQuery);
-		assert.deepEqual(modified, { yup: 'yes' });
-	  
+        assert.deepEqual(modified, { yup: 'yes' });
+      
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { 'nested.a': true } }
         modified = model.modify(obj, updateQuery);
-		assert.deepEqual(modified, { yup: 'yes', nested: { b: 'yeah' } });
-	  
+        assert.deepEqual(modified, { yup: 'yes', nested: { b: 'yeah' } });
+      
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { 'nested.a': true, 'nested.b': true } }
         modified = model.modify(obj, updateQuery);
-		assert.deepEqual(modified, { yup: 'yes', nested: {} });
+        assert.deepEqual(modified, { yup: 'yes', nested: {} });
       });
-	  
-	});   // End of '$unset modifier'
+      
+    });   // End of '$unset modifier'
 
     describe('$inc modifier', function () {
       it('Throw an error if you try to use it with a non-number or on a non number field', function () {
@@ -545,7 +556,7 @@ describe('Model', function () {
 
     });   // End of '$pop modifier'
 
-    describe.skip('$pull modifier', function () {
+    describe('$pull modifier', function () {
 
       it('Can remove an element from a set', function () {
         var obj = { arr: ['hello', 'world'] }
@@ -587,19 +598,19 @@ describe('Model', function () {
         modified = model.modify(obj, { $pull: { arr: { b: 3 } } });
         assert.deepEqual(modified, { arr: [{ b: 2 }] });
       });
-	  
-	  it('Can use any kind of nedb query with $pull', function () {
-		var obj = { arr: [4, 7, 12, 2], other: 'yup' }
-		  , modified
-		  ;
-	  
-//        modified = model.modify(obj, { $pull: { arr: { $gte: 5 } } });
-//        assert.deepEqual(modified, { arr: [4, 2], other: 'yup' });
-		
-//		obj = { arr: [{ b: 4 }, { b: 7 }, { b: 1 }], other: 'yeah' };
-//        modified = model.modify(obj, { $pull: { arr: { b: { $gte: 5} } } });
-//        assert.deepEqual(modified, { arr: [{ b: 4 }, { b: 1 }], other: 'yeah' });
-	  });
+      
+      it('Can use any kind of nedb query with $pull', function () {
+        var obj = { arr: [4, 7, 12, 2], other: 'yup' }
+          , modified
+          ;
+      
+        modified = model.modify(obj, { $pull: { arr: { $gte: 5 } } });
+        assert.deepEqual(modified, { arr: [4, 2], other: 'yup' });
+        
+        obj = { arr: [{ b: 4 }, { b: 7 }, { b: 1 }], other: 'yeah' };
+        modified = model.modify(obj, { $pull: { arr: { b: { $gte: 5} } } });
+        assert.deepEqual(modified, { arr: [{ b: 4 }, { b: 1 }], other: 'yeah' });
+      });
 
     });   // End of '$pull modifier'
 
