@@ -113,6 +113,21 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 });
 ```
 
+#### Inserting many documents in bulk
+You can also provide array of documents to `insert` method, and save them all in one disk I/O (therefore a lot faster).
+
+```javascript
+var documents = [
+    { a: 1 },
+    { a: 2 },
+    { a: 3 }
+];
+
+db.insert(documents, function (err, newDocs) {
+  // newDocs is an array of inserted documents
+});
+```
+
 ### Finding documents
 Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
 

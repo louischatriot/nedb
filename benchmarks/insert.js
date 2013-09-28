@@ -26,6 +26,7 @@ async.waterfall([
   }
 , function (cb) { profiler.beginProfiling(); return cb(); }
 , async.apply(commonUtilities.insertDocs, d, n, profiler)
+, async.apply(commonUtilities.insertDocsBulk, d, n, profiler)
 ], function (err) {
   profiler.step("Benchmark finished");
 

@@ -151,6 +151,16 @@ describe('Database', function () {
       });
     });
 
+    it('Cannot insert invalid doc', function (done) {
+      d.insert('something what is not an Object', function (err) {
+        assert.isDefined(err);
+        d.insert(123, function (err) {
+          assert.isDefined(err);
+          done();
+        });
+      });
+    });
+
     it('Cannot insert a doc that has a field beginning with a $ sign', function (done) {
       d.insert({ $something: 'atest' }, function (err) {
         assert.isDefined(err);
@@ -176,6 +186,40 @@ describe('Database', function () {
         d.findOne({ a: 2 }, function (err, doc) {
           doc.hello.should.equal('world');
           done();
+        });
+      });
+    });
+
+    it('Can insert array of docs in bulk', function (done) {
+      d.insert([ { a: 1 }, { a: 2 }, { a: 3 } ], function (err, newDocs) {
+        assert.isNull(err);
+        newDocs.length.should.equal(3);
+        
+        // order of output should be the same as input
+        newDocs[0].a.should.equal(1);
+        newDocs[1].a.should.equal(2);
+        newDocs[2].a.should.equal(3);
+
+        d.find({}, function (err, docs) {
+          docs.length.should.equal(3);
+          done();
+        });
+      });
+    });
+
+    it('When one of docs in array is rejected, all should be rejected', function (done) {
+      d.insert([ { a: 1 }, 'invalid' ], function (err, newDocs) {
+        assert.isDefined(err);
+        assert.isUndefined(newDocs);
+
+        d.insert([ { a: 1 }, { $a: 2 } ], function (err, newDocs) {
+          assert.isDefined(err);
+          assert.isUndefined(newDocs);
+          
+          d.find({}, function (err, docs) {
+            docs.length.should.equal(0);
+            done();
+          });
         });
       });
     });
