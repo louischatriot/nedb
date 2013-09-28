@@ -114,15 +114,10 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 ```
 
 #### Inserting many documents in bulk
-You can also provide array of documents to `insert` method, and save them all in one disk I/O (therefore a lot faster).
+You can also feed `insert` with array of documents, what will save them all to disk in one write operation.
 
 ```javascript
-var documents = [
-    { a: 1 },
-    { a: 2 },
-    { a: 3 }
-];
-
+var documents = [ { a: 1 }, { a: 2 }, { a: 3 } ];
 db.insert(documents, function (err, newDocs) {
   // newDocs is an array of inserted documents
 });
