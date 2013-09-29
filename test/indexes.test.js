@@ -120,6 +120,19 @@ describe('Indexes', function () {
       assert.deepEqual(idx.tree.search('world'), []);
       assert.deepEqual(idx.tree.search('bloup'), []);
     });
+	
+	describe.only('Array fields', function () {
+	
+	  it('Inserts one entry per unique array element in the index', function () {
+		var obj = { arr: [], really: 'yeah' }
+		  , idx = new Index({ fieldName: 'tf' })
+		  ;
+		
+		idx.insert(obj);
+		
+	  });
+	
+	});   // ==== End of 'Array fields' ==== //
 
   });   // ==== End of 'Insertion' ==== //
 
