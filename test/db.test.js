@@ -207,6 +207,18 @@ describe('Database', function () {
       });
     });
 
+    it('When empty array given should do nothing (and return empty array of inserted docs)', function (done) {
+      d.insert([], function (err, newDocs) {
+        assert.isNull(err);
+        newDocs.length.should.equal(0);
+
+        d.find({}, function (err, docs) {
+          docs.length.should.equal(0);
+          done();
+        });
+      });
+    });
+
     it('When one of docs in array is rejected, all should be rejected', function (done) {
       d.insert([ { a: 1 }, 'invalid' ], function (err, newDocs) {
         assert.isDefined(err);
