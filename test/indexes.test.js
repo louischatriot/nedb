@@ -123,14 +123,48 @@ describe('Indexes', function () {
 	
 	describe.only('Array fields', function () {
 	
-	  it('Inserts one entry per unique array element in the index', function () {
-		var obj = { arr: [], really: 'yeah' }
-		  , idx = new Index({ fieldName: 'tf' })
-		  ;
-		
-		idx.insert(obj);
-		
+	  it('Inserts one entry per array element in the index', function () {
+      var obj = { tf: ['aa', 'bb'], really: 'yeah' }
+        , obj2 = { tf: 'normal', yes: 'indeed' }
+        , idx = new Index({ fieldName: 'tf' })
+        ;
+      
+      idx.insert(obj);
+      idx.getAll().length.should.equal(2);
+      idx.getAll()[0].should.equal(obj);
+      idx.getAll()[1].should.equal(obj);
+
+      idx.insert(obj2);
+      idx.getAll().length.should.equal(3);
 	  });
+    
+	  it('Inserts one entry per unique array element in the index, the unique constraint only holds across documents', function () {
+      var obj = { tf: ['aa', 'aa'], really: 'yeah' }
+        , obj2 = { tf: ['cc', 'yy', 'cc'], yes: 'indeed' }
+        , idx = new Index({ fieldName: 'tf', unique: true })
+        ;
+      
+      idx.insert(obj);
+      idx.getAll().length.should.equal(1);
+      idx.getAll()[0].should.equal(obj);
+
+      idx.insert(obj2);
+      idx.getAll().length.should.equal(3);
+	  });
+
+	  it('The unique constraint holds across documents', function () {
+      var obj = { tf: ['aa', 'aa'], really: 'yeah' }
+        , obj2 = { tf: ['cc', 'aa', 'cc'], yes: 'indeed' }
+        , idx = new Index({ fieldName: 'tf', unique: true })
+        ;
+      
+      idx.insert(obj);
+      idx.getAll().length.should.equal(1);
+      idx.getAll()[0].should.equal(obj);
+
+      (function () { idx.insert(obj2); }).should.throw();
+	  });
+    
 	
 	});   // ==== End of 'Array fields' ==== //
 
