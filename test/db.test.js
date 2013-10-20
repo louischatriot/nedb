@@ -205,7 +205,7 @@ describe('Database', function () {
     });
     
     it('If a bulk insert violates a constraint, all changes are rolled back', function (done) {
-      var docs = [{ a: 5, b: 'hello' }, { a: 42, b: 'world' }, { a: 5, b: 'bloup' }];
+      var docs = [{ a: 5, b: 'hello' }, { a: 42, b: 'world' }, { a: 5, b: 'bloup' }, { a: 7 }];
     
       d.ensureIndex({ fieldName: 'a', unique: true });
     
