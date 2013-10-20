@@ -180,7 +180,7 @@ describe('Database', function () {
       });
     });
     
-    it.only('Can insert an array of documents at once', function (done) {
+    it('Can insert an array of documents at once', function (done) {
       var docs = [{ a: 5, b: 'hello' }, { a: 42, b: 'world' }];
     
       d.insert(docs, function (err) {
@@ -199,6 +199,23 @@ describe('Database', function () {
           model.deserialize(data[1]).a.should.equal(42);
           model.deserialize(data[1]).b.should.equal('world');
                     
+          done();
+        });
+      });
+    });
+    
+    it('If a bulk insert violates a constraint, all changes are rolled back', function (done) {
+      var docs = [{ a: 5, b: 'hello' }, { a: 42, b: 'world' }, { a: 5, b: 'bloup' }];
+    
+      d.ensureIndex({ fieldName: 'a', unique: true });
+    
+      d.insert(docs, function (err) {
+        assert.isDefined(err);
+        assert.isNotNull(err);
+      
+        d.find({}, function (err, docs) {
+          docs.length.should.equal(0);
+
           done();
         });
       });
