@@ -121,7 +121,7 @@ describe('Indexes', function () {
       assert.deepEqual(idx.tree.search('bloup'), []);
     });
 	
-	describe.only('Array fields', function () {
+	describe('Array fields', function () {
 	
 	  it('Inserts one entry per array element in the index', function () {
       var obj = { tf: ['aa', 'bb'], really: 'yeah' }
@@ -199,7 +199,7 @@ describe('Indexes', function () {
     
     it('If a unique constraint is violated when inserting an array key, roll back all inserts before the key', function () {
       var obj = { tf: ['aa', 'bb'], really: 'yeah' }
-        , obj2 = { tf: ['cc', 'dd', 'aa'], yes: 'indeed' }
+        , obj2 = { tf: ['cc', 'dd', 'aa', 'ee'], yes: 'indeed' }
         , idx = new Index({ fieldName: 'tf', unique: true })
         ;
 
@@ -209,6 +209,7 @@ describe('Indexes', function () {
       idx.getMatching('bb').length.should.equal(1);
       idx.getMatching('cc').length.should.equal(0);
       idx.getMatching('dd').length.should.equal(0);
+      idx.getMatching('ee').length.should.equal(0);
       
       (function () { idx.insert(obj2); }).should.throw();
       idx.getAll().length.should.equal(2);
@@ -216,6 +217,7 @@ describe('Indexes', function () {
       idx.getMatching('bb').length.should.equal(1);
       idx.getMatching('cc').length.should.equal(0);
       idx.getMatching('dd').length.should.equal(0);      
+      idx.getMatching('ee').length.should.equal(0);
     });
 	
 	});   // ==== End of 'Array fields' ==== //
