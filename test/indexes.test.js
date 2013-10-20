@@ -137,6 +137,18 @@ describe('Indexes', function () {
       idx.insert(obj2);
       idx.getAll().length.should.equal(3);
 	  });
+
+	  it('Inserts one entry per array element in the index, type-checked', function () {
+      var obj = { tf: ['42', 42, new Date(42), 42], really: 'yeah' }
+        , idx = new Index({ fieldName: 'tf' })
+        ;
+      
+      idx.insert(obj);
+      idx.getAll().length.should.equal(3);
+      idx.getAll()[0].should.equal(obj);
+      idx.getAll()[1].should.equal(obj);
+      idx.getAll()[2].should.equal(obj);
+	  });
     
 	  it('Inserts one entry per unique array element in the index, the unique constraint only holds across documents', function () {
       var obj = { tf: ['aa', 'aa'], really: 'yeah' }
