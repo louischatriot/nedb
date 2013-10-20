@@ -179,6 +179,30 @@ describe('Database', function () {
         });
       });
     });
+    
+    it.only('Can insert an array of documents at once', function (done) {
+      var docs = [{ a: 5, b: 'hello' }, { a: 42, b: 'world' }];
+    
+      d.insert(docs, function (err) {
+        d.find({}, function (err, docs) {
+          var data;
+        
+          docs.length.should.equal(2);
+          _.find(docs, function (doc) { return doc.a === 5; }).b.should.equal('hello');
+          _.find(docs, function (doc) { return doc.a === 42; }).b.should.equal('world');
+          
+          // The data has been persisted correctly
+          data = _.filter(fs.readFileSync(testDb, 'utf8').split('\n'), function (line) { return line.length > 0; });
+          data.length.should.equal(2);
+          model.deserialize(data[0]).a.should.equal(5);
+          model.deserialize(data[0]).b.should.equal('hello');
+          model.deserialize(data[1]).a.should.equal(42);
+          model.deserialize(data[1]).b.should.equal('world');
+                    
+          done();
+        });
+      });
+    });
 
   });   // ==== End of 'Insert' ==== //
 
