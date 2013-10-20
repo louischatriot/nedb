@@ -113,6 +113,20 @@ db.insert(document, function (err, newDoc) {   // Callback is optional
 });
 ```
 
+You can also bulk-insert an array of documents. This operation is atomic, meaning that if one insert fails due to a unique constraint being violated, all changes are rolled back.
+```javascript
+db.insert([{ a: 5 }, { a: 42 }], function (err, newDocs) {
+  // Two documents were inserted in the database
+  // newDocs is an array with these documents, augmented with their _id
+});
+
+// If there is a unique constraint on field 'a', this will fail
+db.insert([{ a: 5 }, { a: 42 }, { a: 5 }], function (err) {
+  // err is a 'uniqueViolated' error
+  // The database was not modified
+});
+```
+
 ### Finding documents
 Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
 

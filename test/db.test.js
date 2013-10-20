@@ -210,8 +210,7 @@ describe('Database', function () {
       d.ensureIndex({ fieldName: 'a', unique: true });
     
       d.insert(docs, function (err) {
-        assert.isDefined(err);
-        assert.isNotNull(err);
+        err.errorType.should.equal('uniqueViolated');
       
         d.find({}, function (err, docs) {
           docs.length.should.equal(0);
