@@ -177,7 +177,7 @@ describe('Indexes', function () {
       (function () { idx.insert(obj2); }).should.throw();
 	  });
     
-    it('When removing a document, remove it from the index at all array elements', function () {
+    it('When removing a document, remove it from the index at all unique array elements', function () {
       var obj = { tf: ['aa', 'aa'], really: 'yeah' }
         , obj2 = { tf: ['cc', 'aa', 'cc'], yes: 'indeed' }
         , idx = new Index({ fieldName: 'tf' })
@@ -195,6 +195,27 @@ describe('Indexes', function () {
       idx.getMatching('aa').indexOf(obj).should.not.equal(-1);
       idx.getMatching('aa').indexOf(obj2).should.equal(-1);
       idx.getMatching('cc').length.should.equal(0);      
+    });
+    
+    it('If a unique constraint is violated when inserting an array key, roll back all inserts before the key', function () {
+      var obj = { tf: ['aa', 'bb'], really: 'yeah' }
+        , obj2 = { tf: ['cc', 'dd', 'aa'], yes: 'indeed' }
+        , idx = new Index({ fieldName: 'tf', unique: true })
+        ;
+
+      idx.insert(obj);
+      idx.getAll().length.should.equal(2);
+      idx.getMatching('aa').length.should.equal(1);
+      idx.getMatching('bb').length.should.equal(1);
+      idx.getMatching('cc').length.should.equal(0);
+      idx.getMatching('dd').length.should.equal(0);
+      
+      (function () { idx.insert(obj2); }).should.throw();
+      idx.getAll().length.should.equal(2);
+      idx.getMatching('aa').length.should.equal(1);
+      idx.getMatching('bb').length.should.equal(1);
+      idx.getMatching('cc').length.should.equal(0);
+      idx.getMatching('dd').length.should.equal(0);      
     });
 	
 	});   // ==== End of 'Array fields' ==== //
