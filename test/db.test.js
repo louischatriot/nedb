@@ -215,6 +215,7 @@ describe('Database', function () {
       
         d.find({}, function (err, docs) {
           docs.length.should.equal(0);
+          fs.readFileSync(testDb, 'utf8').length.should.equal(0);   // Datafile not written to
 
           done();
         });
