@@ -113,6 +113,42 @@ module.exports.insertDocs = function (d, n, profiler, cb) {
 
 
 /**
+ * Bulk-insert of documents
+ */
+module.exports.insertDocsBulk = function (d, n, profiler, cb) {
+  var beg = new Date()
+    , order = getRandomArray(n)
+    , chunkSize = 50
+    ;
+
+  profiler.step('Begin bulk-inserting ' + n + ' docs in chunks of ' + chunkSize + ' at once');
+
+  function runFrom(i) {
+    var bulk = [];
+    
+    if (i === n) {   // Finished
+      console.log("===== RESULT (bulk insert) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
+      profiler.step('Finished inserting ' + n + ' docs');
+      return cb();
+    }
+
+    while (bulk.length < chunkSize) {
+      bulk.push({ docNumber: order[i] });
+      i += 1;
+      if (i === n) break;
+    }
+
+    d.insert(bulk, function (err) {
+      executeAsap(function () {
+        runFrom(i);
+      });
+    });
+  }
+  runFrom(0);
+};
+
+
+/**
  * Find documents with find
  */
 module.exports.findDocs = function (d, n, profiler, cb) {
