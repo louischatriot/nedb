@@ -227,7 +227,7 @@ describe('Database', function () {
      *
      * So we need a way to check that the callback is called only once and the exception thrown is indeed the client exception
      * Mocha's exception handling mechanism interferes with this since it already registers a listener on uncaughtException
-     * which we need to use since findOne uses I/O so the callback is not called in the same turn of the event loop (so no try/catch)
+     * which we need to use since findOne is not called in the same turn of the event loop (so no try/catch)
      * So we remove all current listeners, put our own which when called will register the former listeners (incl. Mocha's) again.
      *
      * Note: maybe using an in-memory only NeDB would give us an easier solution
