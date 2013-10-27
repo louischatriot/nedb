@@ -124,13 +124,52 @@ module.exports.findDocs = function (d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("===== RESULT (find) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
+      console.log("===== RESULT (find with in selector) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
       profiler.step('Finished finding ' + n + ' docs');
       return cb();
     }
 
     d.find({ docNumber: order[i] }, function (err, docs) {
       if (docs.length !== 1 || docs[0].docNumber !== order[i]) { return cb('One find didnt work'); }
+      executeAsap(function () {
+        runFrom(i + 1);
+      });
+    });
+  }
+  runFrom(0);
+};
+
+
+/**
+ * Find documents with find and the $in operator
+ */
+module.exports.findDocsWithIn = function (d, n, profiler, cb) {
+  var beg = new Date()
+    , order = getRandomArray(n)
+    , ins = [], i, j
+    , arraySize = Math.min(10, n)   // The array for $in needs to be smaller than n (inclusive)
+    ;
+
+  // Preparing all the $in arrays, will take some time
+  for (i = 0; i < n; i += 1) {
+    ins[i] = [];
+    
+    for (j = 0; j < arraySize; j += 1) {
+      ins[i].push((i + j) % n);
+    }
+  }
+      
+  profiler.step("Finding " + n + " documents WITH $IN OPERATOR");
+
+  function runFrom(i) {
+    if (i === n) {   // Finished
+      console.log("===== RESULT (find with in selector) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
+      profiler.step('Finished finding ' + n + ' docs');
+      return cb();
+    }
+
+    d.find({ docNumber: { $in: ins[i] } }, function (err, docs) {
+      if (docs.length !== arraySize) { return cb('One find didnt work'); }
       executeAsap(function () {
         runFrom(i + 1);
       });
