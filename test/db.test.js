@@ -220,6 +220,46 @@ describe('Database', function () {
         });
       });
     });
+    
+    /**
+     * Complicated behavior here. Basically we need to test that when a user function throws an exception, it is not caught
+     * in NeDB and the callback called again, transforming a user error into a NeDB error.
+     *
+     * So we need a way to check that the callback is called only once and the exception thrown is indeed the client exception
+     * Mocha's exception handling mechanism interferes with this since it already registers a listener on uncaughtException
+     * which we need to use since findOne uses I/O so the callback is not called in the same turn of the event loop (so no try/catch)
+     * So we remove all current listeners, put our own which when called will register the former listeners (incl. Mocha's) again.
+     *
+     * Note: maybe using an in-memory only NeDB would give us an easier solution
+     */
+    it('If the callback throws an uncaught execption, dont catch it inside findOne, this is userspace concern', function (done) {
+      var tryCount = 0
+        , currentUncaughtExceptionHandlers = process.listeners('uncaughtException')
+        , i
+        ;
+
+      process.removeAllListeners('uncaughtException');
+      
+      process.on('uncaughtException', function MINE (ex) {
+        for (i = 0; i < currentUncaughtExceptionHandlers.length; i += 1) {
+          process.on('uncaughtException', currentUncaughtExceptionHandlers[i]);
+        }
+      
+        ex.should.equal('SOME EXCEPTION');
+        done();
+      });
+
+      d.insert({ a: 5 }, function () {
+        d.findOne({ a : 5}, function (err, doc) {            
+          if (tryCount === 0) {
+            tryCount += 1;
+            throw 'SOME EXCEPTION';
+          } else {
+            done('Callback was called twice');
+          }
+        });
+      });      
+    });
 
   });   // ==== End of 'Insert' ==== //
 
