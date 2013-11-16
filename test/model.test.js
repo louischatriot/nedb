@@ -1048,7 +1048,30 @@ describe('Model', function () {
     });
 
 
-    describe('Array fields', function () {
+      describe('Query operator array $size', function () {
+
+          it('$size', function () {
+              model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 0 } }).should.equal(false);
+              model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 2 } }).should.equal(false);
+              model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 3 } }).should.equal(true);
+          });
+
+          it('$size operator works with empty arrays', function () {
+              model.match({ childrens: [ ] }, { "childrens": { $size: 0 } }).should.equal(true);
+              model.match({ childrens: [ ] }, { "childrens": { $size: 2 } }).should.equal(false);
+              model.match({ childrens: [ ] }, { "childrens": { $size: 3 } }).should.equal(false);
+          });
+
+          it('Should throw an error if a query operator is used without being applied to an array and comparing to an integer', function () {
+              (function () { model.match({ a: 5 }, { a: { $size: 1 } }); }).should.throw();
+              (function () { model.match({ a: [1, 5] }, { a: { $size: 1.4 } }); }).should.throw();
+              (function () { model.match({ a: [1, 5] }, { a: { $size: 'fdf' } }); }).should.throw();
+          });
+
+      });
+
+
+      describe('Array fields', function () {
 
       it('Field equality', function () {
         model.match({ tags: ['node', 'js', 'db'] }, { tags: 'python' }).should.equal(false);
@@ -1078,6 +1101,14 @@ describe('Model', function () {
         model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 4 } }).should.equal(true);
         model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 8 } }).should.equal(true);
         model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 13 } }).should.equal(true);
+      });
+
+      it('Works also with arrays of objects that are in subdocuments', function () {
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 2 } }).should.equal(false);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 3 } }).should.equal(false);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 4 } }).should.equal(true);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 8 } }).should.equal(true);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 13 } }).should.equal(true);
       });
 
     });
