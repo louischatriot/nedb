@@ -1,5 +1,5 @@
 var Nedb = require('../lib/datastore.js')
-  , db = new Nedb({ filename: 'workspace/rah.db' })
+  , db = new Nedb({ filename: 'workspace/lac.db' })
   ;
 
 // Simulate a crash in 100ms

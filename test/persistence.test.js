@@ -264,14 +264,14 @@ describe('Persistence', function () {
       for (i = 0; i < N; i += 1) {
         toWrite += model.serialize({ _id: customUtils.uid(16), hello: 'world' }) + '\n';
       }        
-      fs.writeFileSync('workspace/rah.db', toWrite, 'utf8');
+      fs.writeFileSync('workspace/lac.db', toWrite, 'utf8');
 
       // Loading it in a separate process that'll crash before finishing the load
       cp = child_process.fork('test_lac/loadAndCrash.test')
       cp.on('message', function (msg) {
         // Let the child process enough time to crash
         setTimeout(function () {
-          fs.readFileSync('workspace/rah.db', 'utf8').length.should.not.equal(0);
+          fs.readFileSync('workspace/lac.db', 'utf8').length.should.not.equal(0);
           done();
         }, 100);
       });
