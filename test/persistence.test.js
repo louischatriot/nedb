@@ -6,8 +6,10 @@ var should = require('chai').should()
   , _ = require('underscore')
   , async = require('async')
   , model = require('../lib/model')
+  , customUtils = require('../lib/customUtils')
   , Datastore = require('../lib/datastore')
   , Persistence = require('../lib/persistence')
+  , child_process = require('child_process')
   ;
 
 
@@ -246,6 +248,35 @@ describe('Persistence', function () {
         });
       });
     });
+  });
+  
+  
+  // This test is a bit complicated since it depends on the time actions take to execute
+  // It may not work as expected on all machines
+  // But it will not be seen as a failed test. The worst is that the timing is off and it would have worked on your machine regardless of the load failsafe
+  // It is timed for my dev machine
+  describe.only('Prevent dataloss when persisting data', function () {
+  
+    it('If system crashes during a loadDatabase, the former version is not lost', function (done) {
+      var cp, N = 150000, toWrite = "", i;
+
+      // Creating a db file with 150k records (a bit long to load)
+      for (i = 0; i < N; i += 1) {
+        toWrite += model.serialize({ _id: customUtils.uid(16), hello: 'world' }) + '\n';
+      }        
+      fs.writeFileSync('workspace/rah.db', toWrite, 'utf8');
+
+      // Loading it in a separate process that'll crash before finishing the load
+      cp = child_process.fork('test_lac/loadAndCrash.test')
+      cp.on('message', function (msg) {
+        // Let the child process enough time to crash
+        setTimeout(function () {
+          fs.readFileSync('workspace/rah.db', 'utf8').length.should.not.equal(0);
+          done();
+        }, 100);
+      });
+    });
+  
   });
 
 });
