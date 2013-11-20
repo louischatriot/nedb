@@ -252,10 +252,17 @@ describe('Persistence', function () {
   
   
   // This test is a bit complicated since it depends on the time actions take to execute
-  // It may not work as expected on all machines
-  // But it will not be seen as a failed test. The worst is that the timing is off and it would have worked on your machine regardless of the load failsafe
-  // It is timed for my dev machine
+  // It may not work as expected on all machines as it is timed for my machine
+  // That's why it is skipped, but all versions of nedb pass this test
   describe.only('Prevent dataloss when persisting data', function () {
+
+	it('Creating a datastore with in memory as true and a bad filename wont cause an error', function () {
+		new Datastore({ filename: 'workspace/bad.db~', inMemoryOnly: true });
+	})
+	
+	it('Creating a persistent datastore with a bad filename will cause an error', function () {
+		(function () { new Datastore({ filename: 'workspace/bad.db~' }); }).should.throw();
+	})  
   
     it('If system crashes during a loadDatabase, the former version is not lost', function (done) {
       var cp, N = 150000, toWrite = "", i;
