@@ -278,7 +278,9 @@ describe('Persistence', function () {
       cp.on('message', function (msg) {
         // Let the child process enough time to crash
         setTimeout(function () {
-          fs.readFileSync('workspace/lac.db', 'utf8').length.should.not.equal(0);
+//          fs.readFileSync('workspace/lac.db', 'utf8').length.should.not.equal(0);
+          console.log(fs.readFileSync('workspace/lac.db').length);
+          console.log(fs.readFileSync('workspace/lac.db~').length);
           done();
         }, 100);
       });
