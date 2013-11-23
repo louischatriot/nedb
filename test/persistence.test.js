@@ -256,15 +256,129 @@ describe('Persistence', function () {
   // That's why it is skipped, but all versions of nedb pass this test
   describe.only('Prevent dataloss when persisting data', function () {
 
-	it('Creating a datastore with in memory as true and a bad filename wont cause an error', function () {
-		new Datastore({ filename: 'workspace/bad.db~', inMemoryOnly: true });
-	})
-	
-	it('Creating a persistent datastore with a bad filename will cause an error', function () {
-		(function () { new Datastore({ filename: 'workspace/bad.db~' }); }).should.throw();
-	})  
+    it('Creating a datastore with in memory as true and a bad filename wont cause an error', function () {
+      new Datastore({ filename: 'workspace/bad.db~', inMemoryOnly: true });
+    })
+    
+    it('Creating a persistent datastore with a bad filename will cause an error', function () {
+      (function () { new Datastore({ filename: 'workspace/bad.db~' }); }).should.throw();
+    })  
   
-    it('If system crashes during a loadDatabase, the former version is not lost', function (done) {
+    it('If no file exists, ensureDatafileIntegrity creates an empty datafile', function (done) {
+      var p = new Persistence({ db: { inMemoryOnly: false, filename: 'workspace/it.db' } });
+    
+      if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
+      if (fs.existsSync('workspace/it.db~')) { fs.unlinkSync('workspace/it.db~'); }
+      
+      fs.existsSync('workspace/it.db').should.equal(false);
+      fs.existsSync('workspace/it.db~').should.equal(false);      
+      
+      p.ensureDatafileIntegrity(function (err) {
+        assert.isNull(err);
+        fs.existsSync('workspace/it.db').should.equal(true);
+        fs.existsSync('workspace/it.db~').should.equal(false);
+        
+        fs.readFileSync('workspace/it.db', 'utf8').should.equal('');
+        
+        done();
+      });
+    });
+  
+    it('If only datafile exists, ensureDatafileIntegrity will use it', function (done) {
+      var p = new Persistence({ db: { inMemoryOnly: false, filename: 'workspace/it.db' } });
+    
+      if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
+      if (fs.existsSync('workspace/it.db~')) { fs.unlinkSync('workspace/it.db~'); }
+      
+      fs.writeFileSync('workspace/it.db', 'something', 'utf8');
+
+      fs.existsSync('workspace/it.db').should.equal(true);
+      fs.existsSync('workspace/it.db~').should.equal(false);      
+      
+      p.ensureDatafileIntegrity(function (err) {
+        assert.isNull(err);
+
+        fs.existsSync('workspace/it.db').should.equal(true);
+        fs.existsSync('workspace/it.db~').should.equal(false);
+        
+        fs.readFileSync('workspace/it.db', 'utf8').should.equal('something');
+        
+        done();
+      });
+    });
+    
+    it('If only temp datafile exists, ensureDatafileIntegrity will use it', function (done) {
+      var p = new Persistence({ db: { inMemoryOnly: false, filename: 'workspace/it.db' } });
+    
+      if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
+      if (fs.existsSync('workspace/it.db~')) { fs.unlinkSync('workspace/it.db~'); }
+      
+      fs.writeFileSync('workspace/it.db~', 'something', 'utf8');
+      
+      fs.existsSync('workspace/it.db').should.equal(false);
+      fs.existsSync('workspace/it.db~').should.equal(true);      
+      
+      p.ensureDatafileIntegrity(function (err) {
+        assert.isNull(err);
+        
+        fs.existsSync('workspace/it.db').should.equal(true);
+        fs.existsSync('workspace/it.db~').should.equal(false);
+        
+        fs.readFileSync('workspace/it.db', 'utf8').should.equal('something');
+        
+        done();
+      });
+    });
+  
+    it('If both files exist and datafile is not empty, ensureDatafileIntegrity will use the datafile', function (done) {
+      var p = new Persistence({ db: { inMemoryOnly: false, filename: 'workspace/it.db' } });
+    
+      if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
+      if (fs.existsSync('workspace/it.db~')) { fs.unlinkSync('workspace/it.db~'); }
+      
+      fs.writeFileSync('workspace/it.db', 'something', 'utf8');
+      fs.writeFileSync('workspace/it.db~', 'other', 'utf8');
+      
+      fs.existsSync('workspace/it.db').should.equal(true);
+      fs.existsSync('workspace/it.db~').should.equal(true);      
+      
+      p.ensureDatafileIntegrity(function (err) {
+        assert.isNull(err);
+        
+        fs.existsSync('workspace/it.db').should.equal(true);
+        fs.existsSync('workspace/it.db~').should.equal(false);
+        
+        fs.readFileSync('workspace/it.db', 'utf8').should.equal('something');
+        
+        done();
+      });
+    });
+    
+    it('If both files exist and datafile is empty, ensureDatafileIntegrity will use the datafile', function (done) {
+      var p = new Persistence({ db: { inMemoryOnly: false, filename: 'workspace/it.db' } });
+    
+      if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
+      if (fs.existsSync('workspace/it.db~')) { fs.unlinkSync('workspace/it.db~'); }
+      
+      fs.writeFileSync('workspace/it.db', '', 'utf8');
+      fs.writeFileSync('workspace/it.db~', 'other', 'utf8');
+      
+      fs.existsSync('workspace/it.db').should.equal(true);
+      fs.existsSync('workspace/it.db~').should.equal(true);
+      
+      p.ensureDatafileIntegrity(function (err) {
+        assert.isNull(err);
+        
+        fs.existsSync('workspace/it.db').should.equal(true);
+        fs.existsSync('workspace/it.db~').should.equal(false);
+        
+        fs.readFileSync('workspace/it.db', 'utf8').should.equal('other');
+        
+        done();
+      });
+    });    
+  
+    it.skip('If system crashes during a loadDatabase, the former version is not lost', function (done) {
       var cp, N = 150000, toWrite = "", i;
 
       // Creating a db file with 150k records (a bit long to load)
