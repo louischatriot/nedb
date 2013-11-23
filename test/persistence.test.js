@@ -254,7 +254,7 @@ describe('Persistence', function () {
   // This test is a bit complicated since it depends on the time actions take to execute
   // It may not work as expected on all machines as it is timed for my machine
   // That's why it is skipped, but all versions of nedb pass this test
-  describe.only('Prevent dataloss when persisting data', function () {
+  describe('Prevent dataloss when persisting data', function () {
 
     it('Creating a datastore with in memory as true and a bad filename wont cause an error', function () {
       new Datastore({ filename: 'workspace/bad.db~', inMemoryOnly: true });
