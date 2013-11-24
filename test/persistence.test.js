@@ -376,6 +376,26 @@ describe('Persistence', function () {
         
         done();
       });
+    });
+  
+    it('persistCachedDatabase should update the contents of the datafile', function (done) {
+      d.insert({ hello: 'world' }, function () {
+        d.find({}, function (err, docs) {
+          docs.length.should.equal(1);
+          
+          fs.unlinkSync(testDb);
+          fs.existsSync(testDb).should.equal(false);
+          
+          d.persistence.persistCachedDatabase(function (err) {
+            var contents = fs.readFileSync(testDb, 'utf8');
+            assert.isNull(err);
+            if (!contents.match(/^{"hello":"world","_id":"[0-9a-zA-Z]{16}"}\n$/)) {
+              throw "Datafile contents not as expected";
+            }
+            done();
+          });
+        });
+      });
     });    
   
     it.skip('If system crashes during a loadDatabase, the former version is not lost', function (done) {
