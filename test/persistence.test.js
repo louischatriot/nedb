@@ -423,10 +423,11 @@ describe('Persistence', function () {
       });
     });    
   
-    // This test is a bit complicated since it depends on the time actions take to execute
-    // It may not work as expected on all machines as it is timed for my machine
-    // That's why it is skipped, but all versions of nedb pass this test
-    it.skip('If system crashes during a loadDatabase, the former version is not lost', function (done) {
+    // This test is a bit complicated since it depends on the time I/O actions take to execute
+    // That depends on the machine and the load on the machine when the tests are run
+    // It is timed for my machine with nothing else running but may not work as expected on others (it will not fail but may not be a proof)
+    // Every new version of NeDB passes it on my machine before rtelease
+    it('If system crashes during a loadDatabase, the former version is not lost', function (done) {
       var cp, N = 150000, toWrite = "", i;
       
       // Ensuring the state is clean
@@ -438,21 +439,37 @@ describe('Persistence', function () {
         toWrite += model.serialize({ _id: customUtils.uid(16), hello: 'world' }) + '\n';
       }        
       fs.writeFileSync('workspace/lac.db', toWrite, 'utf8');
-
-      console.log("================");
       
-      // Loading it in a separate process that'll crash before finishing the load
+      // Loading it in a separate process that we will crash before finishing the loadDatabase
       cp = child_process.fork('test_lac/loadAndCrash.test')
-      cp.on('message', function (msg) {
-        // Let the child process enough time to crash
+      
+      // Kill the child process when we're at step 3 of persistCachedDatabase (during write to datafile)
+      setTimeout(function() {
+        cp.kill('SIGINT');
+        
+        // If the timing is correct, only the temp datafile contains data
+        // The datafile was in the middle of being written and is empty
+        
+        // Let the process crash be finished then load database without a crash, and test we didn't lose data
         setTimeout(function () {
-//          fs.readFileSync('workspace/lac.db', 'utf8').length.should.not.equal(0);
-          console.log(fs.readFileSync('workspace/lac.db').length);
-          console.log(fs.readFileSync('workspace/lac.db~').length);
-          
-          done();
-        }, 100);
-      });
+          var db = new Datastore({ filename: 'workspace/lac.db' });
+          db.loadDatabase(function (err) {
+            assert.isNull(err);
+            
+            db.count({}, function (err, n) {
+              // Data has not been lost
+              assert.isNull(err);
+              n.should.equal(150000);
+              
+              // State is clean, the temp datafile has been erased and the datafile contains all the data
+              fs.existsSync('workspace/lac.db').should.equal(true);
+              fs.existsSync('workspace/lac.db~').should.equal(false);
+              
+              done();
+            });
+          });
+        }, 100);        
+      }, 2000);
     });
   
   });
