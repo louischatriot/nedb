@@ -251,9 +251,6 @@ describe('Persistence', function () {
   });
   
   
-  // This test is a bit complicated since it depends on the time actions take to execute
-  // It may not work as expected on all machines as it is timed for my machine
-  // That's why it is skipped, but all versions of nedb pass this test
   describe('Prevent dataloss when persisting data', function () {
 
     it('Creating a datastore with in memory as true and a bad filename wont cause an error', function () {
@@ -354,7 +351,7 @@ describe('Persistence', function () {
       });
     });
     
-    it('If both files exist and datafile is empty, ensureDatafileIntegrity will use the datafile', function (done) {
+    it('If both files exist and datafile is empty, ensureDatafileIntegrity will use the temp datafile', function (done) {
       var p = new Persistence({ db: { inMemoryOnly: false, filename: 'workspace/it.db' } });
     
       if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
@@ -378,7 +375,7 @@ describe('Persistence', function () {
       });
     });
   
-    it('persistCachedDatabase should update the contents of the datafile', function (done) {
+    it('persistCachedDatabase should update the contents of the datafile and leave a clean state', function (done) {
       d.insert({ hello: 'world' }, function () {
         d.find({}, function (err, docs) {
           docs.length.should.equal(1);
@@ -402,7 +399,7 @@ describe('Persistence', function () {
       });
     });
     
-    it('persistCachedDatabase should update the contents of the datafile even if there is a temp datafile', function (done) {
+    it('persistCachedDatabase should update the contents of the datafile and leave a clean state even if there is a temp datafile', function (done) {
       d.insert({ hello: 'world' }, function () {
         d.find({}, function (err, docs) {
           docs.length.should.equal(1);
@@ -426,8 +423,15 @@ describe('Persistence', function () {
       });
     });    
   
-    it.only('If system crashes during a loadDatabase, the former version is not lost', function (done) {
+    // This test is a bit complicated since it depends on the time actions take to execute
+    // It may not work as expected on all machines as it is timed for my machine
+    // That's why it is skipped, but all versions of nedb pass this test
+    it.skip('If system crashes during a loadDatabase, the former version is not lost', function (done) {
       var cp, N = 150000, toWrite = "", i;
+      
+      // Ensuring the state is clean
+      if (fs.existsSync('workspace/lac.db')) { fs.unlinkSync('workspace/lac.db'); }
+      if (fs.existsSync('workspace/lac.db~')) { fs.unlinkSync('workspace/lac.db~'); }
 
       // Creating a db file with 150k records (a bit long to load)
       for (i = 0; i < N; i += 1) {
@@ -435,6 +439,8 @@ describe('Persistence', function () {
       }        
       fs.writeFileSync('workspace/lac.db', toWrite, 'utf8');
 
+      console.log("================");
+      
       // Loading it in a separate process that'll crash before finishing the load
       cp = child_process.fork('test_lac/loadAndCrash.test')
       cp.on('message', function (msg) {

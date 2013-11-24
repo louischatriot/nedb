@@ -6,6 +6,6 @@ var Nedb = require('../lib/datastore.js')
 setTimeout(function() {
   process.send('crash');
   process.exit();
-}, 1880);
+}, 1870);
   
 db.loadDatabase();
