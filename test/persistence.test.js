@@ -383,12 +383,40 @@ describe('Persistence', function () {
         d.find({}, function (err, docs) {
           docs.length.should.equal(1);
           
-          fs.unlinkSync(testDb);
+          if (fs.existsSync(testDb)) { fs.unlinkSync(testDb); }
+          if (fs.existsSync(testDb + '~')) { fs.unlinkSync(testDb + '~'); }
           fs.existsSync(testDb).should.equal(false);
+          fs.existsSync(testDb + '~').should.equal(false);
           
           d.persistence.persistCachedDatabase(function (err) {
             var contents = fs.readFileSync(testDb, 'utf8');
             assert.isNull(err);
+            fs.existsSync(testDb).should.equal(true);
+            fs.existsSync(testDb + '~').should.equal(false);            
+            if (!contents.match(/^{"hello":"world","_id":"[0-9a-zA-Z]{16}"}\n$/)) {
+              throw "Datafile contents not as expected";
+            }
+            done();
+          });
+        });
+      });
+    });
+    
+    it('persistCachedDatabase should update the contents of the datafile even if there is a temp datafile', function (done) {
+      d.insert({ hello: 'world' }, function () {
+        d.find({}, function (err, docs) {
+          docs.length.should.equal(1);
+          
+          if (fs.existsSync(testDb)) { fs.unlinkSync(testDb); }
+          fs.writeFileSync(testDb + '~', 'blabla', 'utf8');
+          fs.existsSync(testDb).should.equal(false);
+          fs.existsSync(testDb + '~').should.equal(true);
+          
+          d.persistence.persistCachedDatabase(function (err) {
+            var contents = fs.readFileSync(testDb, 'utf8');
+            assert.isNull(err);
+            fs.existsSync(testDb).should.equal(true);
+            fs.existsSync(testDb + '~').should.equal(false);            
             if (!contents.match(/^{"hello":"world","_id":"[0-9a-zA-Z]{16}"}\n$/)) {
               throw "Datafile contents not as expected";
             }
@@ -398,7 +426,7 @@ describe('Persistence', function () {
       });
     });    
   
-    it.skip('If system crashes during a loadDatabase, the former version is not lost', function (done) {
+    it.only('If system crashes during a loadDatabase, the former version is not lost', function (done) {
       var cp, N = 150000, toWrite = "", i;
 
       // Creating a db file with 150k records (a bit long to load)
@@ -415,6 +443,7 @@ describe('Persistence', function () {
 //          fs.readFileSync('workspace/lac.db', 'utf8').length.should.not.equal(0);
           console.log(fs.readFileSync('workspace/lac.db').length);
           console.log(fs.readFileSync('workspace/lac.db~').length);
+          
           done();
         }, 100);
       });
