@@ -4,6 +4,8 @@ var model = require('../lib/model')
   , _ = require('underscore')
   , async = require('async')
   , util = require('util')
+  , Datastore = require('../lib/datastore')
+  , fs = require('fs')
   ;
 
 
@@ -124,6 +126,35 @@ describe('Model', function () {
       // Edge cases
       b = model.serialize(e1);
       b = model.serialize(e2);
+    });
+    
+    it('Can serialize string fields with a new line without breaking the DB', function (done) {
+      var db1, db2
+        , badString = "world\r\nearth\nother\rline"
+        ;
+      
+      if (fs.existsSync('workspace/test1.db')) { fs.unlinkSync('workspace/test1.db'); }
+      fs.existsSync('workspace/test1.db').should.equal(false);
+      db1 = new Datastore({ filename: 'workspace/test1.db' });
+      
+      db1.loadDatabase(function (err) {
+        assert.isNull(err);
+        db1.insert({ hello: badString }, function (err) {
+          assert.isNull(err);
+        
+          db2 = new Datastore({ filename: 'workspace/test1.db' });
+          db2.loadDatabase(function (err) {
+            assert.isNull(err);
+            db2.find({}, function (err, docs) {
+              assert.isNull(err);
+              docs.length.should.equal(1);
+              docs[0].hello.should.equal(badString);
+
+              done();
+            });
+          });
+        });
+      });
     });
 
   });   // ==== End of 'Serialization, deserialization' ==== //
