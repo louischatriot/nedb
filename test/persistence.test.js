@@ -358,7 +358,7 @@ describe('Persistence', function () {
           });
         });
       });
-    });    
+    });
   
     it('persistCachedDatabase should update the contents of the datafile and leave a clean state', function (done) {
       d.insert({ hello: 'world' }, function () {
@@ -369,8 +369,11 @@ describe('Persistence', function () {
           if (fs.existsSync(testDb + '~')) { fs.unlinkSync(testDb + '~'); }
           if (fs.existsSync(testDb + '~~')) { fs.unlinkSync(testDb + '~~'); }
           fs.existsSync(testDb).should.equal(false);
-          fs.existsSync(testDb + '~').should.equal(false);
-          fs.existsSync(testDb + '~~').should.equal(false);
+          
+          fs.writeFileSync(testDb + '~', 'something', 'utf8');
+          fs.writeFileSync(testDb + '~~', 'something else', 'utf8');
+          fs.existsSync(testDb + '~').should.equal(true);
+          fs.existsSync(testDb + '~~').should.equal(true);
           
           d.persistence.persistCachedDatabase(function (err) {
             var contents = fs.readFileSync(testDb, 'utf8');
@@ -442,7 +445,30 @@ describe('Persistence', function () {
           });
         });
       });
-    });    
+    });
+    
+    it('persistCachedDatabase should update the contents of the datafile and leave a clean state even if there is a temp or old datafile', function (done) {
+      var testDb = 'workspace/test2.db', theDb;
+    
+      if (fs.existsSync(testDb)) { fs.unlinkSync(testDb); }
+      if (fs.existsSync(testDb + '~')) { fs.unlinkSync(testDb + '~'); }
+      if (fs.existsSync(testDb + '~~')) { fs.unlinkSync(testDb + '~~'); }
+      
+      theDb = new Datastore({ filename: testDb });
+      
+      theDb.loadDatabase(function (err) {
+        var contents = fs.readFileSync(testDb, 'utf8');
+        assert.isNull(err);
+        fs.existsSync(testDb).should.equal(true);
+        fs.existsSync(testDb + '~').should.equal(false);            
+        fs.existsSync(testDb + '~~').should.equal(false);            
+        if (contents != "") {
+          throw "Datafile contents not as expected";
+        }
+        done();
+      });
+    });
+    
   
     // This test is a bit complicated since it depends on the time I/O actions take to execute
     // That depends on the machine and the load on the machine when the tests are run
