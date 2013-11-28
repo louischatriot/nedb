@@ -328,7 +328,7 @@ describe('Persistence', function () {
       });
     });
     
-    it('If both old and current datafiles exist, ensureDatafileIntegrity will use the datafile, it means step 1 of persistence failed', function (done) {
+    it('If both old and current datafiles exist, ensureDatafileIntegrity will use the datafile, it means step 4 of persistence failed', function (done) {
       var theDb = new Datastore({ filename: 'workspace/it.db' });
     
       if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
