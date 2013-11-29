@@ -448,25 +448,103 @@ describe('Persistence', function () {
     });
     
     it('persistCachedDatabase should update the contents of the datafile and leave a clean state even if there is a temp or old datafile', function (done) {
-      var testDb = 'workspace/test2.db', theDb;
+      var dbFile = 'workspace/test2.db', theDb;
     
-      if (fs.existsSync(testDb)) { fs.unlinkSync(testDb); }
-      if (fs.existsSync(testDb + '~')) { fs.unlinkSync(testDb + '~'); }
-      if (fs.existsSync(testDb + '~~')) { fs.unlinkSync(testDb + '~~'); }
+      if (fs.existsSync(dbFile)) { fs.unlinkSync(dbFile); }
+      if (fs.existsSync(dbFile + '~')) { fs.unlinkSync(dbFile + '~'); }
+      if (fs.existsSync(dbFile + '~~')) { fs.unlinkSync(dbFile + '~~'); }
       
-      theDb = new Datastore({ filename: testDb });
+      theDb = new Datastore({ filename: dbFile });
       
       theDb.loadDatabase(function (err) {
-        var contents = fs.readFileSync(testDb, 'utf8');
+        var contents = fs.readFileSync(dbFile, 'utf8');
         assert.isNull(err);
-        fs.existsSync(testDb).should.equal(true);
-        fs.existsSync(testDb + '~').should.equal(false);            
-        fs.existsSync(testDb + '~~').should.equal(false);            
+        fs.existsSync(dbFile).should.equal(true);
+        fs.existsSync(dbFile + '~').should.equal(false);            
+        fs.existsSync(dbFile + '~~').should.equal(false);            
         if (contents != "") {
           throw "Datafile contents not as expected";
         }
         done();
       });
+    });
+
+    it('Persistence works as expected when everything goes fine', function (done) {
+      var dbFile = 'workspace/test2.db', theDb, theDb2, doc1, doc2;
+      
+      async.waterfall([
+        async.apply(customUtils.ensureFileDoesntExist, dbFile)
+      , async.apply(customUtils.ensureFileDoesntExist, dbFile + '~')
+      , async.apply(customUtils.ensureFileDoesntExist, dbFile + '~~')
+      , function (cb) {
+        theDb = new Datastore({ filename: dbFile });
+        theDb.loadDatabase(cb);
+      }
+      , function (cb) {
+        theDb.find({}, function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(0);
+          return cb();
+        });
+      }
+      , function (cb) {
+        theDb.insert({ a: 'hello' }, function (err, _doc1) {
+          assert.isNull(err);
+          doc1 = _doc1;
+          theDb.insert({ a: 'world' }, function (err, _doc2) {
+            assert.isNull(err);
+            doc2 = _doc2;
+            return cb();
+          });
+        });
+      }
+      , function (cb) {
+        theDb.find({}, function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(2);
+          _.find(docs, function (item) { return item._id === doc1._id }).a.should.equal('hello');
+          _.find(docs, function (item) { return item._id === doc2._id }).a.should.equal('world');
+          return cb();
+        });
+      }
+      , function (cb) {
+        theDb.loadDatabase(cb);
+      }
+      , function (cb) {   // No change
+        theDb.find({}, function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(2);
+          _.find(docs, function (item) { return item._id === doc1._id }).a.should.equal('hello');
+          _.find(docs, function (item) { return item._id === doc2._id }).a.should.equal('world');
+          return cb();
+        });
+      }
+      , function (cb) {
+        fs.existsSync(dbFile).should.equal(true);
+        fs.existsSync(dbFile + '~').should.equal(false);
+        fs.existsSync(dbFile + '~~').should.equal(false);
+        return cb();
+      }
+      , function (cb) {
+        theDb2 = new Datastore({ filename: dbFile });
+        theDb2.loadDatabase(cb);
+      }  
+      , function (cb) {   // No change in second db
+        theDb2.find({}, function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(2);
+          _.find(docs, function (item) { return item._id === doc1._id }).a.should.equal('hello');
+          _.find(docs, function (item) { return item._id === doc2._id }).a.should.equal('world');
+          return cb();
+        });
+      }
+      , function (cb) {
+        fs.existsSync(dbFile).should.equal(true);
+        fs.existsSync(dbFile + '~').should.equal(false);
+        fs.existsSync(dbFile + '~~').should.equal(false);
+        return cb();
+      } 
+      ], done);
     });
     
   
