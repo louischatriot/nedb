@@ -1,6 +1,6 @@
 (function(e){if("function"==typeof bootstrap)bootstrap("nedb",e);else if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else if("undefined"!=typeof ses){if(!ses.ok())return;ses.makeNedb=e}else"undefined"!=typeof window?window.Nedb=e():global.Nedb=e()})(function(){var define,ses,bootstrap,module,exports;
 return (function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
-(function(process){if (!process.EventEmitter) process.EventEmitter = function () {};
+var process=require("__browserify_process");if (!process.EventEmitter) process.EventEmitter = function () {};
 
 var EventEmitter = exports.EventEmitter = process.EventEmitter;
 var isArray = typeof Array.isArray === 'function'
@@ -184,7 +184,17 @@ EventEmitter.prototype.listeners = function(type) {
   return this._events[type];
 };
 
-})(require("__browserify_process"))
+EventEmitter.listenerCount = function(emitter, type) {
+  var ret;
+  if (!emitter._events || !emitter._events[type])
+    ret = 0;
+  else if (typeof emitter._events[type] === 'function')
+    ret = 1;
+  else
+    ret = emitter._events[type].length;
+  return ret;
+};
+
 },{"__browserify_process":3}],2:[function(require,module,exports){
 var events = require('events');
 
@@ -229,8 +239,8 @@ exports.inspect = function(obj, showHidden, depth, colors) {
           'regexp': 'red' }[styleType];
 
     if (style) {
-      return '\033[' + styles[style][0] + 'm' + str +
-             '\033[' + styles[style][1] + 'm';
+      return '\u001b[' + styles[style][0] + 'm' + str +
+             '\u001b[' + styles[style][1] + 'm';
     } else {
       return str;
     }
@@ -415,24 +425,18 @@ exports.inspect = function(obj, showHidden, depth, colors) {
 
 
 function isArray(ar) {
-  return ar instanceof Array ||
-         Array.isArray(ar) ||
-         (ar && ar !== Object.prototype && isArray(ar.__proto__));
+  return Array.isArray(ar) ||
+         (typeof ar === 'object' && Object.prototype.toString.call(ar) === '[object Array]');
 }
 
 
 function isRegExp(re) {
-  return re instanceof RegExp ||
-    (typeof re === 'object' && Object.prototype.toString.call(re) === '[object RegExp]');
+  typeof re === 'object' && Object.prototype.toString.call(re) === '[object RegExp]';
 }
 
 
 function isDate(d) {
-  if (d instanceof Date) return true;
-  if (typeof d !== 'object') return false;
-  var properties = Date.prototype && Object_getOwnPropertyNames(Date.prototype);
-  var proto = d.__proto__ && Object_getOwnPropertyNames(d.__proto__);
-  return JSON.stringify(proto) === JSON.stringify(properties);
+  return typeof d === 'object' && Object.prototype.toString.call(d) === '[object Date]';
 }
 
 function pad(n) {
@@ -593,7 +597,7 @@ process.chdir = function (dir) {
 };
 
 },{}],4:[function(require,module,exports){
-(function(){/**
+/**
  * Specific customUtils for the browser, where we don't have access to the Crypto and Buffer modules
  */
 
@@ -672,7 +676,6 @@ function uid (len) {
 
 module.exports.uid = uid;
 
-})()
 },{}],5:[function(require,module,exports){
 var customUtils = require('./customUtils')
   , model = require('./model')
@@ -834,6 +837,7 @@ Datastore.prototype.removeFromIndexes = function (doc) {
 
 /**
  * Update one or several documents in all indexes
+ * To update multiple documents, oldDoc must be an array of { oldDoc, newDoc } pairs
  * If one update violates a constraint, all changes are rolled back
  */
 Datastore.prototype.updateIndexes = function (oldDoc, newDoc) {
@@ -851,7 +855,7 @@ Datastore.prototype.updateIndexes = function (oldDoc, newDoc) {
     }
   }
 
-  // If an error happened, we need to rollback the insert on all other indexes
+  // If an error happened, we need to rollback the update on all other indexes
   if (error) {
     for (i = 0; i < failingIndex; i += 1) {
       this.indexes[keys[i]].revertUpdate(oldDoc, newDoc);
@@ -922,32 +926,113 @@ Datastore.prototype.getCandidates = function (query) {
  */
 Datastore.prototype._insert = function (newDoc, cb) {
   var callback = cb || function () {}
-    , self = this
-    , insertedDoc
     ;
 
-  // Ensure the document has the right format
   try {
-    newDoc._id = customUtils.uid(16);
-    model.checkObject(newDoc);
-    insertedDoc = model.deepCopy(newDoc);
+    this._insertInCache(newDoc);
   } catch (e) {
     return callback(e);
   }
 
-  // Insert in all indexes (also serves to ensure uniqueness)
-  try { self.addToIndexes(insertedDoc); } catch (e) { return callback(e); }
-
-  this.persistence.persistNewState([newDoc], function (err) {
+  this.persistence.persistNewState(util.isArray(newDoc) ? newDoc : [newDoc], function (err) {
     if (err) { return callback(err); }
     return callback(null, newDoc);
   });
+};
+
+/**
+ * Prepare a document (or array of documents) to be inserted in a database
+ * @api private
+ */
+Datastore.prototype.prepareDocumentForInsertion = function (newDoc) {
+  var preparedDoc, self = this;
+
+  if (util.isArray(newDoc)) {
+    preparedDoc = [];
+    newDoc.forEach(function (doc) { preparedDoc.push(self.prepareDocumentForInsertion(doc)); });
+  } else {
+    newDoc._id = customUtils.uid(16);
+    preparedDoc = model.deepCopy(newDoc);
+    model.checkObject(preparedDoc);
+  }
+  
+  return preparedDoc;
+};
+
+/**
+ * If newDoc is an array of documents, this will insert all documents in the cache
+ * @api private
+ */
+Datastore.prototype._insertInCache = function (newDoc) {
+  if (util.isArray(newDoc)) {
+    this._insertMultipleDocsInCache(newDoc);
+  } else {
+    this.addToIndexes(this.prepareDocumentForInsertion(newDoc));  
+  }
+};
+
+/**
+ * If one insertion fails (e.g. because of a unique constraint), roll back all previous
+ * inserts and throws the error
+ * @api private
+ */
+Datastore.prototype._insertMultipleDocsInCache = function (newDocs) {
+  var i, failingI, error
+    , preparedDocs = this.prepareDocumentForInsertion(newDocs)
+    ;
+  
+  for (i = 0; i < preparedDocs.length; i += 1) {
+    try {
+      this.addToIndexes(preparedDocs[i]);
+    } catch (e) {
+      error = e;
+      failingI = i;
+      break;
+    }
+  }
+  
+  if (error) {
+    for (i = 0; i < failingI; i += 1) {
+      this.removeFromIndexes(preparedDocs[i]);
+    }
+    
+    throw error;
+  }
 };
 
 Datastore.prototype.insert = function () {
   this.executor.push({ this: this, fn: this._insert, arguments: arguments });
 };
 
+/**
+ * Count all documents matching the query
+ * @param {Object} query MongoDB-style query
+ *
+ * @api private Use count
+ */
+Datastore.prototype._count = function(query, callback) {
+  var res = 0
+    , self = this
+    , candidates = this.getCandidates(query)
+    , i
+    ;
+
+  try {
+    for (i = 0; i < candidates.length; i += 1) {
+      if (model.match(candidates[i], query)) {
+        res++;
+      }
+    }
+  } catch (err) {
+    return callback(err);
+  }
+
+  return callback(null, res);
+}
+
+Datastore.prototype.count = function() {
+    this.executor.push({this: this, fn: this._count, arguments: arguments });
+}
 
 /**
  * Find all documents matching the query
@@ -989,20 +1074,20 @@ Datastore.prototype.find = function () {
 Datastore.prototype._findOne = function (query, callback) {
   var self = this
     , candidates = this.getCandidates(query)
-    , i
+    , i, found = null
     ;
 
   try {
     for (i = 0; i < candidates.length; i += 1) {
       if (model.match(candidates[i], query)) {
-        return callback(null, model.deepCopy(candidates[i]));
+        found = model.deepCopy(candidates[i]);
       }
     }
   } catch (err) {
     return callback(err);
   }
 
-  return callback(null, null);
+  return callback(null, found);
 };
 
 Datastore.prototype.findOne = function () {
@@ -1027,8 +1112,6 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
     , self = this
     , numReplaced = 0
     , multi, upsert
-    , updatedDocs = []
-    , candidates
     , i
     ;
 
@@ -1056,24 +1139,34 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
     });
   }
   , function () {   // Perform the update
-    var modifiedDoc;
+    var modifiedDoc
+	  , candidates = self.getCandidates(query)
+	  , modifications = []
+	  ;
 
-    candidates = self.getCandidates(query);
-
+	// Preparing update (if an error is thrown here neither the datafile nor
+	// the in-memory indexes are affected)
     try {
       for (i = 0; i < candidates.length; i += 1) {
         if (model.match(candidates[i], query) && (multi || numReplaced === 0)) {
           numReplaced += 1;
           modifiedDoc = model.modify(candidates[i], updateQuery);
-          self.updateIndexes(candidates[i], modifiedDoc);
-          updatedDocs.push(modifiedDoc);
+          modifications.push({ oldDoc: candidates[i], newDoc: modifiedDoc });
         }
       }
     } catch (err) {
       return callback(err);
     }
+	
+	// Change the docs in memory
+	try {
+      self.updateIndexes(modifications);
+	} catch (err) {
+	  return callback(err);
+	}
 
-    self.persistence.persistNewState(updatedDocs, function (err) {
+	// Update the datafile
+    self.persistence.persistNewState(_.pluck(modifications, 'newDoc'), function (err) {
       if (err) { return callback(err); }
       return callback(null, numReplaced);
     });
@@ -1126,13 +1219,11 @@ Datastore.prototype._remove = function (query, options, cb) {
 Datastore.prototype.remove = function () {
   this.executor.push({ this: this, fn: this._remove, arguments: arguments });
 };
-
-
+      
 
 module.exports = Datastore;
-
 },{"./customUtils":4,"./executor":6,"./indexes":7,"./model":8,"./persistence":9,"async":10,"underscore":15,"util":2}],6:[function(require,module,exports){
-(function(){/**
+/**
  * Responsible for sequentially executing actions on the database
  */
 
@@ -1206,7 +1297,6 @@ Executor.prototype.processBuffer = function () {
 // Interface
 module.exports = Executor;
 
-})()
 },{"async":10}],7:[function(require,module,exports){
 var BinarySearchTree = require('binary-search-tree').AVLTree
   , model = require('./model')
@@ -1221,9 +1311,24 @@ function checkValueEquality (a, b) {
   return a === b;
 }
 
+/**
+ * Type-aware projection
+ */
+function projectForUnique (elt) {
+  if (elt === null) { return '$null'; }
+  if (typeof elt === 'string') { return '$string' + elt; }
+  if (typeof elt === 'boolean') { return '$boolean' + elt; }
+  if (typeof elt === 'number') { return '$number' + elt; }
+  if (util.isArray(elt)) { return '$date' + elt.getTime(); }
+  
+  return elt;   // Arrays and objects, will check for pointer equality
+}
+
 
 /**
  * Create a new index
+ * All methods on an index guarantee that either the whole operation was successful and the index changed
+ * or the operation was unsuccessful and an error is thrown while the index is unchanged
  * @param {String} options.fieldName On which field should the index apply (can use dot notation to index on sub fields)
  * @param {Boolean} options.unique Optional, enforce a unique constraint (default: false)
  * @param {Boolean} options.sparse Optional, allow a sparse index (we can have documents for which fieldName is undefined) (default: false)
@@ -1257,7 +1362,9 @@ Index.prototype.reset = function (newData) {
  * O(log(n))
  */
 Index.prototype.insert = function (doc) {
-  var key, self = this;
+  var key, self = this
+    , keys, i, failingI, error
+    ;
 
   if (util.isArray(doc)) { this.insertMultipleDocs(doc); return; }
 
@@ -1266,13 +1373,38 @@ Index.prototype.insert = function (doc) {
   // We don't index documents that don't contain the field if the index is sparse
   if (key === undefined && this.sparse) { return; }
 
-  this.tree.insert(key, doc);
+  if (!util.isArray(key)) {
+    this.tree.insert(key, doc);
+  } else {
+    // If an insert fails due to a unique constraint, roll back all inserts before it
+    keys = _.uniq(key, projectForUnique);
+
+    for (i = 0; i < keys.length; i += 1) {
+      try {
+        this.tree.insert(keys[i], doc);
+      } catch (e) {
+        error = e;
+        failingI = i;
+        break;
+      }
+    }
+    
+    if (error) {
+      for (i = 0; i < failingI; i += 1) {
+        this.tree.delete(keys[i], doc);
+      }
+      
+      throw error;
+    }
+  }
 };
 
 
 /**
  * Insert an array of documents in the index
- * If a constraint is violated, an error should be thrown and the changes rolled back
+ * If a constraint is violated, the changes should be rolled back and an error thrown
+ *
+ * @API private
  */
 Index.prototype.insertMultipleDocs = function (docs) {
   var i, error, failingI;
@@ -1312,7 +1444,13 @@ Index.prototype.remove = function (doc) {
 
   if (key === undefined && this.sparse) { return; }
 
-  this.tree.delete(key, doc);
+  if (!util.isArray(key)) {
+    this.tree.delete(key, doc);
+  } else {
+    _.uniq(key, projectForUnique).forEach(function (_key) {
+      self.tree.delete(_key, doc);
+    });
+  }
 };
 
 
@@ -1340,6 +1478,8 @@ Index.prototype.update = function (oldDoc, newDoc) {
  * If a constraint is violated, the changes need to be rolled back
  * and an error thrown
  * @param {Array of oldDoc, newDoc pairs} pairs
+ *
+ * @API private
  */
 Index.prototype.updateMultipleDocs = function (pairs) {
   var i, failingI, error;
@@ -1588,6 +1728,20 @@ function deepCopy (obj) {
 
 
 /**
+ * Tells if an object is a primitive type or a "real" object
+ * Arrays are considered primitive
+ */
+function isPrimitiveType (obj) {
+  return ( typeof obj === 'boolean' ||
+       typeof obj === 'number' ||
+       typeof obj === 'string' ||
+       obj === null ||
+       util.isDate(obj) ||
+       util.isArray(obj));
+}
+
+
+/**
  * Utility functions for comparing things
  * Assumes type checking was already done (a and b already have the same type)
  * compareNSB works for numbers, strings and booleans
@@ -1616,7 +1770,7 @@ function compareArrays (a, b) {
  * Compare { things U undefined }
  * Things are defined as any native types (string, number, boolean, null, date) and objects
  * We need to compare with undefined as it will be used in indexes
- * In the case of objects and arrays, we compare the serialized versions
+ * In the case of objects and arrays, we deep-compare
  * If two objects dont have the same type, the (arbitrary) type hierarchy is: undefined, null, number, strings, boolean, dates, arrays, objects
  * Return -1 if a < b, 1 if a > b and 0 if a = b (note that equality here is NOT the same as defined in areThingsEqual!)
  */
@@ -1688,6 +1842,14 @@ lastStepModifierFunctions.$set = function (obj, field, value) {
 
 
 /**
+ * Unset a field
+ */
+lastStepModifierFunctions.$unset = function (obj, field, value) {
+  delete obj[field];
+};
+
+
+/**
  * Push an element to the end of an array field
  */
 lastStepModifierFunctions.$push = function (obj, field, value) {
@@ -1750,6 +1912,23 @@ lastStepModifierFunctions.$pop = function (obj, field, value) {
     obj[field] = obj[field].slice(0, obj[field].length - 1);
   } else {
     obj[field] = obj[field].slice(1);
+  }
+};
+
+
+/**
+ * Removes all instances of a value from an existing array
+ */
+lastStepModifierFunctions.$pull = function (obj, field, value) {
+  var arr, i;
+  
+  if (!util.isArray(obj[field])) { throw "Can't $pull an element from non-array values"; }
+
+  arr = obj[field];
+  for (i = arr.length - 1; i >= 0; i -= 1) {
+    if (match(arr[i], value)) {
+      arr.splice(i, 1);
+    }
   }
 };
 
@@ -2031,17 +2210,32 @@ logicalOperators.$not = function (obj, query) {
 
 
 /**
- * Tell if a given document matches a query
+ * Tell if a given document matches a query 
  * @param {Object} obj Document to check
  * @param {Object} query
  */
 function match (obj, query) {
-  var queryKeys = Object.keys(query)
-    , i
-    ;
+  var queryKeys, queryKey, queryValue, i;
 
+  // Primitive query against a primitive type
+  // This is a bit of a hack since we construct an object with an arbitrary key only to dereference it later
+  // But I don't have time for a cleaner implementation now
+  if (isPrimitiveType(obj) || isPrimitiveType(query)) {
+    return matchQueryPart({ needAKey: obj }, 'needAKey', query);
+  }
+    
+  // Normal query
+  queryKeys = Object.keys(query);
   for (i = 0; i < queryKeys.length; i += 1) {
-    if (!matchQueryPart(obj, queryKeys[i], query[queryKeys[i]])) { return false; }
+    queryKey = queryKeys[i];
+    queryValue = query[queryKey];
+  
+    if (queryKey[0] === '$') {
+      if (!logicalOperators[queryKey]) { throw "Unknown logical operator " + queryKey; }
+      if (!logicalOperators[queryKey](obj, queryValue)) { return false; }
+    } else {
+      if (!matchQueryPart(obj, queryKey, queryValue)) { return false; }
+    }
   }
 
   return true;
@@ -2053,17 +2247,8 @@ function match (obj, query) {
  */
 function matchQueryPart (obj, queryKey, queryValue) {
   var objValue = getDotValue(obj, queryKey)
-    , i
-    , keys, firstChars, dollarFirstChars
-    ;
-
-  // Query part begins with a logical operator: apply it
-  if (queryKey[0] === '$') {
-    if (!logicalOperators[queryKey]) { throw "Unknown logical operator " + queryKey; }
-
-    return logicalOperators[queryKey](obj, queryValue);
-  }
-
+    , i, keys, firstChars, dollarFirstChars;
+  
   // Check if the object value is an array treat it as an array of { obj, query }
   // Where there needs to be at least one match
   if (util.isArray(objValue)) {
@@ -2111,6 +2296,7 @@ module.exports.serialize = serialize;
 module.exports.deserialize = deserialize;
 module.exports.deepCopy = deepCopy;
 module.exports.checkObject = checkObject;
+module.exports.isPrimitiveType = isPrimitiveType;
 module.exports.modify = modify;
 module.exports.getDotValue = getDotValue;
 module.exports.match = match;
@@ -2160,7 +2346,7 @@ Persistence.prototype.loadDatabase = function (cb) {
 module.exports = Persistence;
 
 },{}],10:[function(require,module,exports){
-(function(process){/*global setImmediate: false, setTimeout: false, console: false */
+var process=require("__browserify_process");/*global setImmediate: false, setTimeout: false, console: false */
 (function () {
 
     var async = {};
@@ -2253,10 +2439,7 @@ module.exports = Persistence;
     else {
         async.nextTick = process.nextTick;
         if (typeof setImmediate !== 'undefined') {
-            async.setImmediate = function (fn) {
-              // not a direct alias for IE10 compatibility
-              setImmediate(fn);
-            };
+            async.setImmediate = setImmediate;
         }
         else {
             async.setImmediate = async.nextTick;
@@ -3119,7 +3302,6 @@ module.exports = Persistence;
 
 }());
 
-})(require("__browserify_process"))
 },{"__browserify_process":3}],11:[function(require,module,exports){
 module.exports.BinarySearchTree = require('./lib/bst');
 module.exports.AVLTree = require('./lib/avltree');
@@ -4167,7 +4349,7 @@ function defaultCheckValueEquality (a, b) {
 module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
 },{}],15:[function(require,module,exports){
-(function(){//     Underscore.js 1.4.4
+//     Underscore.js 1.4.4
 //     http://underscorejs.org
 //     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
 //     Underscore may be freely distributed under the MIT license.
@@ -5394,7 +5576,6 @@ module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
 }).call(this);
 
-})()
 },{}]},{},[5])(5)
 });
 ;
