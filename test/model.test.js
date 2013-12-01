@@ -910,9 +910,9 @@ describe('Model', function () {
       });
       
       it("Can match for field equality inside an array with the dot notation", function () {
-        mode.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'node' }).should.equal(false);
-        mode.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'embedded' }).should.equal(true);
-        mode.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'database' }).should.equal(false);
+        model.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'node' }).should.equal(false);
+        model.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'embedded' }).should.equal(true);
+        model.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'database' }).should.equal(false);
       })
 
     });
