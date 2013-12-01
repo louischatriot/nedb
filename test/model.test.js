@@ -908,6 +908,12 @@ describe('Model', function () {
         model.match({ a: { b: 5 } }, { a: { b: { $lt: 10 } } }).should.equal(false);
         (function () { model.match({ a: { b: 5 } }, { a: { $or: [ { b: 10 }, { b: 5 } ] } }) }).should.throw();
       });
+      
+      it("Can match for field equality inside an array with the dot notation", function () {
+        mode.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'node' }).should.equal(false);
+        mode.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'embedded' }).should.equal(true);
+        mode.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'database' }).should.equal(false);
+      })
 
     });
 
