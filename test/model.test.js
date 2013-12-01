@@ -1112,6 +1112,7 @@ describe('Model', function () {
         it('Should throw an error if a query operator is used without comparing to an integer', function () {
           (function () { model.match({ a: [1, 5] }, { a: { $size: 1.4 } }); }).should.throw();
           (function () { model.match({ a: [1, 5] }, { a: { $size: 'fdf' } }); }).should.throw();
+          (function () { model.match({ a: [1, 5] }, { a: { $size: { $lt: 5 } } }); }).should.throw();
         });
 
         it('Using $size operator on a non-array field should prevent match but not throw', function () {

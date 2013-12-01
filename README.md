@@ -134,6 +134,7 @@ You can use regular expressions in two ways: in basic querying in place of a str
 
 #### Basic querying
 Basic querying means are looking for documents whose fields match the ones you specify. You can use regular expression to match strings.
+You can use the dot notation to navigate inside nested documents, arrays, arrays of subdocuments and to match a specific element of an array.
 
 ```javascript
 // Let's say our datastore contains the following collection
@@ -141,6 +142,7 @@ Basic querying means are looking for documents whose fields match the ones you s
 // { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true, humans: { genders: 2, eyes: true } }
 // { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
 // { _id: 'id4', planet: 'Omicron Persei 8', system: 'futurama', inhabited: true, humans: { genders: 7 } }
+// { _id: 'id5', completeData: { planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] } }
 
 // Finding all planets in the solar system
 db.find({ system: 'solar' }, function (err, docs) {
@@ -162,6 +164,21 @@ db.find({ system: 'solar', inhabited: true }, function (err, docs) {
 db.find({ "humans.genders": 2 }, function (err, docs) {
   // docs contains Earth
 });
+
+// Use the dot-notation to navigate arrays of subdocuments
+db.find({ "completeData.planets.name": "Mars" }, function (err, docs) {
+  // docs contains document 5
+});
+
+db.find({ "completeData.planets.name": "Jupiter" }, function (err, docs) {
+  // docs is empty
+});
+
+db.find({ "completeData.planets.0.name": "Earth" }, function (err, docs) {
+  // docs contains document 5
+  // If we had tested against "Mars" docs would be empty because we are matching against a specific array element
+});
+
 
 // You can also deep-compare objects. Don't confuse this with dot-notation!
 db.find({ humans: { genders: 2 } }, function (err, docs) {
@@ -217,9 +234,20 @@ db.find({ planet: { $regex: /ar/, $nin: ['Jupiter', 'Earth'] } }, function (err,
 ```
 
 #### Array fields
-When a field in a document is an array, NeDB tries the query on every element and there is a match if at least one element matches.
+When a field in a document is an array, NeDB first tries to see if there is an array-specific comparison function (for now there is only `$size`) being used
+and tries it first. If there isn't, the query is treated as a query on every element and there is a match if at least one element matches.
 
 ```javascript
+// Using an array-specific comparison function
+// Note: you can't use nested comparison functions, e.g. { $size: { $lt: 5 } } will throw an error
+db.find({ satellites: { $size: 2 } }, function (err, docs) {
+  // docs contains Mars
+});
+
+db.find({ satellites: { $size: 1 } }, function (err, docs) {
+  // docs is empty
+});
+
 // If a document's field is an array, matching it means matching any element of the array
 db.find({ satellites: 'Phobos' }, function (err, docs) {
   // docs contains Mars. Result would have been the same if query had been { satellites: 'Deimos' }
