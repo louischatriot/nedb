@@ -1037,6 +1037,36 @@ describe('Model', function () {
 
     });
 
+    
+    describe('Query operator array $size', function () {
+
+        it('Can query on the size of an array field', function () {
+          // Non nested documents
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 0 } }).should.equal(false);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 2 } }).should.equal(false);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 3 } }).should.equal(true);
+            
+          // Nested documents
+          model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 0 } }).should.equal(false);
+          model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 1 } }).should.equal(false);
+          model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 2 } }).should.equal(true);
+          model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 3 } }).should.equal(false);
+        });
+
+        it('$size operator works with empty arrays', function () {
+          model.match({ childrens: [] }, { "childrens": { $size: 0 } }).should.equal(true);
+          model.match({ childrens: [] }, { "childrens": { $size: 2 } }).should.equal(false);
+          model.match({ childrens: [] }, { "childrens": { $size: 3 } }).should.equal(false);
+        });
+
+        it.only('Should throw an error if a query operator is used without being applied to an array and comparing to an integer', function () {
+          model.match({ a: 5 }, { a: { $size: 1 } });
+          (function () { model.match({ a: [1, 5] }, { a: { $size: 1.4 } }); }).should.throw();
+          (function () { model.match({ a: [1, 5] }, { a: { $size: 'fdf' } }); }).should.throw();
+        });
+
+    });
+    
 
     describe('Logical operators $or, $and, $not', function () {
 
@@ -1079,30 +1109,7 @@ describe('Model', function () {
     });
 
 
-      describe('Query operator array $size', function () {
-
-          it('$size', function () {
-              model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 0 } }).should.equal(false);
-              model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 2 } }).should.equal(false);
-              model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 3 } }).should.equal(true);
-          });
-
-          it('$size operator works with empty arrays', function () {
-              model.match({ childrens: [ ] }, { "childrens": { $size: 0 } }).should.equal(true);
-              model.match({ childrens: [ ] }, { "childrens": { $size: 2 } }).should.equal(false);
-              model.match({ childrens: [ ] }, { "childrens": { $size: 3 } }).should.equal(false);
-          });
-
-          it('Should throw an error if a query operator is used without being applied to an array and comparing to an integer', function () {
-              (function () { model.match({ a: 5 }, { a: { $size: 1 } }); }).should.throw();
-              (function () { model.match({ a: [1, 5] }, { a: { $size: 1.4 } }); }).should.throw();
-              (function () { model.match({ a: [1, 5] }, { a: { $size: 'fdf' } }); }).should.throw();
-          });
-
-      });
-
-
-      describe('Array fields', function () {
+    describe('Array fields', function () {
 
       it('Field equality', function () {
         model.match({ tags: ['node', 'js', 'db'] }, { tags: 'python' }).should.equal(false);
