@@ -1176,7 +1176,7 @@ describe('Model', function () {
         model.match({ ages: [3, 7, 12] }, { ages: { $lt: 13 } }).should.equal(true);
       });
 
-      it('Works also with arrays that are in subdocuments', function () {
+      it('Works with arrays that are in subdocuments', function () {
         model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 2 } }).should.equal(false);
         model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 3 } }).should.equal(false);
         model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 4 } }).should.equal(true);
@@ -1184,16 +1184,27 @@ describe('Model', function () {
         model.match({ children: { ages: [3, 7, 12] } }, { "children.ages": { $lt: 13 } }).should.equal(true);
       });
 
-      it('Works also with arrays of objects that are in subdocuments', function () {
+      it('Can query inside arrays thanks to dot notation', function () {
           model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 2 } }).should.equal(false);
           model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 3 } }).should.equal(false);
           model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 4 } }).should.equal(true);
           model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 8 } }).should.equal(true);
           model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 13 } }).should.equal(true);
+          
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.name": 'Louis' }).should.equal(false);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.name": 'Louie' }).should.equal(true);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.name": 'Lewi' }).should.equal(false);
       });
-
+      
+      it('Can query for a specific element inside arrays thanks to dot notation', function () {
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.0.name": 'Louie' }).should.equal(false);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.1.name": 'Louie' }).should.equal(false);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.2.name": 'Louie' }).should.equal(true);
+          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.3.name": 'Louie' }).should.equal(false);
+      });
+      
     });
 
-  });   // ==== End of 'Finding documents' ==== //
+  });   // ==== End of 'Querying' ==== //
 
 });
