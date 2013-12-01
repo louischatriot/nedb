@@ -1103,7 +1103,7 @@ describe('Model', function () {
         });
 
         it('Should throw an error if a query operator is used without being applied to an array and comparing to an integer', function () {
-          // model.match({ a: 5 }, { a: { $size: 1 } });
+          model.match({ a: 5 }, { a: { $size: 1 } });
           (function () { model.match({ a: [1, 5] }, { a: { $size: 1.4 } }); }).should.throw();
           (function () { model.match({ a: [1, 5] }, { a: { $size: 'fdf' } }); }).should.throw();
         });
