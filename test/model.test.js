@@ -840,6 +840,43 @@ describe('Model', function () {
         assert.isUndefined(model.getDotValue({ hello: 'world' }, 'helloo'));
         assert.isUndefined(model.getDotValue({ hello: 'world', type: { planet: true } }, 'type.plane'));
       });
+      
+      it("Can navigate inside arrays with dot notation, and return the array of values in that case", function () {
+        var dv;
+        
+        // Simple array of subdocuments
+        dv = model.getDotValue({ planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] }, 'planets.name');
+        assert.deepEqual(dv, ['Earth', 'Mars', 'Pluton']);
+        
+        // Nested array of subdocuments
+        dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] } }, 'data.planets.number');
+        assert.deepEqual(dv, [3, 2, 9]);
+        
+        // Nested array in a subdocument of an array (yay, inception!)
+        // TODO: make sure MongoDB doesn't flatten the array (it wouldn't make sense)
+        dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', numbers: [ 1, 3 ] }, { name: 'Mars', numbers: [ 7 ] }, { name: 'Pluton', numbers: [ 9, 5, 1 ] } ] } }, 'data.planets.numbers');
+        assert.deepEqual(dv, [[ 1, 3 ], [ 7 ], [ 9, 5, 1 ]]);
+      });
+      
+      it("Can get a single value out of an array using its index", function () {
+        var dv;
+        
+        // Simple index in dot notation
+        dv = model.getDotValue({ planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] }, 'planets.1');
+        assert.deepEqual(dv, { name: 'Mars', number: 2 });
+
+        // Out of bounds index
+        dv = model.getDotValue({ planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] }, 'planets.3');
+        assert.isUndefined(dv);
+
+        // Index in nested array
+        dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] } }, 'data.planets.2');
+        assert.deepEqual(dv, { name: 'Pluton', number: 9 });
+        
+        // Dot notation with index in the middle
+        dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] } }, 'data.planets.0.name');
+        dv.should.equal('Earth');
+      });
 
     });
 
@@ -1059,8 +1096,8 @@ describe('Model', function () {
           model.match({ childrens: [] }, { "childrens": { $size: 3 } }).should.equal(false);
         });
 
-        it.only('Should throw an error if a query operator is used without being applied to an array and comparing to an integer', function () {
-          model.match({ a: 5 }, { a: { $size: 1 } });
+        it('Should throw an error if a query operator is used without being applied to an array and comparing to an integer', function () {
+          // model.match({ a: 5 }, { a: { $size: 1 } });
           (function () { model.match({ a: [1, 5] }, { a: { $size: 1.4 } }); }).should.throw();
           (function () { model.match({ a: [1, 5] }, { a: { $size: 'fdf' } }); }).should.throw();
         });

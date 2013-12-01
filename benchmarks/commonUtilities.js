@@ -124,7 +124,7 @@ module.exports.findDocs = function (d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("===== RESULT (find with in selector) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
+      console.log("===== RESULT (find) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
       profiler.step('Finished finding ' + n + ' docs');
       return cb();
     }
