@@ -1081,7 +1081,7 @@ describe('Model', function () {
     });
 
     
-    describe('Query operator array $size', function () {
+    describe.only('Query operator array $size', function () {
 
         it('Can query on the size of an array field', function () {
           // Non nested documents
