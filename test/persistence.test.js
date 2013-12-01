@@ -552,7 +552,7 @@ describe('Persistence', function () {
     // That depends on the machine and the load on the machine when the tests are run
     // It is timed for my machine with nothing else running but may not work as expected on others (it will not fail but may not be a proof)
     // Every new version of NeDB passes it on my machine before rtelease
-    it.skip('If system crashes during a loadDatabase, the former version is not lost', function (done) {
+    it('If system crashes during a loadDatabase, the former version is not lost', function (done) {
       var cp, N = 150000, toWrite = "", i;
       
       // Ensuring the state is clean
