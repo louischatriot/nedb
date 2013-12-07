@@ -1321,6 +1321,40 @@ describe('Database', function () {
           });
         });
       });
+      
+      it('ensureIndex can be called twice on the same field, the second call will ahve no effect', function (done) {
+        Object.keys(d.indexes).length.should.equal(1);
+        Object.keys(d.indexes)[0].should.equal("_id");
+      
+        d.insert({ planet: "Earth" }, function () {
+          d.insert({ planet: "Mars" }, function () {
+            d.find({}, function (err, docs) {
+              docs.length.should.equal(2);
+              
+              d.ensureIndex({ fieldName: "planet" }, function (err) {
+                assert.isNull(err);
+                Object.keys(d.indexes).length.should.equal(2);
+                Object.keys(d.indexes)[0].should.equal("_id");   
+                Object.keys(d.indexes)[1].should.equal("planet");   
+
+                d.indexes.planet.getAll().length.should.equal(2);
+                
+                // This second call has no effect, documents don't get inserted twice in the index
+                d.ensureIndex({ fieldName: "planet" }, function (err) {
+                  assert.isNull(err);
+                  Object.keys(d.indexes).length.should.equal(2);
+                  Object.keys(d.indexes)[0].should.equal("_id");   
+                  Object.keys(d.indexes)[1].should.equal("planet");   
+
+                  d.indexes.planet.getAll().length.should.equal(2);                
+                  
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
 
       it('ensureIndex can be called after the data set was modified and the index still be correct', function (done) {
         var rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
@@ -1973,6 +2007,51 @@ describe('Database', function () {
       });
 
     });   // ==== End of 'Removing indexes upon document update' ==== //
+    
+    
+    describe.only('Persisting indexes', function () {
+    
+      it('If the persistIndexes options is used, indexes are persisted to a separate file and recreated upon reload', function (done) {
+        var persDb = "workspace/persistIndexes.db"
+          , db
+          ;
+        
+        if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
+        db = new Datastore({ filename: persDb, autoload: true, persistIndexes: true });
+        
+        Object.keys(db.indexes).length.should.equal(1);
+        Object.keys(db.indexes)[0].should.equal("_id");
+        
+        db.insert({ planet: "Earth" }, function (err) {
+          assert.isNull(err);
+          db.insert({ planet: "Mars" }, function (err) {
+            assert.isNull(err);
+            
+            db.ensureIndex({ fieldName: "planet" }, function (err) {
+              Object.keys(db.indexes).length.should.equal(2);
+              Object.keys(db.indexes)[0].should.equal("_id");
+              Object.keys(db.indexes)[1].should.equal("planet");              
+              db.indexes._id.getAll().length.should.equal(2);
+              db.indexes.planet.getAll().length.should.equal(2);
+              
+              // After a reload the indexes are recreated
+              db = new Datastore({ filename: persDb, persistIndexes: true });
+              db.loadDatabase(function (err) {
+                assert.isNull(err);
+                Object.keys(db.indexes).length.should.equal(2);
+                Object.keys(db.indexes)[0].should.equal("_id");
+                Object.keys(db.indexes)[1].should.equal("planet");                
+                db.indexes._id.getAll().length.should.equal(2);
+                db.indexes.planet.getAll().length.should.equal(2);
+              
+                done();                
+              });
+            });
+          });
+        });
+      });
+    
+    });   // ==== End of 'Persisting indexes' ====    
 
   });   // ==== End of 'Using indexes' ==== //
 

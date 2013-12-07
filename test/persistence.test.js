@@ -597,6 +597,6 @@ describe('Persistence', function () {
       }, 2000);
     });
   
-  });
+  });   // ==== End of 'Prevent dataloss when persisting data' ====
 
 });
