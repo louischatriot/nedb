@@ -17,7 +17,7 @@
   "homepage": "https://github.com/louischatriot/nedb",
   "repository": {
     "type": "git",
-    "url": "git@github.com:louischatriot/node-embedded-db.git"
+    "url": "git@github.com:louischatriot/nedb.git"
   },
   "dependencies": {
     "async": "0.2.9",
