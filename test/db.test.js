@@ -2131,9 +2131,9 @@ describe('Database', function () {
                       db.indexes.planet.getAll().length.should.equal(3);
                       db.indexes.bloup.getAll().length.should.equal(0);
                       db.indexes.planet.unique.should.equal(true);
-                      db.indexes.planet.sparse.should.equal(false);                  
+                      db.indexes.planet.sparse.should.equal(false);
                       db.indexes.bloup.unique.should.equal(false);
-                      db.indexes.bloup.sparse.should.equal(true);                    
+                      db.indexes.bloup.sparse.should.equal(true);
                   
                       done();                
                     });
