@@ -126,6 +126,24 @@ describe('Persistence', function () {
     _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
     _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
   });
+  
+  it('If a doc contains $$indexCreated, no error is thrown during treatRawData and we can get the index options', function () {
+    var now = new Date()
+      , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                  model.serialize({ $$indexCreated: { fieldName: "test", unique: true } }) + '\n' +
+                  model.serialize({ _id: "3", today: now })
+      , treatedData = Persistence.treatRawData(rawData).data
+      , indexes = Persistence.treatRawData(rawData).indexes
+      ;
+
+    Object.keys(indexes).length.should.equal(1);
+    assert.deepEqual(indexes.test, { fieldName: "test", unique: true });
+      
+    treatedData.sort(function (a, b) { return a._id - b._id; });
+    treatedData.length.should.equal(2);
+    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+    _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+  });  
 
   it('Compact database on load', function (done) {
     d.insert({ a: 2 }, function () {

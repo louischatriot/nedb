@@ -2009,7 +2009,7 @@ describe('Database', function () {
     });   // ==== End of 'Removing indexes upon document update' ==== //
     
     
-    describe.skip('Persisting indexes', function () {
+    describe.only('Persisting indexes', function () {
     
       it('If the persistIndexes options is used, indexes are persisted to a separate file and recreated upon reload', function (done) {
         var persDb = "workspace/persistIndexes.db"
@@ -2043,8 +2043,19 @@ describe('Database', function () {
                 Object.keys(db.indexes)[1].should.equal("planet");                
                 db.indexes._id.getAll().length.should.equal(2);
                 db.indexes.planet.getAll().length.should.equal(2);
+
+                // After another reload the indexes are still there (i.e. they are preserved during autocompaction)
+                db = new Datastore({ filename: persDb });
+                db.loadDatabase(function (err) {
+                  assert.isNull(err);
+                  Object.keys(db.indexes).length.should.equal(2);
+                  Object.keys(db.indexes)[0].should.equal("_id");
+                  Object.keys(db.indexes)[1].should.equal("planet");                
+                  db.indexes._id.getAll().length.should.equal(2);
+                  db.indexes.planet.getAll().length.should.equal(2);
               
                 done();                
+                });
               });
             });
           });
