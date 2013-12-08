@@ -1291,7 +1291,7 @@ describe('Database', function () {
 
   describe('Using indexes', function () {
 
-    describe('ensureIndex and index initialization in database loading', function () {
+    describe.only('ensureIndex and index initialization in database loading', function () {
 
       it('ensureIndex can be called right after a loadDatabase and be initialized and filled correctly', function (done) {
         var now = new Date()
@@ -1523,9 +1523,27 @@ describe('Database', function () {
           });
         });
       });
+      
+      it('Can remove an index', function (done) {
+        d.ensureIndex({ fieldName: 'e' }, function (err) {
+          assert.isNull(err);
+          
+          Object.keys(d.indexes).length.should.equal(2);
+          assert.isNotNull(d.indexes.e);
+          
+          d.removeIndex("e", function (err) {
+            assert.isNull(err);
+            Object.keys(d.indexes).length.should.equal(1);
+            assert.isUndefined(d.indexes.e); 
+ 
+            done();
+          });
+        });
+      });
 
     });   // ==== End of 'ensureIndex and index initialization in database loading' ==== //
 
+    
     describe('Indexing newly inserted documents', function () {
 
       it('Newly inserted documents are indexed', function (done) {
@@ -2006,10 +2024,10 @@ describe('Database', function () {
         });
       });
 
-    });   // ==== End of 'Removing indexes upon document update' ==== //
+    });   // ==== End of 'Updating indexes upon document remove' ==== //
     
     
-    describe.only('Persisting indexes', function () {
+    describe.skip('Persisting indexes', function () {
     
       it('Indexes are persisted to a separate file and recreated upon reload', function (done) {
         var persDb = "workspace/persistIndexes.db"
