@@ -1291,7 +1291,7 @@ describe('Database', function () {
 
   describe('Using indexes', function () {
 
-    describe.only('ensureIndex and index initialization in database loading', function () {
+    describe('ensureIndex and index initialization in database loading', function () {
 
       it('ensureIndex can be called right after a loadDatabase and be initialized and filled correctly', function (done) {
         var now = new Date()
@@ -2027,7 +2027,7 @@ describe('Database', function () {
     });   // ==== End of 'Updating indexes upon document remove' ==== //
     
     
-    describe.skip('Persisting indexes', function () {
+    describe('Persisting indexes', function () {
     
       it('Indexes are persisted to a separate file and recreated upon reload', function (done) {
         var persDb = "workspace/persistIndexes.db"
@@ -2163,7 +2163,83 @@ describe('Database', function () {
         });
       });
     
-    
+      it('Indexes can also be removed and the remove persisted', function (done) {
+        var persDb = "workspace/persistIndexes.db"
+          , db
+          ;
+        
+        if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
+        db = new Datastore({ filename: persDb, autoload: true });
+        
+        Object.keys(db.indexes).length.should.equal(1);
+        Object.keys(db.indexes)[0].should.equal("_id");
+        
+        db.insert({ planet: "Earth" }, function (err) {
+          assert.isNull(err);
+          db.insert({ planet: "Mars" }, function (err) {
+            assert.isNull(err);
+            
+            db.ensureIndex({ fieldName: "planet" }, function (err) {
+              assert.isNull(err);
+              db.ensureIndex({ fieldName: "another" }, function (err) {
+                assert.isNull(err);
+                Object.keys(db.indexes).length.should.equal(3);
+                Object.keys(db.indexes)[0].should.equal("_id");
+                Object.keys(db.indexes)[1].should.equal("planet");
+                Object.keys(db.indexes)[2].should.equal("another");
+                db.indexes._id.getAll().length.should.equal(2);
+                db.indexes.planet.getAll().length.should.equal(2);
+                db.indexes.planet.fieldName.should.equal("planet");
+                
+                // After a reload the indexes are recreated
+                db = new Datastore({ filename: persDb });
+                db.loadDatabase(function (err) {
+                  assert.isNull(err);
+                  Object.keys(db.indexes).length.should.equal(3);
+                  Object.keys(db.indexes)[0].should.equal("_id");
+                  Object.keys(db.indexes)[1].should.equal("planet");  
+                  Object.keys(db.indexes)[2].should.equal("another");                 
+                  db.indexes._id.getAll().length.should.equal(2);
+                  db.indexes.planet.getAll().length.should.equal(2);
+                  db.indexes.planet.fieldName.should.equal("planet");
+                  
+                  // Index is removed
+                  db.removeIndex("planet", function (err) {
+                    assert.isNull(err);
+                    Object.keys(db.indexes).length.should.equal(2);
+                    Object.keys(db.indexes)[0].should.equal("_id");
+                    Object.keys(db.indexes)[1].should.equal("another");
+                    db.indexes._id.getAll().length.should.equal(2);
+
+                    // After a reload indexes are preserved
+                    db = new Datastore({ filename: persDb });
+                    db.loadDatabase(function (err) {
+                      assert.isNull(err);
+                      Object.keys(db.indexes).length.should.equal(2);
+                      Object.keys(db.indexes)[0].should.equal("_id");
+                      Object.keys(db.indexes)[1].should.equal("another");
+                      db.indexes._id.getAll().length.should.equal(2);
+                  
+                      // After another reload the indexes are still there (i.e. they are preserved during autocompaction)
+                      db = new Datastore({ filename: persDb });
+                      db.loadDatabase(function (err) {
+                        assert.isNull(err);
+                        Object.keys(db.indexes).length.should.equal(2);
+                        Object.keys(db.indexes)[0].should.equal("_id");
+                        Object.keys(db.indexes)[1].should.equal("another");
+                        db.indexes._id.getAll().length.should.equal(2);
+                    
+                        done();                
+                      });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+      
     });   // ==== End of 'Persisting indexes' ====    
 
   });   // ==== End of 'Using indexes' ==== //
