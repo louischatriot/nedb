@@ -2009,7 +2009,7 @@ describe('Database', function () {
     });   // ==== End of 'Removing indexes upon document update' ==== //
     
     
-    describe.only('Persisting indexes', function () {
+    describe.skip('Persisting indexes', function () {
     
       it('If the persistIndexes options is used, indexes are persisted to a separate file and recreated upon reload', function (done) {
         var persDb = "workspace/persistIndexes.db"
@@ -2017,7 +2017,7 @@ describe('Database', function () {
           ;
         
         if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
-        db = new Datastore({ filename: persDb, autoload: true, persistIndexes: true });
+        db = new Datastore({ filename: persDb, autoload: true });
         
         Object.keys(db.indexes).length.should.equal(1);
         Object.keys(db.indexes)[0].should.equal("_id");
@@ -2035,7 +2035,7 @@ describe('Database', function () {
               db.indexes.planet.getAll().length.should.equal(2);
               
               // After a reload the indexes are recreated
-              db = new Datastore({ filename: persDb, persistIndexes: true });
+              db = new Datastore({ filename: persDb });
               db.loadDatabase(function (err) {
                 assert.isNull(err);
                 Object.keys(db.indexes).length.should.equal(2);

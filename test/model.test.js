@@ -112,11 +112,12 @@ describe('Model', function () {
       c.test[2].again.should.equal('yes');
     });
 
-    it('Reject field names beginning with a $ sign or containing a dot, except the two edge cases', function () {
+    it('Reject field names beginning with a $ sign or containing a dot, except the three edge cases', function () {
       var a1 = { $something: 'totest' }
         , a2 = { "with.dot": 'totest' }
         , e1 = { $$date: 4321 }
         , e2 = { $$deleted: true }
+        , e3 = { $$indexCreated: "indexName" }
         , b;
 
       // Normal cases

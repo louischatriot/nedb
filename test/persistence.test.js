@@ -46,7 +46,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ _id: "3", nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData)
+      , treatedData = Persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -61,7 +61,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   'garbage\n' +
                   model.serialize({ _id: "3", nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData)
+      , treatedData = Persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -75,7 +75,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData)
+      , treatedData = Persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -89,7 +89,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ _id: "1", nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData)
+      , treatedData = Persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -104,7 +104,7 @@ describe('Persistence', function () {
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ _id: "1", $$deleted: true }) + '\n' +
                   model.serialize({ _id: "3", today: now })
-      , treatedData = Persistence.treatRawData(rawData)
+      , treatedData = Persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -118,7 +118,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", $$deleted: true }) + '\n' +
                   model.serialize({ _id: "3", today: now })
-      , treatedData = Persistence.treatRawData(rawData)
+      , treatedData = Persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
