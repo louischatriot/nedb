@@ -446,6 +446,9 @@ To create an index, use `datastore.ensureIndex(options, cb)`, where callback is 
 
 Note: the `_id` is automatically indexed with a unique constraint, no need to call `ensureIndex` on it.
 
+You can remove a previously created index with `datastore.removeIndex(fieldName, cb)`.
+
+If your datastore is persistent, the indexes you created are persisted in the datafile, when you load the database a second time they are automatically created for you. No need to remove any `ensureIndex` though, if it is called on a database that already has the index, nothing happens.
 
 ```javascript
 db.ensureIndex({ fieldName: 'somefield' }, function (err) {
@@ -469,6 +472,10 @@ db.insert({ somefield: 'nedb' }, function (err) {
     //        , key: 'name'
     //        , message: 'Unique constraint violated for key name' }
   });
+});
+
+// Remove index on field somefield
+db.removeIndex('somefield', function (err) {
 });
 ```
 
