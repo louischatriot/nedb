@@ -75,7 +75,7 @@ var Datastore = require('nedb')
 // For example on Linux, the datafile will be ~/.config/nwtest/nedb-data/something.db
 var Datastore = require('nedb')
   , path = require('path')
-  , db = new Datastore({ filename: path.join(require('nw.gui').App.dataPath, '/something.db') });
+  , db = new Datastore({ filename: path.join(require('nw.gui').App.dataPath, 'something.db') });
 
 
 // Of course you can create multiple datastores if you need several
