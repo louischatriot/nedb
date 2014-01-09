@@ -731,7 +731,7 @@ function Datastore (options) {
   // binary is always well-balanced
   this.indexes = {};
   this.indexes._id = new Index({ fieldName: '_id', unique: true });
-
+  
   if (this.autoload) { this.loadDatabase(); }
 }
 
@@ -790,7 +790,27 @@ Datastore.prototype.ensureIndex = function (options, cb) {
     return callback(e);
   }
 
-  return callback(null);
+  this.persistence.persistNewState([{ $$indexCreated: options }], function (err) {
+    if (err) { return callback(err); }
+    return callback(null);
+  });
+};
+
+
+/**
+ * Remove an index
+ * @param {String} fieldName
+ * @param {Function} cb Optional callback, signature: err 
+ */
+Datastore.prototype.removeIndex = function (fieldName, cb) {
+  var callback = cb || function () {};
+  
+  delete this.indexes[fieldName];
+  
+  this.persistence.persistNewState([{ $$indexRemoved: fieldName }], function (err) {
+    if (err) { return callback(err); }
+    return callback(null);
+  });  
 };
 
 
@@ -1219,7 +1239,7 @@ Datastore.prototype._remove = function (query, options, cb) {
 Datastore.prototype.remove = function () {
   this.executor.push({ this: this, fn: this._remove, arguments: arguments });
 };
-      
+
 
 module.exports = Datastore;
 },{"./customUtils":4,"./executor":6,"./indexes":7,"./model":8,"./persistence":9,"async":10,"underscore":15,"util":2}],6:[function(require,module,exports){
@@ -1598,6 +1618,7 @@ module.exports = Index;
  * Handle models (i.e. docs)
  * Serialization/deserialization
  * Copying
+ * Querying, update
  */
 
 var dateToJSON = function () { return { $$date: this.getTime() }; }
@@ -1608,6 +1629,7 @@ var dateToJSON = function () { return { $$date: this.getTime() }; }
   , lastStepModifierFunctions = {}
   , comparisonFunctions = {}
   , logicalOperators = {}
+  , arrayComparisonFunctions = {}
   ;
 
 
@@ -1620,7 +1642,7 @@ var dateToJSON = function () { return { $$date: this.getTime() }; }
  * But you really need to want it to trigger such behaviour, even when warned not to use '$' at the beginning of the field names...
  */
 function checkKey (k, v) {
-  if (k[0] === '$' && !(k === '$$date' && typeof v === 'number') && !(k === '$$deleted' && v === true)) {
+  if (k[0] === '$' && !(k === '$$date' && typeof v === 'number') && !(k === '$$deleted' && v === true) && !(k === '$$indexCreated') && !(k === '$$indexRemoved')) {
     throw 'Field names cannot begin with the $ character';
   }
 
@@ -2029,12 +2051,28 @@ function modify (obj, updateQuery) {
  * @param {String} field
  */
 function getDotValue (obj, field) {
-  var fieldParts = typeof field === 'string' ? field.split('.') : field;
+  var fieldParts = typeof field === 'string' ? field.split('.') : field
+    , i, objs;
 
   if (!obj) { return undefined; }   // field cannot be empty so that means we should return undefined so that nothing can match
 
-  if (fieldParts.length === 1) {
-    return obj[fieldParts[0]];
+  if (fieldParts.length === 0) { return obj; }
+
+  if (fieldParts.length === 1) { return obj[fieldParts[0]]; }
+  
+  if (util.isArray(obj[fieldParts[0]])) {
+    // If the next field is an integer, return only this item of the array
+    i = parseInt(fieldParts[1], 10);
+    if (typeof i === 'number' && !isNaN(i)) {
+      return getDotValue(obj[fieldParts[0]][i], fieldParts.slice(2))
+    }
+
+    // Return the array of values
+    objs = new Array();
+    for (i = 0; i < obj[fieldParts[0]].length; i += 1) {
+       objs.push(getDotValue(obj[fieldParts[0]][i], fieldParts.slice(1)));
+    }
+    return objs;
   } else {
     return getDotValue(obj[fieldParts[0]], fieldParts.slice(1));
   }
@@ -2162,6 +2200,15 @@ comparisonFunctions.$exists = function (value, exists) {
   }
 };
 
+// Specific to arrays
+comparisonFunctions.$size = function (obj, value) {
+    if (!util.isArray(obj)) { return false; }
+    if (value % 1 !== 0) { throw "$size operator called without an integer"; }
+
+    return (obj.length == value);
+};
+arrayComparisonFunctions.$size = true;
+
 
 /**
  * Match any of the subqueries
@@ -2210,7 +2257,7 @@ logicalOperators.$not = function (obj, query) {
 
 
 /**
- * Tell if a given document matches a query 
+ * Tell if a given document matches a query
  * @param {Object} obj Document to check
  * @param {Object} query
  */
@@ -2244,14 +2291,23 @@ function match (obj, query) {
 
 /**
  * Match an object against a specific { key: value } part of a query
+ * if the treatObjAsValue flag is set, don't try to match every part separately, but the array as a whole
  */
-function matchQueryPart (obj, queryKey, queryValue) {
+function matchQueryPart (obj, queryKey, queryValue, treatObjAsValue) {
   var objValue = getDotValue(obj, queryKey)
     , i, keys, firstChars, dollarFirstChars;
-  
-  // Check if the object value is an array treat it as an array of { obj, query }
-  // Where there needs to be at least one match
-  if (util.isArray(objValue)) {
+
+  // Check if the value is an array if we don't force a treatment as value
+  if (util.isArray(objValue) && !treatObjAsValue) {
+    // Check if we are using an array-specific comparison function
+    if (queryValue !== null && typeof queryValue === 'object' && !util.isRegExp(queryValue)) {
+      keys = Object.keys(queryValue);      
+      for (i = 0; i < keys.length; i += 1) {
+        if (arrayComparisonFunctions[keys[i]]) { return matchQueryPart(obj, queryKey, queryValue, true); }
+      }
+    }
+
+    // If not, treat it as an array of { obj, query } where there needs to be at least one match
     for (i = 0; i < objValue.length; i += 1) {
       if (matchQueryPart({ k: objValue[i] }, 'k', queryValue)) { return true; }   // k here could be any string
     }
