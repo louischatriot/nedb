@@ -515,7 +515,7 @@ It has been tested and is compatible with Chrome, Safari, Firefox, IE 10, IE 9. 
 
 If you fork and modify nedb, you can build the browser version from the sources, the build script is `browser-version/build.js`.
 
-**The browser version is still young!** For now you can only use it as an in-memory database in browser environments, I'll implement persistence using indexeddb and localstorage later.
+**The browser version is still young!** For now you can only use it as an in-memory database in browser environments, I'll implement persistence later.
 
 
 ## Performance
