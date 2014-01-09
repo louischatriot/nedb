@@ -53,6 +53,46 @@ describe('Database', function () {
     dbef.inMemoryOnly.should.equal(true);
   });
 
+  describe('Autoloading', function () {
+  
+    it('Can autoload a database and query it right away', function (done) {
+      var fileStr = model.serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + model.serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n'
+        , autoDb = 'workspace/auto.db'
+        , db
+        ;
+      
+      fs.writeFileSync(autoDb, fileStr, 'utf8');
+      db = new Datastore({ filename: autoDb, autoload: true })
+      
+      db.find({}, function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(2);
+        done();
+      });
+    });
+    
+    it('Throws if autoload fails', function (done) {
+      var fileStr = model.serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + model.serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n' + '{"$$indexCreated":{"fieldName":"a","unique":true}}'
+        , autoDb = 'workspace/auto.db'
+        , db
+        ;
+      
+      fs.writeFileSync(autoDb, fileStr, 'utf8');
+      
+      // Check the loadDatabase generated an error
+      function onload (err) {
+        err.errorType.should.equal('uniqueViolated');
+        done();
+      }
+      
+      db = new Datastore({ filename: autoDb, autoload: true, onload: onload })
+      
+      db.find({}, function (err, docs) {
+        done("Find should not be executed since autoload failed");
+      });    
+    });
+ 
+  });
 
   describe('Insert', function () {
 
