@@ -43,6 +43,7 @@ You can use NeDB as an in-memory only datastore or as a persistent datastore. On
 need to call `loadDatabase`). Any command
 issued before load is finished is buffered and will be executed when
 load is done.
+* `onload` (optional): if you use autoloading, this is the handler called after the `loadDatabase`. It takes one `error` argument. If you use autoloading without specifying this handler, and an error happens during load, an error will be thrown.
 * `nodeWebkitAppName` (optional, **DEPRECATED**): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows. Now that you can use `require('nw.gui').App.dataPath` in Node Webkit to get the path to the data directory for your application, you should not use this option anymore and it will be removed.
 
 If you use a persistent datastore without the `autoload` option, you need to call `loadDatabase` manually.
