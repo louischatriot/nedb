@@ -561,7 +561,8 @@ process.nextTick = (function () {
     if (canPost) {
         var queue = [];
         window.addEventListener('message', function (ev) {
-            if (ev.source === window && ev.data === 'process-tick') {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
                 ev.stopPropagation();
                 if (queue.length > 0) {
                     var fn = queue.shift();
@@ -695,6 +696,7 @@ var customUtils = require('./customUtils')
  * @param {Boolean} options.nodeWebkitAppName Optional, specify the name of your NW app if you want options.filename to be relative to the directory where
  *                                            Node Webkit stores application data such as cookies and local storage (the best place to store data in my opinion)
  * @param {Boolean} options.autoload Optional, defaults to false
+ * @param {Function} options.onload Optional, if autoload is used this will be called after the load database with the error object as parameter. If you don't pass it the error will be thrown
  */
 function Datastore (options) {
   var filename;
@@ -732,7 +734,11 @@ function Datastore (options) {
   this.indexes = {};
   this.indexes._id = new Index({ fieldName: '_id', unique: true });
   
-  if (this.autoload) { this.loadDatabase(); }
+  // Queue a load of the database right away and call the onload handler
+  // By default (no onload handler), if there is an error there, no operation will be possible so warn the user by throwing an exception
+  if (this.autoload) { this.loadDatabase(options.onload || function (err) {
+    if (err) { throw err; }
+  }); }
 }
 
 
@@ -743,6 +749,12 @@ Datastore.prototype.loadDatabase = function () {
   this.executor.push({ this: this.persistence, fn: this.persistence.loadDatabase, arguments: arguments }, true);
 };
 
+/**
+ * Load the database from the string, and trigger the execution of buffered commands if any
+ */
+Datastore.prototype.loadString = function () {
+  this.executor.push({ this: this.persistence, fn: this.persistence.loadString, arguments: arguments }, true);
+};
 
 /**
  * Get an array of all the data in the database
@@ -1242,6 +1254,7 @@ Datastore.prototype.remove = function () {
 
 
 module.exports = Datastore;
+
 },{"./customUtils":4,"./executor":6,"./indexes":7,"./model":8,"./persistence":9,"async":10,"underscore":15,"util":2}],6:[function(require,module,exports){
 /**
  * Responsible for sequentially executing actions on the database
@@ -2369,6 +2382,10 @@ module.exports.compareThings = compareThings;
  * Shim for the browser
  */
 
+
+var model = require('./model')
+  , Index = require('./indexes')
+  ;
 /**
  * Create a new Persistence object for database options.db
  * For now, no browser persistence supported, in-memory only mode forced
@@ -2389,19 +2406,90 @@ Persistence.prototype.persistNewState = function (newDocs, cb) {
   if (cb) { return cb(); }
 };
 
-
 /**
- * No persistence in the browser (for now)
+ * From a database's raw data, return the corresponding
+ * machine understandable collection
  */
-Persistence.prototype.loadDatabase = function (cb) {
-  if (cb) { return cb(); }
+Persistence.treatRawData = function (rawData) {
+  var data = rawData.split('\n')
+    , dataById = {}
+    , tdata = []
+    , i
+    , indexes = {}
+    ;
+
+  for (i = 0; i < data.length; i += 1) {
+    var doc;
+
+    try {
+      doc = model.deserialize(data[i]);
+      if (doc._id) {
+        if (doc.$$deleted === true) {
+          delete dataById[doc._id];
+        } else {
+          dataById[doc._id] = doc;
+        }
+      } else if (doc.$$indexCreated && doc.$$indexCreated.fieldName != undefined) {
+        indexes[doc.$$indexCreated.fieldName] = doc.$$indexCreated;
+      } else if (typeof doc.$$indexRemoved === "string") {
+        delete indexes[doc.$$indexRemoved];
+      }
+    } catch (e) {
+    }
+  }
+
+  Object.keys(dataById).forEach(function (k) {
+    tdata.push(dataById[k]);
+  });
+
+  return { data: tdata, indexes: indexes };
 };
 
+
+
+/**
+ * Load Data from String
+ */
+Persistence.prototype.loadString = function(data,cb) {
+   var callback = cb || function () {}
+    , self = this
+    ;
+
+    self.db.resetIndexes();
+    return self.loadData(data,cb);
+};
+
+/**
+ * Load Database Data
+ */
+Persistence.prototype.loadData = function(data,cb) {
+  var callback = cb || function () {}
+    , self = this
+    ;
+
+  var treatedData = Persistence.treatRawData(data);
+
+  // Recreate all indexes in the datafile
+  Object.keys(treatedData.indexes).forEach(function (key) {
+    self.db.indexes[key] = new Index(treatedData.indexes[key]);
+  });
+            
+  // Fill cached database (i.e. all indexes) with data
+  try {
+    self.db.resetIndexes(treatedData.data);
+  } catch (e) {
+    self.db.resetIndexes();   // Rollback any index which didn't fail
+    return cb(e);
+  }
+
+  self.db.executor.processBuffer();
+  return cb(null);
+};
 
 // Interface
 module.exports = Persistence;
 
-},{}],10:[function(require,module,exports){
+},{"./indexes":7,"./model":8}],10:[function(require,module,exports){
 var process=require("__browserify_process");/*global setImmediate: false, setTimeout: false, console: false */
 (function () {
 
