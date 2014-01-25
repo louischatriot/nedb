@@ -12,7 +12,7 @@ var should = require('chai').should()
   ;
 
 
-describe.only('Cursor', function () {
+describe('Cursor', function () {
   var d;
 
   beforeEach(function (done) {
@@ -149,7 +149,7 @@ describe.only('Cursor', function () {
   });   // ===== End of 'Without sorting' =====
   
   
-  describe('Sorting of the results', function () {
+  describe.only('Sorting of the results', function () {
 
     beforeEach(function (done) {
       // We don't know the order in which docs wil be inserted but we ensure correctness by testing both sort orders
@@ -371,6 +371,95 @@ describe.only('Cursor', function () {
           });
         }
       ], done);
+    });
+    
+    it('Sorting strings', function (done) {
+      async.waterfall([
+        function (cb) {
+          d.remove({}, { multi: true }, function (err) {
+            if (err) { return cb(err); }
+
+            d.insert({ name: 'jako'}, function () {
+              d.insert({ name: 'jakeb' }, function () {
+                d.insert({ name: 'sue' }, function () {
+                  return cb();
+                });
+              });            
+            });
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ name: 1 }).exec(function (err, docs) {
+            docs.length.should.equal(3);
+            docs[0].name.should.equal('jakeb');
+            docs[1].name.should.equal('jako');
+            docs[2].name.should.equal('sue');
+            return cb();
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ name: -1 }).exec(function (err, docs) {
+            docs.length.should.equal(3);
+            docs[0].name.should.equal('sue');
+            docs[1].name.should.equal('jako');
+            docs[2].name.should.equal('jakeb');
+            return cb();
+          });
+        }
+      ], done);
+    });
+    
+    it('Sorting nested fields with dates', function (done) {
+      var doc1, doc2, doc3;
+      
+      async.waterfall([
+        function (cb) {
+          d.remove({}, { multi: true }, function (err) {
+            if (err) { return cb(err); }
+
+            d.insert({ event: { recorded: new Date(400) } }, function (err, _doc1) {
+              doc1 = _doc1;
+              d.insert({ event: { recorded: new Date(60000) } }, function (err, _doc2) {
+                doc2 = _doc2;
+                d.insert({ event: { recorded: new Date(32) } }, function (err, _doc3) {
+                  doc3 = _doc3;
+                  return cb();
+                });
+              });            
+            });
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ "event.recorded": 1 }).exec(function (err, docs) {
+            docs.length.should.equal(3);
+            docs[0]._id.should.equal(doc3._id);
+            docs[1]._id.should.equal(doc1._id);
+            docs[2]._id.should.equal(doc2._id);
+            return cb();
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ "event.recorded": -1 }).exec(function (err, docs) {
+            docs.length.should.equal(3);
+            docs[0]._id.should.equal(doc2._id);
+            docs[1]._id.should.equal(doc1._id);
+            docs[2]._id.should.equal(doc3._id);
+            return cb();
+          });
+        }
+      ], done);
+    });
+    
+    it('Sorting when some fields are undefined', function (done) {      
+      done();
+    });
+    
+    it('Sorting when all fields are undefined', function (done) {      
+      done();
     });
   
   });   // ===== End of 'Sorting' =====
