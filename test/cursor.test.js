@@ -149,7 +149,7 @@ describe('Cursor', function () {
   });   // ===== End of 'Without sorting' =====
   
   
-  describe.only('Sorting of the results', function () {
+  describe('Sorting of the results', function () {
 
     beforeEach(function (done) {
       // We don't know the order in which docs wil be inserted but we ensure correctness by testing both sort orders
