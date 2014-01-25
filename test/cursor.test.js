@@ -455,11 +455,81 @@ describe('Cursor', function () {
     });
     
     it('Sorting when some fields are undefined', function (done) {      
-      done();
+      async.waterfall([
+        function (cb) {
+          d.remove({}, { multi: true }, function (err) {
+            if (err) { return cb(err); }
+
+            d.insert({ name: 'jako', other: 2 }, function () {
+              d.insert({ name: 'jakeb', other: 3 }, function () {
+                d.insert({ name: 'sue' }, function () {
+                  d.insert({ name: 'henry', other: 4 }, function () {
+                    return cb();
+                  });
+                });
+              });            
+            });
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ other: 1 }).exec(function (err, docs) {
+            docs.length.should.equal(4);
+            docs[0].name.should.equal('sue');
+            assert.isUndefined(docs[0].other);
+            docs[1].name.should.equal('jako');
+            docs[1].other.should.equal(2);
+            docs[2].name.should.equal('jakeb');
+            docs[2].other.should.equal(3);
+            docs[3].name.should.equal('henry');
+            docs[3].other.should.equal(4);
+            return cb();
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d, { name: { $in: [ 'suzy', 'jakeb', 'jako' ] } });
+          cursor.sort({ other: -1 }).exec(function (err, docs) {
+            docs.length.should.equal(2);
+            docs[0].name.should.equal('jakeb');
+            docs[0].other.should.equal(3);
+            docs[1].name.should.equal('jako');
+            docs[1].other.should.equal(2);
+            return cb();
+          });
+        }
+      ], done);
     });
     
     it('Sorting when all fields are undefined', function (done) {      
-      done();
+      async.waterfall([
+        function (cb) {
+          d.remove({}, { multi: true }, function (err) {
+            if (err) { return cb(err); }
+
+            d.insert({ name: 'jako'}, function () {
+              d.insert({ name: 'jakeb' }, function () {
+                d.insert({ name: 'sue' }, function () {
+                  return cb();
+                });
+              });            
+            });
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ other: 1 }).exec(function (err, docs) {
+            docs.length.should.equal(3);
+            return cb();
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d, { name: { $in: [ 'sue', 'jakeb', 'jakob' ] } });
+          cursor.sort({ other: -1 }).exec(function (err, docs) {
+            docs.length.should.equal(2);
+            return cb();
+          });
+        }
+      ], done);
     });
   
   });   // ===== End of 'Sorting' =====
