@@ -40,35 +40,74 @@ describe.only('Cursor', function () {
     ], done);
   });
   
+  describe('Querying without modifier', function () {
+  
+    it('Without query', function (done) {
+      async.waterfall([
+        function (cb) {
+          d.insert({ age: 5 }, function (err) {
+            d.insert({ age: 57 }, function (err) {
+              d.insert({ age: 52 }, function (err) {
+                d.insert({ age: 23 }, function (err) {
+                  d.insert({ age: 89 }, function (err) {
+                    return cb();
+                  });
+                });
+              });
+            });
+          });
+        }
+      , function (cb) {
+        var cursor = new Cursor(d);
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(5);
+          _.filter(docs, function(doc) { return doc.age === 5; })[0].age.should.equal(5);
+          _.filter(docs, function(doc) { return doc.age === 57; })[0].age.should.equal(57);
+          _.filter(docs, function(doc) { return doc.age === 52; })[0].age.should.equal(52);
+          _.filter(docs, function(doc) { return doc.age === 23; })[0].age.should.equal(23);
+          _.filter(docs, function(doc) { return doc.age === 89; })[0].age.should.equal(89);
+          cb();
+        });
+      }
+      ], done);
+    });
+  
+  });
+  
   describe('Sorting of the results', function () {
   
     it('Using one sort', function (done) {
       var cursor, i;
-      
-      d.insert({ age: 5 });
-      d.insert({ age: 57 });
-      d.insert({ age: 52 });
-      d.insert({ age: 23 });
-      d.insert({ age: 89 }, function (err) {   // We only need the last callback as all operations are queued
-        cursor = new Cursor(d, {});
-        cursor.sort({ age: 1 });
-        cursor.exec(function (err, docs) {
-          assert.isNull(err);
-          // Results are in ascending order
-          for (i = 0; i < docs.length - 1; i += 1) {
-            assert(docs[i].age < docs[i + 1].age)
-          }
-          
-          cursor.sort({ age: -1 });
-          cursor.exec(function (err, docs) {
-            assert.isNull(err);
-            // Results are in descending order
-            for (i = 0; i < docs.length - 1; i += 1) {
-              assert(docs[i].age > docs[i + 1].age)
-            }
-          
-            done();
-          });          
+      // We don't know the order in which docs wil be inserted but we ensure correctness by testing both sort orders
+      d.insert({ age: 5 }, function (err) {
+        d.insert({ age: 57 }, function (err) {
+          d.insert({ age: 52 }, function (err) {
+            d.insert({ age: 23 }, function (err) {
+              d.insert({ age: 89 }, function (err) {
+                cursor = new Cursor(d, {});
+                cursor.sort({ age: 1 });
+                cursor.exec(function (err, docs) {
+                  assert.isNull(err);
+                  // Results are in ascending order
+                  for (i = 0; i < docs.length - 1; i += 1) {
+                    assert(docs[i].age < docs[i + 1].age)
+                  }
+                  
+                  cursor.sort({ age: -1 });
+                  cursor.exec(function (err, docs) {
+                    assert.isNull(err);
+                    // Results are in descending order
+                    for (i = 0; i < docs.length - 1; i += 1) {
+                      assert(docs[i].age > docs[i + 1].age)
+                    }
+
+                    done();
+                  });          
+                });
+              });
+            });
+          });
         });
       });
     });
