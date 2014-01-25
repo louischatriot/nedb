@@ -531,6 +531,10 @@ describe('Cursor', function () {
         }
       ], done);
     });
+    
+    it.skip('Multiple consecutive sorts', function(done) {
+      done();
+    });
   
   });   // ===== End of 'Sorting' =====
   

@@ -602,6 +602,25 @@ describe('Database', function () {
         });
       });
     });
+    
+    it.only('Can use sort, skip and limit if the callback is not passed to find but to exec', function (done) {
+      d.insert({ a: 2, hello: 'world' }, function () {
+        d.insert({ a: 24, hello: 'earth' }, function () {
+          d.insert({ a: 13, hello: 'blueplanet' }, function () {
+            d.insert({ a: 15, hello: 'home' }, function () {
+              d.find({}).sort({ a: 1 }).limit(2).exec(function (err, docs) {
+                assert.isNull(err);
+                docs.length.should.equal(2);
+                docs[0].hello.should.equal('world');
+                docs[1].hello.should.equal('blueplanet');
+                done();
+              });
+            });
+          });
+        });      
+      });
+    });
+    
 
   });   // ==== End of 'Find' ==== //
 
