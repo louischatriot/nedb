@@ -189,7 +189,7 @@ describe.only('Cursor', function () {
       ], done);
     });
 
-    it('Using limiting and sorting', function (done) {
+    it('Using limit and sort', function (done) {
       var i;    
       async.waterfall([
         function (cb) {
@@ -235,8 +235,88 @@ describe.only('Cursor', function () {
       ], done);
     });
 
+    it('Using limit and skip with sort', function (done) {
+      var i;    
+      async.waterfall([
+        function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: 1 }).limit(1).skip(2).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(1);
+            docs[0].age.should.equal(52);
+            cb();
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: 1 }).limit(3).skip(1).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(3);
+            docs[0].age.should.equal(23);
+            docs[1].age.should.equal(52);
+            docs[2].age.should.equal(57);
+            cb();
+          });
+        }
+      ], done);
+    });
     
-    
+    it('Using too big a limit and a skip with sort', function (done) {
+      var i;    
+      async.waterfall([
+        function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: 1 }).limit(8).skip(2).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(3);
+            docs[0].age.should.equal(52);
+            docs[1].age.should.equal(57);
+            docs[2].age.should.equal(89);
+            cb();
+          });
+        }
+      ], done);
+    });
+
+    it('Using too big a skip with sort should return no result', function (done) {
+      var i;    
+      async.waterfall([
+        function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: 1 }).skip(5).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(0);
+            cb();
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: 1 }).skip(7).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(0);
+            cb();
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: 1 }).limit(3).skip(7).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(0);
+            cb();
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: 1 }).limit(6).skip(7).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(0);
+            cb();
+          });
+        }
+      ], done);
+    });
+
+
     
     
     
@@ -245,5 +325,11 @@ describe.only('Cursor', function () {
   });   // ===== End of 'Sorting' =====
   
 });
+
+
+
+
+
+
 
 
