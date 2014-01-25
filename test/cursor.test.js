@@ -40,24 +40,25 @@ describe.only('Cursor', function () {
     ], done);
   });
   
-  describe('Querying without modifier', function () {
+  describe('Without sorting', function () {
 
-    it('Without query, an empty query or a simple query', function (done) {
-      async.waterfall([
-        function (cb) {
-          d.insert({ age: 5 }, function (err) {
-            d.insert({ age: 57 }, function (err) {
-              d.insert({ age: 52 }, function (err) {
-                d.insert({ age: 23 }, function (err) {
-                  d.insert({ age: 89 }, function (err) {
-                    return cb();
-                  });
-                });
+    beforeEach(function (done) {
+      d.insert({ age: 5 }, function (err) {
+        d.insert({ age: 57 }, function (err) {
+          d.insert({ age: 52 }, function (err) {
+            d.insert({ age: 23 }, function (err) {
+              d.insert({ age: 89 }, function (err) {
+                return done();
               });
             });
           });
-        }
-      , function (cb) {
+        });
+      });
+    });
+  
+    it('Without query, an empty query or a simple query and no skip or limit', function (done) {
+      async.waterfall([
+        function (cb) {
         var cursor = new Cursor(d);
         cursor.exec(function (err, docs) {
           assert.isNull(err);
@@ -88,10 +89,8 @@ describe.only('Cursor', function () {
         cursor.exec(function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(3);
-          // _.filter(docs, function(doc) { return doc.age === 5; })[0].age.should.equal(5);
           _.filter(docs, function(doc) { return doc.age === 57; })[0].age.should.equal(57);
           _.filter(docs, function(doc) { return doc.age === 52; })[0].age.should.equal(52);
-          // _.filter(docs, function(doc) { return doc.age === 23; })[0].age.should.equal(23);
           _.filter(docs, function(doc) { return doc.age === 89; })[0].age.should.equal(89);
           cb();
         });
@@ -99,7 +98,55 @@ describe.only('Cursor', function () {
       ], done);
     });
     
-  });   // ===== End of 'Querying without modifier' =====
+    it('With an empty collection', function (done) {
+      async.waterfall([
+        function (cb) {
+          d.remove({}, { multi: true }, function(err) { return cb(err); })
+        }
+      , function (cb) {
+          var cursor = new Cursor(d);
+          cursor.exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(0);
+            cb();
+          });
+        }
+      ], done);
+    });
+    
+    it('With a limit', function (done) {
+      var cursor = new Cursor(d);
+      cursor.limit(3);
+      cursor.exec(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(3);
+        // No way to predict which results are returned of course ...
+        done();
+      });
+    });
+
+    it('With a skip', function (done) {
+      var cursor = new Cursor(d);
+      cursor.skip(2).exec(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(3);
+        // No way to predict which results are returned of course ...
+        done();
+      });
+    });
+    
+    it('With a limit and a skip and method chaining', function (done) {
+      var cursor = new Cursor(d);
+      cursor.limit(4).skip(3);   // Only way to know that the right number of results was skipped is if limit + skip > number of results
+      cursor.exec(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(2);
+        // No way to predict which results are returned of course ...
+        done();
+      });
+    });
+    
+  });   // ===== End of 'Without sorting' =====
   
   
   describe('Sorting of the results', function () {
@@ -258,6 +305,16 @@ describe.only('Cursor', function () {
             cb();
           });
         }
+      , function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: -1 }).limit(2).skip(2).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(2);
+            docs[0].age.should.equal(52);
+            docs[1].age.should.equal(23);
+            cb();
+          });
+        }
       ], done);
     });
     
@@ -315,12 +372,6 @@ describe.only('Cursor', function () {
         }
       ], done);
     });
-
-
-    
-    
-    
-    
   
   });   // ===== End of 'Sorting' =====
   
