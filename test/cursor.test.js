@@ -154,8 +154,7 @@ describe.only('Cursor', function () {
     });
     
     it('Ability to chain sorting and exec', function (done) {
-      var i;
-    
+      var i;    
       async.waterfall([
         function (cb) {
           d.insert({ age: 5 }, function (err) {
@@ -195,6 +194,45 @@ describe.only('Cursor', function () {
       ], done);
     });
 
+    it('Using limiting and sorting', function (done) {
+      var i;    
+      async.waterfall([
+        function (cb) {
+          d.insert({ age: 5 }, function (err) {
+            d.insert({ age: 57 }, function (err) {
+              d.insert({ age: 52 }, function (err) {
+                d.insert({ age: 23 }, function (err) {
+                  d.insert({ age: 89 }, function (err) {
+                    return cb();
+                  });
+                });
+              });
+            });
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: 1 }).limit(3).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(3);
+            docs[0].age.should.equal(5);
+            docs[1].age.should.equal(23);
+            docs[2].age.should.equal(52);
+            cb();
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: -1 }).limit(2).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(2);
+            docs[0].age.should.equal(89);
+            docs[1].age.should.equal(57);
+            cb();
+          });
+        }
+      ], done);
+    });
 
 
     
@@ -203,3 +241,5 @@ describe.only('Cursor', function () {
   });   // ===== End of 'Sorting' =====
   
 });
+
+
