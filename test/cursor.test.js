@@ -104,52 +104,60 @@ describe.only('Cursor', function () {
   
   describe('Sorting of the results', function () {
 
-    it('Using one sort', function (done) {
-      var cursor, i;
+    beforeEach(function (done) {
       // We don't know the order in which docs wil be inserted but we ensure correctness by testing both sort orders
       d.insert({ age: 5 }, function (err) {
         d.insert({ age: 57 }, function (err) {
           d.insert({ age: 52 }, function (err) {
             d.insert({ age: 23 }, function (err) {
               d.insert({ age: 89 }, function (err) {
-                cursor = new Cursor(d, {});
-                cursor.sort({ age: 1 });
-                cursor.exec(function (err, docs) {
-                  assert.isNull(err);
-                  // Results are in ascending order
-                  for (i = 0; i < docs.length - 1; i += 1) {
-                    assert(docs[i].age < docs[i + 1].age)
-                  }
-                  
-                  cursor.sort({ age: -1 });
-                  cursor.exec(function (err, docs) {
-                    assert.isNull(err);
-                    // Results are in descending order
-                    for (i = 0; i < docs.length - 1; i += 1) {
-                      assert(docs[i].age > docs[i + 1].age)
-                    }
-
-                    done();
-                  });          
-                });
+                return done();
               });
             });
           });
         });
       });
     });
+  
+    it('Using one sort', function (done) {
+      var cursor, i;
+
+      cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });
+      cursor.exec(function (err, docs) {
+        assert.isNull(err);
+        // Results are in ascending order
+        for (i = 0; i < docs.length - 1; i += 1) {
+          assert(docs[i].age < docs[i + 1].age)
+        }
+        
+        cursor.sort({ age: -1 });
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          // Results are in descending order
+          for (i = 0; i < docs.length - 1; i += 1) {
+            assert(docs[i].age > docs[i + 1].age)
+          }
+
+          done();
+        });          
+      });
+    });
     
     it('With an empty collection', function (done) {
       async.waterfall([
         function (cb) {
-        var cursor = new Cursor(d);
-        cursor.sort({ age: 1 });
-        cursor.exec(function (err, docs) {
-          assert.isNull(err);
-          docs.length.should.equal(0);
-          cb();
-        });
-      }
+          d.remove({}, { multi: true }, function(err) { return cb(err); })
+        }
+      , function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: 1 });
+          cursor.exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(0);
+            cb();
+          });
+        }
       ], done);
     });
     
@@ -157,19 +165,6 @@ describe.only('Cursor', function () {
       var i;    
       async.waterfall([
         function (cb) {
-          d.insert({ age: 5 }, function (err) {
-            d.insert({ age: 57 }, function (err) {
-              d.insert({ age: 52 }, function (err) {
-                d.insert({ age: 23 }, function (err) {
-                  d.insert({ age: 89 }, function (err) {
-                    return cb();
-                  });
-                });
-              });
-            });
-          });
-        }
-      , function (cb) {
           var cursor = new Cursor(d);
           cursor.sort({ age: 1 }).exec(function (err, docs) {
             assert.isNull(err);
@@ -198,19 +193,6 @@ describe.only('Cursor', function () {
       var i;    
       async.waterfall([
         function (cb) {
-          d.insert({ age: 5 }, function (err) {
-            d.insert({ age: 57 }, function (err) {
-              d.insert({ age: 52 }, function (err) {
-                d.insert({ age: 23 }, function (err) {
-                  d.insert({ age: 89 }, function (err) {
-                    return cb();
-                  });
-                });
-              });
-            });
-          });
-        }
-      , function (cb) {
           var cursor = new Cursor(d);
           cursor.sort({ age: 1 }).limit(3).exec(function (err, docs) {
             assert.isNull(err);
@@ -234,7 +216,29 @@ describe.only('Cursor', function () {
       ], done);
     });
 
+    it('Using a limit higher than total number of docs shouldnt cause an error', function (done) {
+      var i;    
+      async.waterfall([
+        function (cb) {
+          var cursor = new Cursor(d);
+          cursor.sort({ age: 1 }).limit(7).exec(function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(5);
+            docs[0].age.should.equal(5);
+            docs[1].age.should.equal(23);
+            docs[2].age.should.equal(52);
+            docs[3].age.should.equal(57);
+            docs[4].age.should.equal(89);
+            cb();
+          });
+        }
+      ], done);
+    });
 
+    
+    
+    
+    
     
     
   
