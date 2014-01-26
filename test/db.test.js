@@ -603,7 +603,7 @@ describe('Database', function () {
       });
     });
     
-    it.only('Can use sort, skip and limit if the callback is not passed to find but to exec', function (done) {
+    it('Can use sort, skip and limit if the callback is not passed to find but to exec', function (done) {
       d.insert({ a: 2, hello: 'world' }, function () {
         d.insert({ a: 24, hello: 'earth' }, function () {
           d.insert({ a: 13, hello: 'blueplanet' }, function () {
