@@ -145,6 +145,8 @@ Use `find` to look for multiple documents matching you query, or `findOne` to lo
 
 You can use regular expressions in two ways: in basic querying in place of a string, or with the `$regex` operator.
 
+You can sort and paginate results using the cursor API (see below).
+
 #### Basic querying
 Basic querying means are looking for documents whose fields match the ones you specify. You can use regular expression to match strings.
 You can use the dot notation to navigate inside nested documents, arrays, arrays of subdocuments and to match a specific element of an array.
@@ -299,6 +301,24 @@ db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }], inhabited: true }, fun
 
 ```
 
+#### Sorting and paginating
+If you don't specify a callback to `find`, `findOne` or `skip`, a `Cursor` object is returned. You can modify the cursor with `sort`, `skip` and `limit` and then execute it with `exec(callback)`.
+
+```javascript
+// Let's say the database contains these 4 documents
+// doc1 = { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false, satellites: ['Phobos', 'Deimos'] }
+// doc2 = { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true, humans: { genders: 2, eyes: true } }
+// doc3 = { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
+// doc4 = { _id: 'id4', planet: 'Omicron Persei 8', system: 'futurama', inhabited: true, humans: { genders: 7 } }
+
+// No query used means all results are returned (before the Cursor modifiers)
+db.find({}).sort({ planet: 1 }).skip(1).limit(2).exec(function (err, docs) {
+  // docs is [doc3, doc1]
+});
+```
+
+
+
 ### Counting documents
 You can use `count` to count documents. It has the same syntax as `find`. For example:
 
@@ -313,6 +333,7 @@ db.count({}, function (err, count) {
   // count equals to 4
 });
 ```
+
 
 ### Updating documents
 `db.update(query, update, options, callback)` will update all documents matching `query` according to the `update` rules:  
