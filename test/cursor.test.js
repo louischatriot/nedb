@@ -531,7 +531,7 @@ describe('Cursor', function () {
         }
       ], done);
     });
-    
+
     it('Multiple consecutive sorts', function(done) {
       async.waterfall([
         function (cb) {

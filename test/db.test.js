@@ -620,7 +620,42 @@ describe('Database', function () {
         });      
       });
     });
-    
+
+     it('Can use sort and skip if the callback is not passed to findOne but to exec', function (done) {
+      d.insert({ a: 2, hello: 'world' }, function () {
+        d.insert({ a: 24, hello: 'earth' }, function () {
+          d.insert({ a: 13, hello: 'blueplanet' }, function () {
+            d.insert({ a: 15, hello: 'home' }, function () {
+              // No skip no query
+              d.findOne({}).sort({ a: 1 }).exec(function (err, doc) {
+                assert.isNull(err);
+                doc.hello.should.equal('world');
+                
+                // A query
+                d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).exec(function (err, doc) {
+                  assert.isNull(err);
+                  doc.hello.should.equal('home');
+                  
+                  // And a skip
+                  d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).skip(1).exec(function (err, doc) {
+                    assert.isNull(err);
+                    doc.hello.should.equal('earth');
+                    
+                    // No result
+                    d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).skip(2).exec(function (err, doc) {
+                      assert.isNull(err);
+                      assert.isNull(doc);
+                      
+                      done();
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });      
+      });
+    });   
 
   });   // ==== End of 'Find' ==== //
 
