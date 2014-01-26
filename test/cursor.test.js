@@ -532,9 +532,78 @@ describe('Cursor', function () {
       ], done);
     });
     
-    it.skip('Multiple consecutive sorts', function(done) {
-      done();
-    });
+    it('Multiple consecutive sorts', function(done) {
+      async.waterfall([
+        function (cb) {
+          d.remove({}, { multi: true }, function (err) {
+            if (err) { return cb(err); }
+
+            d.insert({ name: 'jako', age: 43, nid: 1 }, function () {
+              d.insert({ name: 'jakeb', age: 43, nid: 2 }, function () {
+                d.insert({ name: 'sue', age: 12, nid: 3 }, function () {
+                  d.insert({ name: 'zoe', age: 23, nid: 4 }, function () {
+                    d.insert({ name: 'jako', age: 35, nid: 5 }, function () {
+                      return cb();
+                    });
+                  });
+                });
+              });            
+            });
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ name: 1, age: -1 }).exec(function (err, docs) {
+            docs.length.should.equal(5);
+            
+            docs[0].nid.should.equal(2);
+            docs[1].nid.should.equal(1);
+            docs[2].nid.should.equal(5);
+            docs[3].nid.should.equal(3);
+            docs[4].nid.should.equal(4);
+            return cb();
+          });
+        }
+        , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ name: 1, age: 1 }).exec(function (err, docs) {
+            docs.length.should.equal(5);
+            
+            docs[0].nid.should.equal(2);
+            docs[1].nid.should.equal(5);
+            docs[2].nid.should.equal(1);
+            docs[3].nid.should.equal(3);
+            docs[4].nid.should.equal(4);
+            return cb();
+          });
+        }
+        , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ age: 1, name: 1 }).exec(function (err, docs) {
+            docs.length.should.equal(5);
+            
+            docs[0].nid.should.equal(3);
+            docs[1].nid.should.equal(4);
+            docs[2].nid.should.equal(5);
+            docs[3].nid.should.equal(2);
+            docs[4].nid.should.equal(1);
+            return cb();
+          });
+        }
+        , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ age: 1, name: -1 }).exec(function (err, docs) {
+            docs.length.should.equal(5);
+            
+            docs[0].nid.should.equal(3);
+            docs[1].nid.should.equal(4);
+            docs[2].nid.should.equal(5);
+            docs[3].nid.should.equal(1);
+            docs[4].nid.should.equal(2);
+            return cb();
+          });
+        }
+      ], done);    });
   
   });   // ===== End of 'Sorting' =====
   
