@@ -28,6 +28,11 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 * <a href="#compacting-the-database">Compacting the database</a>
 * <a href="#inserting-documents">Inserting documents</a>
 * <a href="#finding-documents">Finding documents</a>
+  * <a href="#basic-querying">Basic Querying</a>
+  * <a href="#operators-lt-lte-gt-gte-in-nin-ne-exists-regex">Operators ($lt, $lte, $gt, $gte, $in, $nin, $ne, $exists, $regex)</a>
+  * <a href="#array-fields">Array fields</a>
+  * <a href="#logical-operators-or-and-not">Logical operators $or, $and, $not</a>
+  * <a href="#sorting-and-paginating">Sorting and paginating</a>
 * <a href="#counting-documents">Counting documents</a>
 * <a href="#updating-documents">Updating documents</a>
 * <a href="#removing-documents">Removing documents</a>
@@ -144,6 +149,8 @@ db.insert([{ a: 5 }, { a: 42 }, { a: 5 }], function (err) {
 Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
 
 You can use regular expressions in two ways: in basic querying in place of a string, or with the `$regex` operator.
+
+You can sort and paginate results using the cursor API (see below).
 
 #### Basic querying
 Basic querying means are looking for documents whose fields match the ones you specify. You can use regular expression to match strings.
@@ -299,6 +306,32 @@ db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }], inhabited: true }, fun
 
 ```
 
+#### Sorting and paginating
+If you don't specify a callback to `find`, `findOne` or `count`, a `Cursor` object is returned. You can modify the cursor with `sort`, `skip` and `limit` and then execute it with `exec(callback)`.
+
+```javascript
+// Let's say the database contains these 4 documents
+// doc1 = { _id: 'id1', planet: 'Mars', system: 'solar', inhabited: false, satellites: ['Phobos', 'Deimos'] }
+// doc2 = { _id: 'id2', planet: 'Earth', system: 'solar', inhabited: true, humans: { genders: 2, eyes: true } }
+// doc3 = { _id: 'id3', planet: 'Jupiter', system: 'solar', inhabited: false }
+// doc4 = { _id: 'id4', planet: 'Omicron Persei 8', system: 'futurama', inhabited: true, humans: { genders: 7 } }
+
+// No query used means all results are returned (before the Cursor modifiers)
+db.find({}).sort({ planet: 1 }).skip(1).limit(2).exec(function (err, docs) {
+  // docs is [doc3, doc1]
+});
+
+// You can sort in reverse order like this
+db.find({ system: 'solar' }).sort({ planet: -1 }).exec(function (err, docs) {
+  // docs is [doc1, doc3, doc2]
+});
+
+// You can sort on one field, then another, and so on like this:
+db.find({}).sort({ firstField: 1, secondField: -1 }) ...   // You understand how this works!
+```
+
+
+
 ### Counting documents
 You can use `count` to count documents. It has the same syntax as `find`. For example:
 
@@ -313,6 +346,7 @@ db.count({}, function (err, count) {
   // count equals to 4
 });
 ```
+
 
 ### Updating documents
 `db.update(query, update, options, callback)` will update all documents matching `query` according to the `update` rules:  
