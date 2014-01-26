@@ -645,7 +645,7 @@ describe('Database', function () {
                     d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).skip(2).exec(function (err, doc) {
                       assert.isNull(err);
                       assert.isNull(doc);
-                      
+
                       done();
                     });
                   });
