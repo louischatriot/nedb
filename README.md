@@ -28,6 +28,8 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 * <a href="#compacting-the-database">Compacting the database</a>
 * <a href="#inserting-documents">Inserting documents</a>
 * <a href="#finding-documents">Finding documents</a>
+  * xxxx
+  * xxxx
 * <a href="#counting-documents">Counting documents</a>
 * <a href="#updating-documents">Updating documents</a>
 * <a href="#removing-documents">Removing documents</a>
