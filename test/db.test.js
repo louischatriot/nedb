@@ -905,14 +905,15 @@ describe('Database', function () {
         d.find({}, function (err, docs) {
           docs.length.should.equal(0);   // Default option for upsert is false
 
-          d.update({ impossible: 'db is empty anyway' }, { newDoc: true }, { upsert: true }, function (err, nr, upsert) {
+          d.update({ impossible: 'db is empty anyway' }, { something: "created ok" }, { upsert: true }, function (err, nr, newDoc) {
             assert.isNull(err);
             nr.should.equal(1);
-            upsert.should.equal(true);
+            newDoc.something.should.equal("created ok");
+            assert.isDefined(newDoc._id);
 
             d.find({}, function (err, docs) {
               docs.length.should.equal(1);   // Default option for upsert is false
-              docs[0].newDoc.should.equal(true);
+              docs[0].something.should.equal("created ok");
 
               done();
             });
@@ -966,10 +967,12 @@ describe('Database', function () {
     });
 
     it('Can upsert a document even with modifiers', function (done) {
-      d.update({ bloup: 'blap' }, { $set: { hello: 'world' } }, { upsert: true }, function (err, nr, upsert) {
+      d.update({ bloup: 'blap' }, { $set: { hello: 'world' } }, { upsert: true }, function (err, nr, newDoc) {
         assert.isNull(err);
         nr.should.equal(1);
-        upsert.should.equal(true);
+        newDoc.bloup.should.equal('blap');
+        newDoc.hello.should.equal('world');
+        assert.isDefined(newDoc._id);
 
         d.find({}, function (err, docs) {
           docs.length.should.equal(1);
