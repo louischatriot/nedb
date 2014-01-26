@@ -307,7 +307,7 @@ db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }], inhabited: true }, fun
 ```
 
 #### Sorting and paginating
-If you don't specify a callback to `find`, `findOne` or `skip`, a `Cursor` object is returned. You can modify the cursor with `sort`, `skip` and `limit` and then execute it with `exec(callback)`.
+If you don't specify a callback to `find`, `findOne` or `count`, a `Cursor` object is returned. You can modify the cursor with `sort`, `skip` and `limit` and then execute it with `exec(callback)`.
 
 ```javascript
 // Let's say the database contains these 4 documents
