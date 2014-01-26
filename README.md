@@ -315,6 +315,14 @@ If you don't specify a callback to `find`, `findOne` or `skip`, a `Cursor` objec
 db.find({}).sort({ planet: 1 }).skip(1).limit(2).exec(function (err, docs) {
   // docs is [doc3, doc1]
 });
+
+// You can sort in reverse order like this
+db.find({ system: 'solar' }).sort({ planet: -1 }).exec(function (err, docs) {
+  // docs is [doc1, doc3, doc2]
+});
+
+// You can sort on one field, then another, and so on like this:
+db.find({}).sort({ firstField: 1, secondField: -1 }) ...   // You understand how this works!
 ```
 
 
