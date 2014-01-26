@@ -28,8 +28,11 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 * <a href="#compacting-the-database">Compacting the database</a>
 * <a href="#inserting-documents">Inserting documents</a>
 * <a href="#finding-documents">Finding documents</a>
-  * xxxx
-  * xxxx
+  * <a href="#basic-querying">Basic Querying</a>
+  * <a href="#operators-lt-lte-gt-gte-in-nin-ne-exists-regex">Operators ($lt, $lte, $gt, $gte, $in, $nin, $ne, $exists, $regex)</a>
+  * <a href="#array-fields">Array fields</a>
+  * <a href="#logical-operators-or-and-not">Logical operators $or, $and, $not</a>
+  * <a href="#sorting-and-paginating">Sorting and paginating</a>
 * <a href="#counting-documents">Counting documents</a>
 * <a href="#updating-documents">Updating documents</a>
 * <a href="#removing-documents">Removing documents</a>
