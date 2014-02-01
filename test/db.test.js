@@ -914,8 +914,15 @@ describe('Database', function () {
             d.find({}, function (err, docs) {
               docs.length.should.equal(1);   // Default option for upsert is false
               docs[0].something.should.equal("created ok");
-
-              done();
+              
+              // Modifying the returned upserted document doesn't modify the database
+              newDoc.newField = true;
+              d.find({}, function (err, docs) {
+                docs[0].something.should.equal("created ok");
+                assert.isUndefined(docs[0].newField);
+              
+                done();
+              });
             });
           });
         });
