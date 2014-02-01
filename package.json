@@ -36,6 +36,10 @@
   "scripts": {
     "test": "./node_modules/.bin/mocha --reporter spec --timeout 2000"
   },
+  "browser": {
+    "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
+    "./lib/persistence.js": "./browser-version/browser-specific/lib/persistence.js"
+  },
   "main": "index",
   "licence": "MIT"
 }
