@@ -1172,6 +1172,24 @@ describe('Model', function () {
     });
 
 
+    describe('Logical operator $where', function () {
+
+      it('Function should match and not match correctly', function () {
+        model.match({ a: 4}, { $where: function () { return this.a === 4; } }).should.equal(true);
+        model.match({ a: 4}, { $where: function () { return this.a === 5; } }).should.equal(false);
+      });
+
+      it('Should throw an error if the $where function is not, in fact, a function', function () {
+        (function () { model.match({ a: 4 }, { $where: 'not a function' }); }).should.throw();
+      });
+
+      it('Should throw an error if the $where function returns a non-boolean', function () {
+        (function () { model.match({ a: 4 }, { $where: function () { return 'not a boolean'; } }); }).should.throw();
+      });
+
+    });
+
+
     describe('Array fields', function () {
 
       it('Field equality', function () {
