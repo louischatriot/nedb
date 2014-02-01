@@ -598,6 +598,123 @@ process.chdir = function (dir) {
 
 },{}],4:[function(require,module,exports){
 /**
+ * Manage access to data, be it to find, update or remove it
+ */
+var model = require('./model');
+
+ 
+
+/**
+ * Create a new cursor for this collection
+ * @param {Datastore} db - The datastore this cursor is bound to
+ * @param {Query} query - The query this cursor will operate on
+ * @param {Function} execDn - Handler to be executed  after cursor has found the results and before the callback passed to find/findOne/update/remove
+ */
+function Cursor (db, query, execFn) {
+  this.db = db;
+  this.query = query || {};
+  if (execFn) { this.execFn = execFn; }
+}
+
+
+/**
+ * Set a limit to the number of results
+ */
+Cursor.prototype.limit = function(limit) {
+  this._limit = limit;
+  return this;
+};
+
+
+/**
+ * Skip a the number of results
+ */
+Cursor.prototype.skip = function(skip) {
+  this._skip = skip;
+  return this;
+};
+
+
+/**
+ * Sort results of the query
+ * @Param {SortQuery} sortQuery - SortQuery is { field: order }, field can use the dot-notation, order is 1 for ascending and -1 for descending
+ */
+Cursor.prototype.sort = function(sortQuery) {
+  this._sort = sortQuery;
+  return this;
+};
+
+
+/**
+ * Get all matching elements
+ * Will return pointers to matched elements (shallow copies), returning full copies is the role of find or findOne
+ * This is an internal function, use exec which uses the executor
+ *
+ * @param {Function} callback - Signature: err, results
+ */
+Cursor.prototype._exec = function(callback) {
+  var candidates = this.db.getCandidates(this.query)
+    , res = [], added = 0, skipped = 0, self = this
+    , i, keys, key
+    ;
+  
+  try {
+    for (i = 0; i < candidates.length; i += 1) {
+      if (model.match(candidates[i], this.query)) {
+        // If a sort is defined, wait for the results to be sorted before applying limit and skip
+        if (!this._sort) {
+          if (this._skip && this._skip > skipped) {
+            skipped += 1;
+          } else {
+            res.push(candidates[i]);
+            added += 1;
+            if (this._limit && this._limit <= added) { break; }                  
+          }
+        } else {
+          res.push(candidates[i]);
+        }
+      }
+    }
+  } catch (err) {
+    return callback(err);
+  }
+
+  // Apply all sorts
+  if (this._sort) {
+    keys = Object.keys(this._sort);
+    
+    // Going backwards so that the first sort is the last that gets applied
+    for (i = keys.length - 1; i >= 0; i -= 1) {
+      key = keys[i];
+      res.sort(function(a, b) {
+        return self._sort[key] * model.compareThings(model.getDotValue(a, key), model.getDotValue(b, key));
+      });    
+    }
+    
+    // Applying limit and skip
+    var limit = this._limit || res.length
+      , skip = this._skip || 0;
+      
+    res = res.slice(skip, skip + limit);
+  }
+
+  if (this.execFn) {
+    return this.execFn(null, res, callback);
+  } else {
+    return callback(null, res);
+  }
+};
+
+Cursor.prototype.exec = function () {
+  this.db.executor.push({ this: this, fn: this._exec, arguments: arguments });
+};
+
+
+
+// Interface
+module.exports = Cursor;
+},{"./model":9}],5:[function(require,module,exports){
+/**
  * Specific customUtils for the browser, where we don't have access to the Crypto and Buffer modules
  */
 
@@ -676,7 +793,7 @@ function uid (len) {
 
 module.exports.uid = uid;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 var customUtils = require('./customUtils')
   , model = require('./model')
   , async = require('async')
@@ -685,6 +802,7 @@ var customUtils = require('./customUtils')
   , util = require('util')
   , _ = require('underscore')
   , Persistence = require('./persistence')
+  , Cursor = require('./cursor')
   ;
 
 
@@ -695,6 +813,7 @@ var customUtils = require('./customUtils')
  * @param {Boolean} options.nodeWebkitAppName Optional, specify the name of your NW app if you want options.filename to be relative to the directory where
  *                                            Node Webkit stores application data such as cookies and local storage (the best place to store data in my opinion)
  * @param {Boolean} options.autoload Optional, defaults to false
+ * @param {Function} options.onload Optional, if autoload is used this will be called after the load database with the error object as parameter. If you don't pass it the error will be thrown
  */
 function Datastore (options) {
   var filename;
@@ -732,7 +851,11 @@ function Datastore (options) {
   this.indexes = {};
   this.indexes._id = new Index({ fieldName: '_id', unique: true });
   
-  if (this.autoload) { this.loadDatabase(); }
+  // Queue a load of the database right away and call the onload handler
+  // By default (no onload handler), if there is an error there, no operation will be possible so warn the user by throwing an exception
+  if (this.autoload) { this.loadDatabase(options.onload || function (err) {
+    if (err) { throw err; }
+  }); }
 }
 
 
@@ -892,6 +1015,8 @@ Datastore.prototype.updateIndexes = function (oldDoc, newDoc) {
  * We try the following query types, in this order: basic match, $in match, comparison match
  * One way to make it better would be to enable the use of multiple indexes if the first usable index
  * returns too much data. I may do it in the future.
+ *
+ * TODO: needs to be moved to the Cursor module
  */
 Datastore.prototype.getCandidates = function (query) {
   var indexNames = Object.keys(this.indexes)
@@ -1024,94 +1149,70 @@ Datastore.prototype.insert = function () {
   this.executor.push({ this: this, fn: this._insert, arguments: arguments });
 };
 
+
 /**
  * Count all documents matching the query
  * @param {Object} query MongoDB-style query
- *
- * @api private Use count
  */
-Datastore.prototype._count = function(query, callback) {
-  var res = 0
-    , self = this
-    , candidates = this.getCandidates(query)
-    , i
-    ;
+Datastore.prototype.count = function(query, callback) {
+  var cursor = new Cursor(this, query, function(err, docs, callback) {
+    if (err) { return callback(err); }
+    return callback(null, docs.length);
+  });
 
-  try {
-    for (i = 0; i < candidates.length; i += 1) {
-      if (model.match(candidates[i], query)) {
-        res++;
-      }
-    }
-  } catch (err) {
-    return callback(err);
+  if (typeof callback === 'function') {
+    cursor.exec(callback);
+  } else {
+    return cursor;
   }
+};
 
-  return callback(null, res);
-}
-
-Datastore.prototype.count = function() {
-    this.executor.push({this: this, fn: this._count, arguments: arguments });
-}
 
 /**
  * Find all documents matching the query
+ * If no callback is passed, we return the cursor so that user can limit, skip and finally exec
  * @param {Object} query MongoDB-style query
- *
- * @api private Use find
  */
-Datastore.prototype._find = function (query, callback) {
-  var res = []
-    , self = this
-    , candidates = this.getCandidates(query)
-    , i
-    ;
-
-  try {
-    for (i = 0; i < candidates.length; i += 1) {
-      if (model.match(candidates[i], query)) {
-        res.push(model.deepCopy(candidates[i]));
-      }
+Datastore.prototype.find = function (query, callback) {
+  var cursor = new Cursor(this, query, function(err, docs, callback) {
+    var res = [], i;
+  
+    if (err) { return callback(err); }
+    
+    for (i = 0; i < docs.length; i += 1) {
+      res.push(model.deepCopy(docs[i]));
     }
-  } catch (err) {
-    return callback(err);
+    return callback(null, res);
+  });
+
+  if (typeof callback === 'function') {
+    cursor.exec(callback);
+  } else {
+    return cursor;
   }
-
-  return callback(null, res);
-};
-
-Datastore.prototype.find = function () {
-  this.executor.push({ this: this, fn: this._find, arguments: arguments });
 };
 
 
 /**
  * Find one document matching the query
  * @param {Object} query MongoDB-style query
- *
- * @api private Use findOne
  */
-Datastore.prototype._findOne = function (query, callback) {
-  var self = this
-    , candidates = this.getCandidates(query)
-    , i, found = null
-    ;
-
-  try {
-    for (i = 0; i < candidates.length; i += 1) {
-      if (model.match(candidates[i], query)) {
-        found = model.deepCopy(candidates[i]);
-      }
+Datastore.prototype.findOne = function (query, callback) {
+  var cursor = new Cursor(this, query, function(err, docs, callback) {
+    if (err) { return callback(err); }
+    if (docs.length === 1) {
+      return callback(null, model.deepCopy(docs[0]));
+    } else {
+      return callback(null, null);    
     }
-  } catch (err) {
-    return callback(err);
+  });
+
+  cursor.limit(1);
+  if (typeof callback === 'function') {
+    cursor.exec(callback);
+  } else {
+    return cursor;
   }
-
-  return callback(null, found);
-};
-
-Datastore.prototype.findOne = function () {
-  this.executor.push({ this: this, fn: this._findOne, arguments: arguments });
 };
 
 
@@ -1144,13 +1245,13 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
   function (cb) {   // If upsert option is set, check whether we need to insert the doc
     if (!upsert) { return cb(); }
 
-    self._findOne(query, function (err, doc) {
+    // Need to use an internal function not tied to the executor to avoid deadlock
+    var cursor = new Cursor(self, query);
+    cursor.limit(1)._exec(function (err, docs) {
       if (err) { return callback(err); }
-      if (doc) {
+      if (docs.length === 1) {
         return cb();
       } else {
-        // The upserted document is the query (since for now queries have the same structure as
-        // documents), modified by the updateQuery
         return self._insert(model.modify(query, updateQuery), function (err) {
           if (err) { return callback(err); }
           return callback(null, 1, true);
@@ -1242,7 +1343,7 @@ Datastore.prototype.remove = function () {
 
 
 module.exports = Datastore;
-},{"./customUtils":4,"./executor":6,"./indexes":7,"./model":8,"./persistence":9,"async":10,"underscore":15,"util":2}],6:[function(require,module,exports){
+},{"./cursor":4,"./customUtils":5,"./executor":7,"./indexes":8,"./model":9,"./persistence":10,"async":11,"underscore":16,"util":2}],7:[function(require,module,exports){
 /**
  * Responsible for sequentially executing actions on the database
  */
@@ -1317,7 +1418,7 @@ Executor.prototype.processBuffer = function () {
 // Interface
 module.exports = Executor;
 
-},{"async":10}],7:[function(require,module,exports){
+},{"async":11}],8:[function(require,module,exports){
 var BinarySearchTree = require('binary-search-tree').AVLTree
   , model = require('./model')
   , _ = require('underscore')
@@ -1613,7 +1714,7 @@ Index.prototype.getAll = function () {
 // Interface
 module.exports = Index;
 
-},{"./model":8,"binary-search-tree":11,"underscore":15,"util":2}],8:[function(require,module,exports){
+},{"./model":9,"binary-search-tree":12,"underscore":16,"util":2}],9:[function(require,module,exports){
 /**
  * Handle models (i.e. docs)
  * Serialization/deserialization
@@ -2359,7 +2460,7 @@ module.exports.match = match;
 module.exports.areThingsEqual = areThingsEqual;
 module.exports.compareThings = compareThings;
 
-},{"underscore":15,"util":2}],9:[function(require,module,exports){
+},{"underscore":16,"util":2}],10:[function(require,module,exports){
 /**
  * Handle every persistence-related task
  * The interface Datastore expects to be implemented is
@@ -2401,7 +2502,7 @@ Persistence.prototype.loadDatabase = function (cb) {
 // Interface
 module.exports = Persistence;
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 var process=require("__browserify_process");/*global setImmediate: false, setTimeout: false, console: false */
 (function () {
 
@@ -3358,11 +3459,11 @@ var process=require("__browserify_process");/*global setImmediate: false, setTim
 
 }());
 
-},{"__browserify_process":3}],11:[function(require,module,exports){
+},{"__browserify_process":3}],12:[function(require,module,exports){
 module.exports.BinarySearchTree = require('./lib/bst');
 module.exports.AVLTree = require('./lib/avltree');
 
-},{"./lib/avltree":12,"./lib/bst":13}],12:[function(require,module,exports){
+},{"./lib/avltree":13,"./lib/bst":14}],13:[function(require,module,exports){
 /**
  * Self-balancing binary search tree using the AVL implementation
  */
@@ -3819,7 +3920,7 @@ AVLTree.prototype.delete = function (key, value) {
 // Interface
 module.exports = AVLTree;
 
-},{"./bst":13,"./customUtils":14,"underscore":15,"util":2}],13:[function(require,module,exports){
+},{"./bst":14,"./customUtils":15,"underscore":16,"util":2}],14:[function(require,module,exports){
 /**
  * Simple binary search tree
  */
@@ -4364,7 +4465,7 @@ BinarySearchTree.prototype.prettyPrint = function (printData, spacing) {
 // Interface
 module.exports = BinarySearchTree;
 
-},{"./customUtils":14}],14:[function(require,module,exports){
+},{"./customUtils":15}],15:[function(require,module,exports){
 /**
  * Return an array with the numbers from 0 to n-1, in a random order
  */
@@ -4404,7 +4505,7 @@ function defaultCheckValueEquality (a, b) {
 }
 module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 //     Underscore.js 1.4.4
 //     http://underscorejs.org
 //     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
@@ -5632,6 +5733,6 @@ module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
 }).call(this);
 
-},{}]},{},[5])(5)
+},{}]},{},[6])(6)
 });
 ;
