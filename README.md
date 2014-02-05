@@ -31,7 +31,7 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
   * <a href="#basic-querying">Basic Querying</a>
   * <a href="#operators-lt-lte-gt-gte-in-nin-ne-exists-regex">Operators ($lt, $lte, $gt, $gte, $in, $nin, $ne, $exists, $regex)</a>
   * <a href="#array-fields">Array fields</a>
-  * <a href="#logical-operators-or-and-not">Logical operators $or, $and, $not</a>
+  * <a href="#logical-operators-or-and-not-where">Logical operators $or, $and, $not, $where</a>
   * <a href="#sorting-and-paginating">Sorting and paginating</a>
 * <a href="#counting-documents">Counting documents</a>
 * <a href="#updating-documents">Updating documents</a>
@@ -146,7 +146,7 @@ db.insert([{ a: 5 }, { a: 42 }, { a: 5 }], function (err) {
 ```
 
 ### Finding documents
-Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and` and `$not`. See below for the syntax.
+Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and`, `$not` and `$where`. See below for the syntax.
 
 You can use regular expressions in two ways: in basic querying in place of a string, or with the `$regex` operator.
 
@@ -284,11 +284,12 @@ db.find({ satellites: { $in: ['Moon', 'Deimos'] } }, function (err, docs) {
 });
 ```
 
-#### Logical operators $or, $and, $not
+#### Logical operators $or, $and, $not, $where
 You can combine queries using logical operators:  
 
 * For `$or` and `$and`, the syntax is `{ $op: [query1, query2, ...] }`.
 * For `$not`, the syntax is `{ $not: query }`
+* For `$where`, the syntax is `{ $where: function () { /* object is "this", return a boolean */ } }`
 
 ```javascript
 db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }] }, function (err, docs) {
@@ -297,6 +298,10 @@ db.find({ $or: [{ planet: 'Earth' }, { planet: 'Mars' }] }, function (err, docs)
 
 db.find({ $not: { planet: 'Earth' } }, function (err, docs) {
   // docs contains Mars, Jupiter, Omicron Persei 8
+});
+
+db.find({ $where: function () { return Object.keys(this) > 6; } }, function (err, docs) {
+  // docs with more than 6 properties
 });
 
 // You can mix normal queries, comparison queries and logical operators
