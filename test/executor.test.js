@@ -49,18 +49,28 @@ function testRightOrder (d, done) {
     // Do nothing with the error which is only there to test we stay on track
   });
 
-  d.find({}, function (err) {    
-    process.nextTick(function () {
-      d.insert({ bar: 1 }, function (err) {
-        for (var i = 0; i < currentUncaughtExceptionHandlers.length; i += 1) {
-          process.on('uncaughtException', currentUncaughtExceptionHandlers[i]);
-        }
-        
-        done();
+  d.find({}, function (err, docs) {
+    docs.length.should.equal(0);
+  
+    d.insert({ a: 1 }, function () {
+      d.update({ a: 1 }, { a: 2 }, {}, function () {
+        d.find({}, function (err, docs) {
+          docs[0].a.should.equal(2);
+          
+          process.nextTick(function () {
+            d.update({ a: 2 }, { a: 3 }, {}, function () {
+              d.find({}, function (err, docs) {
+                docs[0].a.should.equal(3);
+                done();
+
+              });
+            });
+          });
+          
+          throw 'Some error';
+        });
       });
     });
-    
-    throw 'Some error';
   });
 }  
   
@@ -68,7 +78,7 @@ function testRightOrder (d, done) {
 
 describe('Executor', function () {
 
-  describe.only('With persistent database', function () {
+  describe('With persistent database', function () {
     var d;
 
     beforeEach(function (done) {
@@ -99,6 +109,10 @@ describe('Executor', function () {
     it('A throw in a callback doesnt prevent execution of next operations', function(done) {
       testThrowInCallback(d, done);
     });
+    
+    it('Operations are executed in the right order', function(done) {
+      testRightOrder(d, done);
+    });
   
   });   // ==== End of 'With persistent database' ====
 
@@ -113,12 +127,16 @@ describe('Executor', function () {
       d.loadDatabase(function (err) {
         assert.isNull(err);
         d.getAllData().length.should.equal(0);
-        return cb();
+        return done();
       });
     });
 
     it('A throw in a callback doesnt prevent execution of next operations', function(done) {
       testThrowInCallback(d, done);
+    });
+  
+    it('Operations are executed in the right order', function(done) {
+      testRightOrder(d, done);
     });
   
   });   // ==== End of 'With non persistent database' ====
