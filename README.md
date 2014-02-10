@@ -8,9 +8,11 @@ can be used with a simple `require` statement. The API is a subset of MongoDB's.
 
 NeDB is not intended to be a replacement of large-scale databases such as MongoDB! Its goal is to provide you with a clean and easy way to query data and persist it to disk, for web applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a> and desktop applications built with <a href="https://github.com/rogerwang/node-webkit" target="_blank">Node Webkit</a>.
 
-I recently benchmarked NeDB against the popular client-side database <a href="http://www.taffydb.com/" target="_blank">TaffyDB</a> and <a href="https://github.com/louischatriot/taffydb-benchmark" target="_blank">NeDB is much, much faster</a>. That's why I created <a href="#browser-version">a browser version</a>.
+NeDB was benchmarked against the popular client-side database <a href="http://www.taffydb.com/" target="_blank">TaffyDB</a> and <a href="https://github.com/louischatriot/taffydb-benchmark" target="_blank">NeDB is much, much faster</a>. That's why there is now <a href="#browser-version">a browser version</a>.
 
 Check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log in the wiki</a> if you think nedb doesn't behave as the documentation describes! Most of the issues I get are due to non-latest version NeDBs.
+
+You want to help out? Check out how!
 
 
 ## Installation, tests
@@ -581,6 +583,10 @@ of a lower speed).
 Connect and Express, backed by nedb
 * If you mostly use NeDB for logging purposes and don't want the memory footprint of your application to grow too large, you can use <a href="https://github.com/louischatriot/nedb-logger" target="_blank">NeDB Logger</a> to insert documents in a NeDB-readable database
 * If you've outgrown NeDB, switching to MongoDB won't be too hard as it is the same API. Use <a href="https://github.com/louischatriot/nedb-to-mongodb" target="_blank">this utility</a> to transfer the data from a NeDB database to a MongoDB collection
+
+
+## Help out!
+
 
 
 ## License 
