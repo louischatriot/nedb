@@ -585,8 +585,14 @@ Connect and Express, backed by nedb
 * If you've outgrown NeDB, switching to MongoDB won't be too hard as it is the same API. Use <a href="https://github.com/louischatriot/nedb-to-mongodb" target="_blank">this utility</a> to transfer the data from a NeDB database to a MongoDB collection
 
 
-## Help out!
+## Contribute!
+You want to help? You can contribute time or bitcoins.
 
+### Helping on the codebase
+Issues reporting and pull requests are always appreciated. For issues, make sure to always include a code snippet and describe the expected vs actual behavior. If you send a pull request, make sure to stick to NeDB's coding style and always test all the code you submit. You can look at the current tests to see how to do it
+
+### Bitcoins
+You don't have time? You can support NeDB by sending bitcoins to this adress: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
 
 ## License 
