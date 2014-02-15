@@ -187,7 +187,9 @@ describe('Basic CRUD functionality', function () {
 
     db.update({ a: 4 }, { $inc: { b: 1 } }, { upsert: true }, function (err, nr, upsert) {
       assert.isNull(err);
-      upsert.should.equal(true);
+      // Return upserted document
+      upsert.a.should.equal(4);
+      upsert.b.should.equal(1);
       nr.should.equal(1);
 
       db.find({}, function (err, docs) {
