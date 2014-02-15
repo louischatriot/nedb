@@ -1252,9 +1252,9 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
       if (docs.length === 1) {
         return cb();
       } else {
-        return self._insert(model.modify(query, updateQuery), function (err) {
+        return self._insert(model.modify(query, updateQuery), function (err, newDoc) {
           if (err) { return callback(err); }
-          return callback(null, 1, true);
+          return callback(null, 1, newDoc);
         });
       }
     });
@@ -1342,9 +1342,11 @@ Datastore.prototype.remove = function () {
 };
 
 
+
 module.exports = Datastore;
+
 },{"./cursor":4,"./customUtils":5,"./executor":7,"./indexes":8,"./model":9,"./persistence":10,"async":11,"underscore":16,"util":2}],7:[function(require,module,exports){
-/**
+var process=require("__browserify_process");/**
  * Responsible for sequentially executing actions on the database
  */
 
@@ -1368,8 +1370,8 @@ function Executor () {
     // Always tell the queue task is complete. Execute callback if any was given.
     if (typeof lastArg === 'function') {
       callback = function () {
+        process.nextTick(cb);
         lastArg.apply(null, arguments);
-        cb();
       };
 
       newArguments[newArguments.length - 1] = callback;
@@ -1418,7 +1420,7 @@ Executor.prototype.processBuffer = function () {
 // Interface
 module.exports = Executor;
 
-},{"async":11}],8:[function(require,module,exports){
+},{"__browserify_process":3,"async":11}],8:[function(require,module,exports){
 var BinarySearchTree = require('binary-search-tree').AVLTree
   , model = require('./model')
   , _ = require('underscore')
@@ -2358,6 +2360,23 @@ logicalOperators.$not = function (obj, query) {
 
 
 /**
+ * Use a function to match
+ * @param {Model} obj
+ * @param {Query} query
+ */
+logicalOperators.$where = function (obj, fn) {
+  var result;
+
+  if (!_.isFunction(fn)) { throw "$where operator used without a function"; }
+
+  result = fn.call(obj);
+  if (!_.isBoolean(result)) { throw "$where function must return boolean"; }
+
+  return result;
+};
+
+
+/**
  * Tell if a given document matches a query
  * @param {Object} obj Document to check
  * @param {Object} query
@@ -2596,7 +2615,10 @@ var process=require("__browserify_process");/*global setImmediate: false, setTim
     else {
         async.nextTick = process.nextTick;
         if (typeof setImmediate !== 'undefined') {
-            async.setImmediate = setImmediate;
+            async.setImmediate = function (fn) {
+              // not a direct alias for IE10 compatibility
+              setImmediate(fn);
+            };
         }
         else {
             async.setImmediate = async.nextTick;
