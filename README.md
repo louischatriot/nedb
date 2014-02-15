@@ -12,7 +12,7 @@ NeDB was benchmarked against the popular client-side database <a href="http://ww
 
 Check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log in the wiki</a> if you think nedb doesn't behave as the documentation describes! Most of the issues I get are due to non-latest version NeDBs.
 
-You want to help out? Check out how!
+You want to help out? <a href="#contribute">You can contribute time or bitcoins, check out how!</a>
 
 
 ## Installation, tests
