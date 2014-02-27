@@ -35,6 +35,7 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
   * <a href="#array-fields">Array fields</a>
   * <a href="#logical-operators-or-and-not-where">Logical operators $or, $and, $not, $where</a>
   * <a href="#sorting-and-paginating">Sorting and paginating</a>
+  * <a href="#browsing-through-documents">Browsing through documents using $first, $last, $before and $after</a>
 * <a href="#counting-documents">Counting documents</a>
 * <a href="#updating-documents">Updating documents</a>
 * <a href="#removing-documents">Removing documents</a>
@@ -337,7 +338,33 @@ db.find({ system: 'solar' }).sort({ planet: -1 }).exec(function (err, docs) {
 db.find({}).sort({ firstField: 1, secondField: -1 }) ...   // You understand how this works!
 ```
 
+#### Browsing through documents
 
+You can use `$first`, `$last`, `$before` and `$after` to browse through all or some of the documents like this:
+
+```
+db.find({ planet: { $first: true }}, function(err, docs) {
+  // docs is [ doc2 ]
+});
+
+db.find({ planet: { $after: 'Earth' }}, function(err, docs) {
+  // docs is [ doc3 ]
+});
+
+db.find({ planet: { $last: true }}, function(err, docs) {
+  // docs is [ doc4 ]
+});
+
+db.find({ planet: { $before: 'Nothing' }}, function(err, docs) {
+  // docs is [ doc1 ]
+});
+```
+
+These operators cannot be combined with any other operators, and they always only return a single result (or multiple results only in case there were multiple documents with equal keys).
+
+As seen in the last example, the key value does not have to exist in the database; the search will anyway give you the result preceding that key value. Please note that the searched field must be indexed. 
+
+Similar results can be achieved using `skip`, `sort` and `limit` but the difference is that these operators are much more efficient.
 
 ### Counting documents
 You can use `count` to count documents. It has the same syntax as `find`. For example:
