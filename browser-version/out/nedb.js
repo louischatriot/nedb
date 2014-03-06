@@ -561,7 +561,8 @@ process.nextTick = (function () {
     if (canPost) {
         var queue = [];
         window.addEventListener('message', function (ev) {
-            if (ev.source === window && ev.data === 'process-tick') {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
                 ev.stopPropagation();
                 if (queue.length > 0) {
                     var fn = queue.shift();
@@ -600,9 +601,8 @@ process.chdir = function (dir) {
 /**
  * Manage access to data, be it to find, update or remove it
  */
-var model = require('./model');
-
- 
+var model = require('./model'),
+  async = require('async');
 
 /**
  * Create a new cursor for this collection
@@ -610,40 +610,46 @@ var model = require('./model');
  * @param {Query} query - The query this cursor will operate on
  * @param {Function} execDn - Handler to be executed  after cursor has found the results and before the callback passed to find/findOne/update/remove
  */
-function Cursor (db, query, execFn) {
+function Cursor(db, query, execFn) {
   this.db = db;
   this.query = query || {};
-  if (execFn) { this.execFn = execFn; }
+  if (execFn) {
+    this.execFn = execFn;
+  }
 }
-
 
 /**
  * Set a limit to the number of results
  */
-Cursor.prototype.limit = function(limit) {
+Cursor.prototype.limit = function (limit) {
   this._limit = limit;
   return this;
 };
 
-
 /**
  * Skip a the number of results
  */
-Cursor.prototype.skip = function(skip) {
+Cursor.prototype.skip = function (skip) {
   this._skip = skip;
   return this;
 };
 
+/**
+ * Aggregate on results
+ */
+Cursor.prototype.group = function (group) {
+  this._group = group;
+  return this;
+};
 
 /**
  * Sort results of the query
  * @Param {SortQuery} sortQuery - SortQuery is { field: order }, field can use the dot-notation, order is 1 for ascending and -1 for descending
  */
-Cursor.prototype.sort = function(sortQuery) {
+Cursor.prototype.sort = function (sortQuery) {
   this._sort = sortQuery;
   return this;
 };
-
 
 /**
  * Get all matching elements
@@ -652,68 +658,123 @@ Cursor.prototype.sort = function(sortQuery) {
  *
  * @param {Function} callback - Signature: err, results
  */
-Cursor.prototype._exec = function(callback) {
-  var candidates = this.db.getCandidates(this.query)
-    , res = [], added = 0, skipped = 0, self = this
-    , i, keys, key
-    ;
-  
-  try {
-    for (i = 0; i < candidates.length; i += 1) {
-      if (model.match(candidates[i], this.query)) {
-        // If a sort is defined, wait for the results to be sorted before applying limit and skip
-        if (!this._sort) {
-          if (this._skip && this._skip > skipped) {
-            skipped += 1;
+Cursor.prototype._exec = function (callback) {
+  var candidates = this.db.getCandidates(this.query),
+    res = [],
+    added = 0,
+    skipped = 0,
+    self = this,
+    i, keys, key;
+
+  if (this._group) {
+    async.waterfall([
+
+      function (next) {
+        async.each(candidates, function (cand, done) {
+          try {
+            if (model.match(cand, self.query)) {
+              res.push(cand);
+            }
+            done();
+          } catch (err) {
+            done(err);
+          }
+        }, function (err) {
+          next(err, res);
+        });
+      },
+      function (coll, next) {
+        var res = [];
+        //TODO: group stuff
+        return next(null, res);
+      },
+      function (coll, next) {
+        if (self._sort) {
+          keys = Object.keys(self._sort);
+
+          // Going backwards so that the first sort is the last that gets applied
+          for (i = keys.length - 1; i >= 0; i -= 1) {
+            key = keys[i];
+            coll.sort(function (a, b) {
+              return self._sort[key] * model.compareThings(model.getDotValue(a, key), model.getDotValue(b, key));
+            });
+          }
+        }
+        next(null, coll);
+      },
+      function (coll, next) {
+        next(null, coll.slice(self._skip || 0, self._limit || coll.length));
+      }
+    ], function (err, res) {
+      if (self.execFn) {
+        return self.execFn(err, res, callback);
+      } else {
+        return callback(err, res);
+      }
+    });
+  } else {
+
+    try {
+      for (i = 0; i < candidates.length; i += 1) {
+        if (model.match(candidates[i], this.query)) {
+          // If a sort is defined, wait for the results to be sorted before applying limit and skip
+          if (!this._sort) {
+            if (this._skip && this._skip > skipped) {
+              skipped += 1;
+            } else {
+              res.push(candidates[i]);
+              added += 1;
+              if (this._limit && this._limit <= added) {
+                break;
+              }
+            }
           } else {
             res.push(candidates[i]);
-            added += 1;
-            if (this._limit && this._limit <= added) { break; }                  
           }
-        } else {
-          res.push(candidates[i]);
         }
       }
+    } catch (err) {
+      return callback(err);
     }
-  } catch (err) {
-    return callback(err);
-  }
 
-  // Apply all sorts
-  if (this._sort) {
-    keys = Object.keys(this._sort);
-    
-    // Going backwards so that the first sort is the last that gets applied
-    for (i = keys.length - 1; i >= 0; i -= 1) {
-      key = keys[i];
-      res.sort(function(a, b) {
-        return self._sort[key] * model.compareThings(model.getDotValue(a, key), model.getDotValue(b, key));
-      });    
+    // Apply all sorts
+    if (this._sort) {
+      keys = Object.keys(this._sort);
+
+      // Going backwards so that the first sort is the last that gets applied
+      for (i = keys.length - 1; i >= 0; i -= 1) {
+        key = keys[i];
+        res.sort(function (a, b) {
+          return self._sort[key] * model.compareThings(model.getDotValue(a, key), model.getDotValue(b, key));
+        });
+      }
+
+      // Applying limit and skip
+      var limit = this._limit || res.length,
+        skip = this._skip || 0;
+
+      res = res.slice(skip, skip + limit);
     }
-    
-    // Applying limit and skip
-    var limit = this._limit || res.length
-      , skip = this._skip || 0;
-      
-    res = res.slice(skip, skip + limit);
-  }
 
-  if (this.execFn) {
-    return this.execFn(null, res, callback);
-  } else {
-    return callback(null, res);
+    if (this.execFn) {
+      return this.execFn(null, res, callback);
+    } else {
+      return callback(null, res);
+    }
   }
 };
 
 Cursor.prototype.exec = function () {
-  this.db.executor.push({ this: this, fn: this._exec, arguments: arguments });
+  this.db.executor.push({
+    this: this,
+    fn: this._exec,
+    arguments: arguments
+  });
 };
-
-
 
 // Interface
 module.exports = Cursor;
-},{"./model":9}],5:[function(require,module,exports){
+},{"./model":9,"async":11}],5:[function(require,module,exports){
 /**
  * Specific customUtils for the browser, where we don't have access to the Crypto and Buffer modules
  */
