@@ -606,16 +606,19 @@ describe('Cursor', function () {
       ], done);    });
 
     it('Similar data, multiple consecutive sorts', function(done) {
+      var i, j, id
+        , companies = [ 'acme', 'milkman', 'zoinks' ]
+        , entities = []
+        ;
+    
       async.waterfall([
         function (cb) {
           d.remove({}, { multi: true }, function (err) {
             if (err) { return cb(err); }
-
-            var entities = [];
-            var companies = [ 'acme', 'milkman', 'zoinks' ];
-            var id = 1;
-            for (var i = 0; i < companies.length; i++) {
-              for (var j = 5; j <= 100; j += 5) {
+            
+            id = 1;
+            for (i = 0; i < companies.length; i++) {
+              for (j = 5; j <= 100; j += 5) {
                 entities.push({
                   company: companies[i],
                   cost: j,
@@ -632,7 +635,6 @@ describe('Cursor', function () {
             }, function(err) {
               return cb();
             });
-
           });
         }
       , function (cb) {
