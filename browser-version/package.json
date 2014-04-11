@@ -4,6 +4,6 @@
     "fs-extra": "~0.6.3",
     "uglify-js": "~2.3.6",
     "browserify": "~2.25.0",
-    "xxhashjs": "0.0.3"
+    "es-hash": "^1.0.4"
   }
 }
