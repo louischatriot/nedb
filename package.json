@@ -23,8 +23,7 @@
     "async": "0.2.10",
     "underscore": "~1.4.4",
     "binary-search-tree": "0.2.3",
-    "mkdirp": "~0.3.5",
-    "es-hash": "^1.0.4"
+    "mkdirp": "~0.3.5"
   },
   "devDependencies": {
     "chai": "1.0.x",
