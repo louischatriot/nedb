@@ -604,7 +604,52 @@ describe('Cursor', function () {
           });
         }
       ], done);    });
-  
+
+    it('Similar data, multiple consecutive sorts', function(done) {
+      var i, j, id
+        , companies = [ 'acme', 'milkman', 'zoinks' ]
+        , entities = []
+        ;
+    
+      async.waterfall([
+        function (cb) {
+          d.remove({}, { multi: true }, function (err) {
+            if (err) { return cb(err); }
+            
+            id = 1;
+            for (i = 0; i < companies.length; i++) {
+              for (j = 5; j <= 100; j += 5) {
+                entities.push({
+                  company: companies[i],
+                  cost: j,
+                  nid: id
+                });
+                id++;
+              }
+            }
+
+            async.each(entities, function(entity, callback) {
+              d.insert(entity, function() {
+                callback();
+              });
+            }, function(err) {
+              return cb();
+            });
+          });
+        }
+      , function (cb) {
+          var cursor = new Cursor(d, {});
+          cursor.sort({ company: 1, cost: 1 }).exec(function (err, docs) {
+            docs.length.should.equal(60);
+            
+            for (var i = 0; i < docs.length; i++) {
+              docs[i].nid.should.equal(i+1);
+            };
+            return cb();
+          });
+        }
+      ], done);    });
+
   });   // ===== End of 'Sorting' =====
   
 });
