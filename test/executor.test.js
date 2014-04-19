@@ -74,7 +74,22 @@ function testRightOrder (d, done) {
   });
 }  
   
-  
+
+
+// Note:  The following test does not have any assertion because it
+// is meant to address the deprecation warning:
+// (node) warning: Recursive process.nextTick detected. This will break in the next version of node. Please use setImmediate for recursive deferral.
+// see
+var testEventLoopStarvation = function(d, done){
+   var times = 1001;
+   var i = 0;
+   while ( i <times) {
+      i++;
+     d.find({"bogus": "search"}, function (err, docs) {
+     });
+   }
+   done();
+ };
 
 describe('Executor', function () {
 
@@ -112,6 +127,10 @@ describe('Executor', function () {
     
     it('Operations are executed in the right order', function(done) {
       testRightOrder(d, done);
+    });
+
+    it('Does not starve event loop and raise warning when more than 1000 callbacks are in queue', function(done){
+      testEventLoopStarvation(d, done);
     });
   
   });   // ==== End of 'With persistent database' ====
