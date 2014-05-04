@@ -85,6 +85,18 @@ describe('Model', function () {
       util.isDate(c.test).should.equal(true);
       c.test.getTime().should.equal(d.getTime());
     });
+    
+    it('Can serialize and deserialize a buffer', function () {
+      var a, b, c
+        , d = new Buffer([0, 1, 2, 3]);
+
+      a = { test: d };
+      b = model.serialize(a);
+      c = model.deserialize(b);
+      b.indexOf('\n').should.equal(-1);
+      c.test.should.be.instanceof(Buffer);
+      d.toString('hex').should.equal(c.test.toString('hex'));
+    });
 
     it('Can serialize and deserialize sub objects', function () {
       var a, b, c
