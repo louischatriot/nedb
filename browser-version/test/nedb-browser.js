@@ -19,14 +19,14 @@ function findById (docs, id) {
 describe('Basic CRUD functionality', function () {
 
   it('Able to create a database object in the browser', function () {
-    var db = new Nedb();
+    var db = new Nedb('test');
 
-    db.inMemoryOnly.should.equal(true);
-    db.persistence.inMemoryOnly.should.equal(true);
+    db.inMemoryOnly.should.equal(false);
+    db.persistence.inMemoryOnly.should.equal(false);
   });
 
   it('Insertion and querying', function (done) {
-    var db = new Nedb();
+    var db = new Nedb('test');
 
     db.insert({ a: 4 }, function (err, newDoc1) {
       assert.isNull(err);
@@ -246,7 +246,6 @@ describe('Basic CRUD functionality', function () {
 
 });   // ==== End of 'Basic CRUD functionality' ==== //
 
-
 describe('Indexing', function () {
 
   it('getCandidates works as expected', function (done) {
@@ -295,5 +294,104 @@ describe('Indexing', function () {
 
 });   // ==== End of 'Indexing' ==== //
 
+describe('Persistence', function(){
+   var newObj = {
+      myId: 1,
+      intProp: 2,
+      stringProp: '1231412',
+      arrayProp: [1,2,3],
+      objectProp: {
+         sub: 'prop',
+         test: true
+      }
+   };
 
+   it('Insert and verify localStorage-Content', function(done){
+      var db = new Nedb('persistence_test');
+
+      db.insert(newObj, function (err, newDoc1) {
+         assert.isNull(err);
+
+         var newDoc1Json = JSON.stringify(newDoc1);
+         var databaseJson = localStorage.getItem(db.filename);
+
+         assert.isTrue(databaseJson.indexOf(newDoc1Json) != -1);
+
+         done();
+      });
+   });
+
+   it('Update and verify localStorage-Content', function(done){
+      var db = new Nedb({
+         filename: 'persistence_test',
+         autoload: true
+      });
+
+      var searchObj = {myId: 1};
+      var newData = {
+         intProp: 3,
+         objectProp: {
+            sub: 'prop2'
+         }
+      };
+
+      db.update(searchObj, { $set: newData }, {}, function (err, nr) {
+         assert.isNull(err);
+         nr.should.equal(1);
+
+         var newDoc = _.extend(newObj, newData);
+
+         var newDoc1Json = JSON.stringify(newDoc);
+         var databaseJson = localStorage.getItem(db.filename);
+
+         assert.isTrue(databaseJson.indexOf(newDoc1Json) != -1);
+
+         done();
+      });
+   });
+
+   it('Remove and verify localStorage-Content', function(done){
+      var db = new Nedb({
+         filename: 'persistence_test',
+         autoload: true
+      });
+
+      var searchObj = {myId: 1};
+
+      db.remove(searchObj, { multi: true }, function (err, nr) {
+         assert.isNull(err);
+         nr.should.equal(1);
+
+         db.find({}, function (err, docs) {
+            docs.length.should.equal(0);
+
+            var databaseJson = localStorage.getItem(db.filename);
+            var deletedJson = '{"$$deleted":true,"_id":"'+newObj._id+'"}';
+
+            assert.isTrue(databaseJson.indexOf(deletedJson) != -1);
+
+            done();
+         });
+      });
+   });
+
+   it('persistCachedDatabase and verify localStorage-Content', function(done){
+      var db = new Nedb({
+         filename: 'persistence_test',
+         autoload: true
+      });
+
+      db.persistence.persistCachedDatabase(function(){
+         var databaseJson = localStorage.getItem(db.filename);
+
+         // Should be empty after deleting the entry
+
+         assert.isTrue(databaseJson == '[]');
+
+         done();
+      });
+   });
+
+   // ==== End of 'Persistence' ==== //
+});
 
