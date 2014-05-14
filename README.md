@@ -106,7 +106,7 @@ You can also set automatic compaction at regular intervals with `yourDatabase.pe
 
 Keep in mind that compaction takes a bit of time (not too much: 130ms for 50k records on my slow machine) and no other operation can happen when it does, so most projects actually don't need to use it.
 
-To intercept the compaction, there is a `beforeCompactDatafile` handler. You can define the callback function by setting it as option while creating the datastore. Or you can manually add a `yourDatabase.beforeCompactDatafile` handler function. This can be handy, if you use NeDB as a cache and you like to delete outdatet cache entries before compacting.
+To intercept the compaction, there is a `beforeCompactDatafile` handler. You can define the callback function by setting it as option while creating the datastore. Or you can manually add a `yourDatabase.beforeCompactDatafile` handler function. This can be handy, if you use NeDB as a cache and you like to delete outdatet cache entries before compacting. If your callback returns null or false, the compaction is not executed.
 
 ```javascript
 // Persistent datastore with beforeCompactDatafile handler

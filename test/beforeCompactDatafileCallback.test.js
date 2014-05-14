@@ -23,7 +23,7 @@ describe('beforeCompactDatafile', function () {
   });
 
 
-  it('Call Auto Compact',function(){
+  it('Call Auto Compact Directly',function(){
     var result = d.persistence.compactDatafile();
     assert.isNotNull(result);
   });
