@@ -597,4 +597,4 @@ You don't have time? You can support NeDB by sending bitcoins to this adress: 1d
 
 ## License 
 
-See [License](LICENSE.md)
+See [License](LICENSE)
