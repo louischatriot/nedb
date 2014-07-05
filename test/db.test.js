@@ -205,7 +205,11 @@ describe('Database', function () {
         newDoc.stuff.should.equal(true);
         newDoc._id.should.equal('test');
 
-        done();
+        d.insert({ _id: 'test', otherstuff: 42 }, function (err) {
+          err.errorType.should.equal('uniqueViolated');
+        
+          done();
+        });
       });
     });
 
