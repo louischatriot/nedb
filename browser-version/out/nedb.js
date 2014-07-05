@@ -561,7 +561,8 @@ process.nextTick = (function () {
     if (canPost) {
         var queue = [];
         window.addEventListener('message', function (ev) {
-            if (ev.source === window && ev.data === 'process-tick') {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
                 ev.stopPropagation();
                 if (queue.length > 0) {
                     var fn = queue.shift();
@@ -683,13 +684,23 @@ Cursor.prototype._exec = function(callback) {
   if (this._sort) {
     keys = Object.keys(this._sort);
     
-    // Going backwards so that the first sort is the last that gets applied
-    for (i = keys.length - 1; i >= 0; i -= 1) {
+    // Sorting
+    var criteria = [];
+    for (i = 0; i < keys.length; i++) {
       key = keys[i];
-      res.sort(function(a, b) {
-        return self._sort[key] * model.compareThings(model.getDotValue(a, key), model.getDotValue(b, key));
-      });    
+      criteria.push({ key: key, direction: self._sort[key] });
     }
+    res.sort(function(a, b) {
+      var criterion, compare, i;
+      for (i = 0; i < criteria.length; i++) {
+        criterion = criteria[i];
+        compare = criterion.direction * model.compareThings(model.getDotValue(a, criterion.key), model.getDotValue(b, criterion.key));
+        if (compare !== 0) {
+          return compare;
+        }
+      }
+      return 0;
+    });
     
     // Applying limit and skip
     var limit = this._limit || res.length
@@ -1096,7 +1107,7 @@ Datastore.prototype.prepareDocumentForInsertion = function (newDoc) {
     preparedDoc = [];
     newDoc.forEach(function (doc) { preparedDoc.push(self.prepareDocumentForInsertion(doc)); });
   } else {
-    newDoc._id = customUtils.uid(16);
+    newDoc._id = newDoc._id || customUtils.uid(16);
     preparedDoc = model.deepCopy(newDoc);
     model.checkObject(preparedDoc);
   }
