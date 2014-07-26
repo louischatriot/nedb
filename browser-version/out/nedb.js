@@ -1734,9 +1734,7 @@ module.exports = Index;
  * Querying, update
  */
 
-var dateToJSON = function () { return { $$date: this.getTime() }; }
-  , originalDateToJSON = Date.prototype.toJSON
-  , util = require('util')
+var util = require('util')
   , _ = require('underscore')
   , modifierFunctions = {}
   , lastStepModifierFunctions = {}
@@ -1795,21 +1793,19 @@ function checkObject (obj) {
  */
 function serialize (obj) {
   var res;
-
-  // Keep track of the fact that this is a Date object
-  Date.prototype.toJSON = dateToJSON;
-
+  
   res = JSON.stringify(obj, function (k, v) {
     checkKey(k, v);
+    
+    if (v === undefined) { return undefined; }
+    if (v === null) { return null; }
 
-    if (typeof v === undefined) { return null; }
-    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' || v === null) { return v; }
+    // Hackish way of checking if object is Date (this way it works between execution contexts in node-webkit).
+    // We can't use value directly because for dates it is already string in this function (date.toJSON was already called), so we use this
+    if (typeof this[k].getTime === 'function') { return { $$date: this[k].getTime() }; }
 
     return v;
   });
-
-  // Return Date to its original state
-  Date.prototype.toJSON = originalDateToJSON;
 
   return res;
 }
