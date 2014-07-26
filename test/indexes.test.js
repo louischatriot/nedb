@@ -649,6 +649,52 @@ describe('Indexes', function () {
       assert.deepEqual(idx.getMatching(['nope', 'no']), []);
     });
 
+    it('Can browse through the db with $first and $after', function() {
+      var idx = new Index({ fieldName: 'a' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 2, tf: 'bloup' }
+        , doc3 = { a: 8, tf: 'world' }
+        , doc4 = { a: 7, tf: 'yes' }
+        , doc5 = { a: 10, tf: 'yes' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.insert(doc4);
+      idx.insert(doc5);
+
+      assert.deepEqual(idx.getOrdered({ $first: true }), [ doc2 ]);
+      assert.deepEqual(idx.getOrdered({ $after: doc2.a }), [ doc1 ]);
+      assert.deepEqual(idx.getOrdered({ $after: doc1.a }), [ doc4 ]);
+      assert.deepEqual(idx.getOrdered({ $after: doc4.a }), [ doc3 ]);
+      assert.deepEqual(idx.getOrdered({ $after: doc3.a }), [ doc5 ]);
+      assert.deepEqual(idx.getOrdered({ $after: doc5.a }), []);
+    });
+
+    it('Can browse through the db with $last and $before', function() {
+      var idx = new Index({ fieldName: 'a' })
+        , doc1 = { a: 5, tf: 'hello' }
+        , doc2 = { a: 2, tf: 'bloup' }
+        , doc3 = { a: 8, tf: 'world' }
+        , doc4 = { a: 7, tf: 'yes' }
+        , doc5 = { a: 10, tf: 'yes' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+      idx.insert(doc4);
+      idx.insert(doc5);
+
+      assert.deepEqual(idx.getOrdered({ $last: true }), [ doc5 ]);
+      assert.deepEqual(idx.getOrdered({ $before: doc5.a }), [ doc3 ]);
+      assert.deepEqual(idx.getOrdered({ $before: doc3.a }), [ doc4 ]);
+      assert.deepEqual(idx.getOrdered({ $before: doc4.a }), [ doc1 ]);
+      assert.deepEqual(idx.getOrdered({ $before: doc1.a }), [ doc2 ]);
+      assert.deepEqual(idx.getOrdered({ $before: doc2.a }), []);
+    });
+
     it('Can get all documents whose key is between certain bounds', function () {
       var idx = new Index({ fieldName: 'a' })
         , doc1 = { a: 5, tf: 'hello' }
