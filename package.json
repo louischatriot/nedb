@@ -1,6 +1,6 @@
 {
   "name": "nedb",
-  "version": "0.10.5",
+  "version": "0.10.7",
   "author": {
     "name": "Louis Chatriot",
     "email": "louis.chatriot@gmail.com"
@@ -34,7 +34,7 @@
     "commander": "1.1.1"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha --reporter spec --timeout 2000"
+    "test": "./node_modules/.bin/mocha --reporter spec --timeout 10000"
   },
   "browser": {
     "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",

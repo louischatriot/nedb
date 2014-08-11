@@ -198,14 +198,18 @@ describe('Database', function () {
       });
     });
 
-    it('If an _id is already given when we insert a document, dont use it but use an automatic one', function (done) {
+    it('If an _id is already given when we insert a document, use that instead of generating a random one', function (done) {
       d.insert({ _id: 'test', stuff: true }, function (err, newDoc) {
         if (err) { return done(err); }
 
         newDoc.stuff.should.equal(true);
-        newDoc._id.should.not.equal('test');
+        newDoc._id.should.equal('test');
 
-        done();
+        d.insert({ _id: 'test', otherstuff: 42 }, function (err) {
+          err.errorType.should.equal('uniqueViolated');
+        
+          done();
+        });
       });
     });
 

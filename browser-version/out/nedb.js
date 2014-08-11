@@ -683,13 +683,23 @@ Cursor.prototype._exec = function(callback) {
   if (this._sort) {
     keys = Object.keys(this._sort);
     
-    // Going backwards so that the first sort is the last that gets applied
-    for (i = keys.length - 1; i >= 0; i -= 1) {
+    // Sorting
+    var criteria = [];
+    for (i = 0; i < keys.length; i++) {
       key = keys[i];
-      res.sort(function(a, b) {
-        return self._sort[key] * model.compareThings(model.getDotValue(a, key), model.getDotValue(b, key));
-      });    
+      criteria.push({ key: key, direction: self._sort[key] });
     }
+    res.sort(function(a, b) {
+      var criterion, compare, i;
+      for (i = 0; i < criteria.length; i++) {
+        criterion = criteria[i];
+        compare = criterion.direction * model.compareThings(model.getDotValue(a, criterion.key), model.getDotValue(b, criterion.key));
+        if (compare !== 0) {
+          return compare;
+        }
+      }
+      return 0;
+    });
     
     // Applying limit and skip
     var limit = this._limit || res.length
@@ -1096,7 +1106,7 @@ Datastore.prototype.prepareDocumentForInsertion = function (newDoc) {
     preparedDoc = [];
     newDoc.forEach(function (doc) { preparedDoc.push(self.prepareDocumentForInsertion(doc)); });
   } else {
-    newDoc._id = customUtils.uid(16);
+    newDoc._id = newDoc._id || customUtils.uid(16);
     preparedDoc = model.deepCopy(newDoc);
     model.checkObject(preparedDoc);
   }
@@ -1724,9 +1734,7 @@ module.exports = Index;
  * Querying, update
  */
 
-var dateToJSON = function () { return { $$date: this.getTime() }; }
-  , originalDateToJSON = Date.prototype.toJSON
-  , util = require('util')
+var util = require('util')
   , _ = require('underscore')
   , modifierFunctions = {}
   , lastStepModifierFunctions = {}
@@ -1785,21 +1793,19 @@ function checkObject (obj) {
  */
 function serialize (obj) {
   var res;
-
-  // Keep track of the fact that this is a Date object
-  Date.prototype.toJSON = dateToJSON;
-
+  
   res = JSON.stringify(obj, function (k, v) {
     checkKey(k, v);
+    
+    if (v === undefined) { return undefined; }
+    if (v === null) { return null; }
 
-    if (typeof v === undefined) { return null; }
-    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' || v === null) { return v; }
+    // Hackish way of checking if object is Date (this way it works between execution contexts in node-webkit).
+    // We can't use value directly because for dates it is already string in this function (date.toJSON was already called), so we use this
+    if (typeof this[k].getTime === 'function') { return { $$date: this[k].getTime() }; }
 
     return v;
   });
-
-  // Return Date to its original state
-  Date.prototype.toJSON = originalDateToJSON;
 
   return res;
 }
