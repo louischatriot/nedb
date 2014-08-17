@@ -39,7 +39,7 @@ describe('Cursor', function () {
       }
     ], done);
   });
-  
+
   describe('Without sorting', function () {
 
     beforeEach(function (done) {
@@ -55,7 +55,7 @@ describe('Cursor', function () {
         });
       });
     });
-  
+
     it('Without query, an empty query or a simple query and no skip or limit', function (done) {
       async.waterfall([
         function (cb) {
@@ -134,7 +134,7 @@ describe('Cursor', function () {
         done();
       });
     });
-    
+
     it('With a limit and a skip and method chaining', function (done) {
       var cursor = new Cursor(d);
       cursor.limit(4).skip(3);   // Only way to know that the right number of results was skipped is if limit + skip > number of results
@@ -145,10 +145,10 @@ describe('Cursor', function () {
         done();
       });
     });
-    
+
   });   // ===== End of 'Without sorting' =====
-  
-  
+
+
   describe('Sorting of the results', function () {
 
     beforeEach(function (done) {
@@ -165,7 +165,7 @@ describe('Cursor', function () {
         });
       });
     });
-  
+
     it('Using one sort', function (done) {
       var cursor, i;
 
@@ -641,7 +641,7 @@ describe('Cursor', function () {
           var cursor = new Cursor(d, {});
           cursor.sort({ company: 1, cost: 1 }).exec(function (err, docs) {
             docs.length.should.equal(60);
-            
+
             for (var i = 0; i < docs.length; i++) {
               docs[i].nid.should.equal(i+1);
             };
@@ -651,7 +651,43 @@ describe('Cursor', function () {
       ], done);    });
 
   });   // ===== End of 'Sorting' =====
-  
+
+
+  describe.only('Projections', function () {
+
+    beforeEach(function (done) {
+      // We don't know the order in which docs wil be inserted but we ensure correctness by testing both sort orders
+      d.insert({ age: 5, name: 'Jo', planet: 'B' }, function (err) {
+        d.insert({ age: 57, name: 'Louis', planet: 'R' }, function (err) {
+          d.insert({ age: 52, name: 'Grafitti', planet: 'C' }, function (err) {
+            d.insert({ age: 23, name: 'LM', planet: 'S' }, function (err) {
+              d.insert({ age: 89, planet: 'Earth' }, function (err) {
+                return done();
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it('Takes all results if no projection or empty object given', function (done) {
+      var cursor = new Cursor(d, {});
+      cursor.exec(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(5);
+
+        cursor.projection({});
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(5);
+
+          done();
+        });
+      });
+    });
+
+  });   // ==== End of 'Projections' ====
+
 });
 
 
