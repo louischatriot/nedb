@@ -718,7 +718,19 @@ describe('Cursor', function () {
         assert.deepEqual(docs[3], { age: 57, name: 'Louis', _id: doc1._id });
         assert.deepEqual(docs[4], { age: 89, _id: doc4._id });   // No problems if one field to take doesn't exist
 
-        done();
+        cursor.projection({ age: 1, name: 1, _id: 0 });
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(5);
+          // Takes the _id by default
+          assert.deepEqual(docs[0], { age: 5, name: 'Jo', _id: doc0._id });
+          assert.deepEqual(docs[1], { age: 23, name: 'LM', _id: doc3._id });
+          assert.deepEqual(docs[2], { age: 52, name: 'Grafitti', _id: doc2._id });
+          assert.deepEqual(docs[3], { age: 57, name: 'Louis', _id: doc1._id });
+          assert.deepEqual(docs[4], { age: 89, _id: doc4._id });   // No problems if one field to take doesn't exist
+
+          done();
+        });
       });
     });
 
