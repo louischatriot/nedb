@@ -1,6 +1,6 @@
 (function(e){if("function"==typeof bootstrap)bootstrap("nedb",e);else if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else if("undefined"!=typeof ses){if(!ses.ok())return;ses.makeNedb=e}else"undefined"!=typeof window?window.Nedb=e():global.Nedb=e()})(function(){var define,ses,bootstrap,module,exports;
 return (function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
-var process=require("__browserify_process");if (!process.EventEmitter) process.EventEmitter = function () {};
+(function(process){if (!process.EventEmitter) process.EventEmitter = function () {};
 
 var EventEmitter = exports.EventEmitter = process.EventEmitter;
 var isArray = typeof Array.isArray === 'function'
@@ -184,17 +184,7 @@ EventEmitter.prototype.listeners = function(type) {
   return this._events[type];
 };
 
-EventEmitter.listenerCount = function(emitter, type) {
-  var ret;
-  if (!emitter._events || !emitter._events[type])
-    ret = 0;
-  else if (typeof emitter._events[type] === 'function')
-    ret = 1;
-  else
-    ret = emitter._events[type].length;
-  return ret;
-};
-
+})(require("__browserify_process"))
 },{"__browserify_process":3}],2:[function(require,module,exports){
 var events = require('events');
 
@@ -239,8 +229,8 @@ exports.inspect = function(obj, showHidden, depth, colors) {
           'regexp': 'red' }[styleType];
 
     if (style) {
-      return '\u001b[' + styles[style][0] + 'm' + str +
-             '\u001b[' + styles[style][1] + 'm';
+      return '\033[' + styles[style][0] + 'm' + str +
+             '\033[' + styles[style][1] + 'm';
     } else {
       return str;
     }
@@ -425,18 +415,24 @@ exports.inspect = function(obj, showHidden, depth, colors) {
 
 
 function isArray(ar) {
-  return Array.isArray(ar) ||
-         (typeof ar === 'object' && Object.prototype.toString.call(ar) === '[object Array]');
+  return ar instanceof Array ||
+         Array.isArray(ar) ||
+         (ar && ar !== Object.prototype && isArray(ar.__proto__));
 }
 
 
 function isRegExp(re) {
-  typeof re === 'object' && Object.prototype.toString.call(re) === '[object RegExp]';
+  return re instanceof RegExp ||
+    (typeof re === 'object' && Object.prototype.toString.call(re) === '[object RegExp]');
 }
 
 
 function isDate(d) {
-  return typeof d === 'object' && Object.prototype.toString.call(d) === '[object Date]';
+  if (d instanceof Date) return true;
+  if (typeof d !== 'object') return false;
+  var properties = Date.prototype && Object_getOwnPropertyNames(Date.prototype);
+  var proto = d.__proto__ && Object_getOwnPropertyNames(d.__proto__);
+  return JSON.stringify(proto) === JSON.stringify(properties);
 }
 
 function pad(n) {
@@ -600,15 +596,17 @@ process.chdir = function (dir) {
 /**
  * Manage access to data, be it to find, update or remove it
  */
-var model = require('./model');
+var model = require('./model')
+  , _ = require('underscore')
+  ;
 
- 
+
 
 /**
  * Create a new cursor for this collection
  * @param {Datastore} db - The datastore this cursor is bound to
  * @param {Query} query - The query this cursor will operate on
- * @param {Function} execDn - Handler to be executed  after cursor has found the results and before the callback passed to find/findOne/update/remove
+ * @param {Function} execDn - Handler to be executed after cursor has found the results and before the callback passed to find/findOne/update/remove
  */
 function Cursor (db, query, execFn) {
   this.db = db;
@@ -637,11 +635,59 @@ Cursor.prototype.skip = function(skip) {
 
 /**
  * Sort results of the query
- * @Param {SortQuery} sortQuery - SortQuery is { field: order }, field can use the dot-notation, order is 1 for ascending and -1 for descending
+ * @param {SortQuery} sortQuery - SortQuery is { field: order }, field can use the dot-notation, order is 1 for ascending and -1 for descending
  */
 Cursor.prototype.sort = function(sortQuery) {
   this._sort = sortQuery;
   return this;
+};
+
+
+/**
+ * Add the use of a projection
+ * @param {Object} projection - MongoDB-style projection. {} means take all fields. Then it's { key1: 1, key2: 1 } to take only key1 and key2
+ *                              { key1: 0, key2: 0 } to omit only key1 and key2. Except _id, you can't mix takes and omits
+ */
+Cursor.prototype.projection = function(projection) {
+  this._projection = projection;
+  return this;
+};
+
+
+/**
+ * Apply the projection
+ */
+Cursor.prototype.project = function (candidates) {
+  var res = [], self = this
+    , keepId, action, keys
+    ;
+
+  if (this._projection === undefined || Object.keys(this._projection).length === 0) {
+    return candidates;
+  }
+
+  keepId = this._projection._id === 0 ? false : true;
+  this._projection = _.omit(this._projection, '_id');
+
+  // Check for consistency
+  keys = Object.keys(this._projection);
+  keys.forEach(function (k) {
+    if (action !== undefined && self._projection[k] !== action) { throw "Can't both keep and omit fields except for _id"; }
+    action = self._projection[k];
+  });
+
+  // Do the actual projection
+  candidates.forEach(function (candidate) {
+    var toPush = action === 1 ? _.pick(candidate, keys) : _.omit(candidate, keys);
+    if (keepId) {
+      toPush._id = candidate._id;
+    } else {
+      delete toPush._id;
+    }
+    res.push(toPush);
+  });
+
+  return res;
 };
 
 
@@ -655,9 +701,10 @@ Cursor.prototype.sort = function(sortQuery) {
 Cursor.prototype._exec = function(callback) {
   var candidates = this.db.getCandidates(this.query)
     , res = [], added = 0, skipped = 0, self = this
+    , error = null
     , i, keys, key
     ;
-  
+
   try {
     for (i = 0; i < candidates.length; i += 1) {
       if (model.match(candidates[i], this.query)) {
@@ -668,7 +715,7 @@ Cursor.prototype._exec = function(callback) {
           } else {
             res.push(candidates[i]);
             added += 1;
-            if (this._limit && this._limit <= added) { break; }                  
+            if (this._limit && this._limit <= added) { break; }
           }
         } else {
           res.push(candidates[i]);
@@ -682,7 +729,7 @@ Cursor.prototype._exec = function(callback) {
   // Apply all sorts
   if (this._sort) {
     keys = Object.keys(this._sort);
-    
+
     // Sorting
     var criteria = [];
     for (i = 0; i < keys.length; i++) {
@@ -700,18 +747,26 @@ Cursor.prototype._exec = function(callback) {
       }
       return 0;
     });
-    
+
     // Applying limit and skip
     var limit = this._limit || res.length
       , skip = this._skip || 0;
-      
+
     res = res.slice(skip, skip + limit);
   }
 
+  // Apply projection
+  try {
+    res = this.project(res);
+  } catch (e) {
+    error = e;
+    res = undefined;
+  }
+
   if (this.execFn) {
-    return this.execFn(null, res, callback);
+    return this.execFn(error, res, callback);
   } else {
-    return callback(null, res);
+    return callback(error, res);
   }
 };
 
@@ -723,8 +778,9 @@ Cursor.prototype.exec = function () {
 
 // Interface
 module.exports = Cursor;
-},{"./model":9}],5:[function(require,module,exports){
-/**
+
+},{"./model":9,"underscore":16}],5:[function(require,module,exports){
+(function(){/**
  * Specific customUtils for the browser, where we don't have access to the Crypto and Buffer modules
  */
 
@@ -803,6 +859,7 @@ function uid (len) {
 
 module.exports.uid = uid;
 
+})()
 },{}],6:[function(require,module,exports){
 var customUtils = require('./customUtils')
   , model = require('./model')
@@ -1182,19 +1239,34 @@ Datastore.prototype.count = function(query, callback) {
  * Find all documents matching the query
  * If no callback is passed, we return the cursor so that user can limit, skip and finally exec
  * @param {Object} query MongoDB-style query
+ * @param {Object} projection MongoDB-style projection
  */
-Datastore.prototype.find = function (query, callback) {
+Datastore.prototype.find = function (query, projection, callback) {
+  switch (arguments.length) {
+    case 1:
+      projection = {};
+      // callback is undefined, will return a cursor
+      break;
+    case 2:
+      if (typeof projection === 'function') {
+        callback = projection;
+        projection = {};
+      }   // If not assume projection is an object and callback undefined
+      break;
+  }
+
   var cursor = new Cursor(this, query, function(err, docs, callback) {
     var res = [], i;
-  
+
     if (err) { return callback(err); }
-    
+
     for (i = 0; i < docs.length; i += 1) {
       res.push(model.deepCopy(docs[i]));
     }
     return callback(null, res);
   });
 
+  cursor.projection(projection);
   if (typeof callback === 'function') {
     cursor.exec(callback);
   } else {
@@ -1206,18 +1278,32 @@ Datastore.prototype.find = function (query, callback) {
 /**
  * Find one document matching the query
  * @param {Object} query MongoDB-style query
+ * @param {Object} projection MongoDB-style projection
  */
-Datastore.prototype.findOne = function (query, callback) {
+Datastore.prototype.findOne = function (query, projection, callback) {
+  switch (arguments.length) {
+    case 1:
+      projection = {};
+      // callback is undefined, will return a cursor
+      break;
+    case 2:
+      if (typeof projection === 'function') {
+        callback = projection;
+        projection = {};
+      }   // If not assume projection is an object and callback undefined
+      break;
+  }
+
   var cursor = new Cursor(this, query, function(err, docs, callback) {
     if (err) { return callback(err); }
     if (docs.length === 1) {
       return callback(null, model.deepCopy(docs[0]));
     } else {
-      return callback(null, null);    
+      return callback(null, null);
     }
   });
 
-  cursor.limit(1);
+  cursor.projection(projection).limit(1);
   if (typeof callback === 'function') {
     cursor.exec(callback);
   } else {
@@ -1353,10 +1439,12 @@ Datastore.prototype.remove = function () {
 
 
 
+
+
 module.exports = Datastore;
 
 },{"./cursor":4,"./customUtils":5,"./executor":7,"./indexes":8,"./model":9,"./persistence":10,"async":11,"underscore":16,"util":2}],7:[function(require,module,exports){
-var process=require("__browserify_process");/**
+(function(process){/**
  * Responsible for sequentially executing actions on the database
  */
 
@@ -1430,6 +1518,7 @@ Executor.prototype.processBuffer = function () {
 // Interface
 module.exports = Executor;
 
+})(require("__browserify_process"))
 },{"__browserify_process":3,"async":11}],8:[function(require,module,exports){
 var BinarySearchTree = require('binary-search-tree').AVLTree
   , model = require('./model')
@@ -2528,7 +2617,7 @@ Persistence.prototype.loadDatabase = function (cb) {
 module.exports = Persistence;
 
 },{}],11:[function(require,module,exports){
-var process=require("__browserify_process");/*global setImmediate: false, setTimeout: false, console: false */
+(function(process){/*global setImmediate: false, setTimeout: false, console: false */
 (function () {
 
     var async = {};
@@ -3487,6 +3576,7 @@ var process=require("__browserify_process");/*global setImmediate: false, setTim
 
 }());
 
+})(require("__browserify_process"))
 },{"__browserify_process":3}],12:[function(require,module,exports){
 module.exports.BinarySearchTree = require('./lib/bst');
 module.exports.AVLTree = require('./lib/avltree');
@@ -4403,7 +4493,7 @@ BinarySearchTree.prototype.delete = function (key, value) {
   if (!this.compareKeys(key, this.key) === 0) { return; }
 
   // Delete only a value
-  if (this.data.length > 1 && value) {
+  if (this.data.length > 1 && value !== undefined) {
     this.data.forEach(function (d) {
       if (!self.checkValueEquality(d, value)) { newData.push(d); }
     });
@@ -4534,7 +4624,7 @@ function defaultCheckValueEquality (a, b) {
 module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
 },{}],16:[function(require,module,exports){
-//     Underscore.js 1.4.4
+(function(){//     Underscore.js 1.4.4
 //     http://underscorejs.org
 //     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
 //     Underscore may be freely distributed under the MIT license.
@@ -5761,6 +5851,7 @@ module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
 }).call(this);
 
+})()
 },{}]},{},[6])(6)
 });
 ;
