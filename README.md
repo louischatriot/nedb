@@ -12,7 +12,7 @@ NeDB was benchmarked against the popular client-side database <a href="http://ww
 
 Check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log in the wiki</a> if you think nedb doesn't behave as the documentation describes! Most of the issues I get are due to non-latest version NeDBs.
 
-You want to help out? <a href="#contribute">You can contribute time, bitcoins or simply money, check out how!</a>
+You want to help out? <a href="#contribute">You can contribute time or bitcoins, check out how!</a>
 
 
 ## Installation, tests
@@ -630,14 +630,6 @@ Issues reporting and pull requests are always appreciated. For issues, make sure
 ### Bitcoins
 You don't have time? You can support NeDB by sending bitcoins to this adress: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
-### Donations
-Maintaining NeDB takes time. I'm happy to do it for free but if you wamt to show support, I'm happy too :)
-
-<script async="async" src="https://www.paypalobjects.com/js/external/paypal-button.min.js?merchant=louis.chatriot@gmail.com" 
-    data-button="donate" 
-    data-name="NeDB" 
-    data-callback="https://github.com/louischatriot/nedb"
-></script>
 
 ## License 
 
