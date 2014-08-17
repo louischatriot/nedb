@@ -154,6 +154,8 @@ You can use regular expressions in two ways: in basic querying in place of a str
 
 You can sort and paginate results using the cursor API (see below).
 
+You can use standard projections to restrict the fields to appear in the results (see below).
+
 #### Basic querying
 Basic querying means are looking for documents whose fields match the ones you specify. You can use regular expression to match strings.
 You can use the dot notation to navigate inside nested documents, arrays, arrays of subdocuments and to match a specific element of an array.
@@ -335,6 +337,39 @@ db.find({ system: 'solar' }).sort({ planet: -1 }).exec(function (err, docs) {
 
 // You can sort on one field, then another, and so on like this:
 db.find({}).sort({ firstField: 1, secondField: -1 }) ...   // You understand how this works!
+```
+
+#### Projections
+You can give `find` and `findOne` an optional second argument, `projections`. The syntax is the same as MongoDB: `{ a: 1, b: 1 }` to return only the `a` and `b` fields, `{ a: 0, b: 0 }` to omit these two fields. You cannot use both modes at the time, except for `_id` which is by default always returned and which you can choose to omit.
+
+```javascript
+// Same database as above
+
+// Keeping only the given fields
+db.find({ planet: 'Mars' }, { planet: 1, system: 1 }, function (err, docs) {
+  // docs is [{ planet: 'Mars', system: 'solar', _id: 'id1' }]
+});
+
+// Keeping only the given fields but removing _id
+db.find({ planet: 'Mars' }, { planet: 1, system: 1, _id: 0 }, function (err, docs) {
+  // docs is [{ planet: 'Mars', system: 'solar' }]
+});
+
+// Omitting only the given fields and removing _id
+db.find({ planet: 'Mars' }, { planet: 0, system: 0, _id: 0 }, function (err, docs) {
+  // docs is [{ inhabited: false, satellites: ['Phobos', 'Deimos'] }]
+});
+
+// Failure: using both modes at the same time
+db.find({ planet: 'Mars' }, { planet: 0, system: 1 }, function (err, docs) {
+  // err is the error message, docs is undefined
+});
+
+// You can also use it in a Cursor way but this syntax is not compatible with MongoDB
+// If upstream compatibility is important don't use this method
+db.find({ planet: 'Mars' }).projection({ planet: 1, system: 1 }).exec(function (err, docs) {
+  // docs is [{ planet: 'Mars', system: 'solar', _id: 'id1' }]
+});
 ```
 
 
