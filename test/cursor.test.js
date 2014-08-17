@@ -654,14 +654,21 @@ describe('Cursor', function () {
 
 
   describe.only('Projections', function () {
+    var doc1, doc2, doc3, doc4, doc0;
+
 
     beforeEach(function (done) {
       // We don't know the order in which docs wil be inserted but we ensure correctness by testing both sort orders
-      d.insert({ age: 5, name: 'Jo', planet: 'B' }, function (err) {
-        d.insert({ age: 57, name: 'Louis', planet: 'R' }, function (err) {
-          d.insert({ age: 52, name: 'Grafitti', planet: 'C' }, function (err) {
-            d.insert({ age: 23, name: 'LM', planet: 'S' }, function (err) {
-              d.insert({ age: 89, planet: 'Earth' }, function (err) {
+      d.insert({ age: 5, name: 'Jo', planet: 'B' }, function (err, _doc0) {
+        doc0 = _doc0;
+        d.insert({ age: 57, name: 'Louis', planet: 'R' }, function (err, _doc1) {
+          doc1 = _doc1;
+          d.insert({ age: 52, name: 'Grafitti', planet: 'C' }, function (err, _doc2) {
+            doc2 = _doc2;
+            d.insert({ age: 23, name: 'LM', planet: 'S' }, function (err, _doc3) {
+              doc3 = _doc3;
+              d.insert({ age: 89, planet: 'Earth' }, function (err, _doc4) {
+                doc4 = _doc4;
                 return done();
               });
             });
@@ -672,17 +679,46 @@ describe('Cursor', function () {
 
     it('Takes all results if no projection or empty object given', function (done) {
       var cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });   // For easier finding
       cursor.exec(function (err, docs) {
         assert.isNull(err);
         docs.length.should.equal(5);
+        assert.deepEqual(docs[0], doc0);
+        assert.deepEqual(docs[1], doc3);
+        assert.deepEqual(docs[2], doc2);
+        assert.deepEqual(docs[3], doc1);
+        assert.deepEqual(docs[4], doc4);
 
         cursor.projection({});
         cursor.exec(function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(5);
+          assert.deepEqual(docs[0], doc0);
+          assert.deepEqual(docs[1], doc3);
+          assert.deepEqual(docs[2], doc2);
+          assert.deepEqual(docs[3], doc1);
+          assert.deepEqual(docs[4], doc4);
 
           done();
         });
+      });
+    });
+
+    it('Can take only the expected fields', function (done) {
+      var cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });   // For easier finding
+      cursor.projection({ age: 1, name: 1 });
+      cursor.exec(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(5);
+        // Takes the _id by default
+        assert.deepEqual(docs[0], { age: 5, name: 'Jo', _id: doc0._id });
+        assert.deepEqual(docs[1], { age: 23, name: 'LM', _id: doc3._id });
+        assert.deepEqual(docs[2], { age: 52, name: 'Grafitti', _id: doc2._id });
+        assert.deepEqual(docs[3], { age: 57, name: 'Louis', _id: doc1._id });
+        assert.deepEqual(docs[4], { age: 89, _id: doc4._id });   // No problems if one field to take doesn't exist
+
+        done();
       });
     });
 
