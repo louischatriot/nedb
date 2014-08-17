@@ -35,6 +35,7 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
   * <a href="#array-fields">Array fields</a>
   * <a href="#logical-operators-or-and-not-where">Logical operators $or, $and, $not, $where</a>
   * <a href="#sorting-and-paginating">Sorting and paginating</a>
+  * <a href="#projections">Projections</a>
 * <a href="#counting-documents">Counting documents</a>
 * <a href="#updating-documents">Updating documents</a>
 * <a href="#removing-documents">Removing documents</a>
