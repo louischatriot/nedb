@@ -639,12 +639,12 @@ describe('Database', function () {
                 d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).exec(function (err, doc) {
                   assert.isNull(err);
                   doc.hello.should.equal('home');
-                  
+
                   // And a skip
                   d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).skip(1).exec(function (err, doc) {
                     assert.isNull(err);
                     doc.hello.should.equal('earth');
-                    
+
                     // No result
                     d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).skip(2).exec(function (err, doc) {
                       assert.isNull(err);
@@ -657,9 +657,40 @@ describe('Database', function () {
               });
             });
           });
-        });      
+        });
       });
-    });   
+    });
+
+    it.only('Can use projections in find, normal or cursor way', function (done) {
+      d.insert({ a: 2, hello: 'world' }, function (err, doc0) {
+        d.insert({ a: 24, hello: 'earth' }, function (err, doc1) {
+          d.find({ a: 2 }, { a: 0, _id: 0 }, function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(1);
+            assert.deepEqual(docs[0], { hello: 'world' });
+
+            d.find({ a: 2 }, { a: 0, _id: 0 }).exec(function (err, docs) {
+              assert.isNull(err);
+              docs.length.should.equal(1);
+              assert.deepEqual(docs[0], { hello: 'world' });
+
+              // Can't use both modes at once if not _id
+              d.find({ a: 2 }, { a: 0, hello: 1 }, function (err, docs) {
+                assert.isNotNull(err);
+                assert.isUndefined(docs);
+
+                d.find({ a: 2 }, { a: 0, hello: 1 }).exec(function (err, docs) {
+                  assert.isNotNull(err);
+                  assert.isUndefined(docs);
+
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+    });
 
   });   // ==== End of 'Find' ==== //
 
@@ -1187,14 +1218,14 @@ describe('Database', function () {
                 d2.a.should.equal(5);
                 d3.a.should.equal('abc');
               });
- 
+
               done();
             });
           });
         });
       });
     });
-    
+
     it('If an index constraint is violated by an update, all changes should be rolled back', function (done) {
       d.ensureIndex({ fieldName: 'a', unique: true });
       d.insert({ a: 4 }, function (err, doc1) {
@@ -1202,18 +1233,18 @@ describe('Database', function () {
           // With this query, candidates are always returned in the order 4, 5, 'abc' so it's always the last one which fails
            d.update({ a: { $in: [4, 5, 'abc'] } }, { $set: { a: 10 } }, { multi: true }, function (err) {
             assert.isDefined(err);
-			
+
             // Check that no index was modified
             _.each(d.indexes, function (index) {
               var docs = index.getAll()
               , d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
               , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
               ;
-			  
+
               d1.a.should.equal(4);
               d2.a.should.equal(5);
             });
-            
+
             done();
           });
         });
