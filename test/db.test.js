@@ -257,8 +257,11 @@ describe('Database', function () {
         err.errorType.should.equal('uniqueViolated');
       
         d.find({}, function (err, docs) {
+          // Datafile only contains index definition
+          var datafileContents = model.deserialize(fs.readFileSync(testDb, 'utf8'));
+          assert.deepEqual(datafileContents, { $$indexCreated: { fieldName: 'a', unique: true } });
+
           docs.length.should.equal(0);
-          fs.readFileSync(testDb, 'utf8').length.should.equal(0);   // Datafile not written to
 
           done();
         });
