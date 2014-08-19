@@ -38,7 +38,7 @@
   },
   "browser": {
     "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
-    "./lib/persistence.js": "./browser-version/browser-specific/lib/persistence.js"
+    "./lib/storage.js": "./browser-version/browser-specific/lib/storage.js"
   },
   "main": "index",
   "licence": "MIT"
