@@ -1,6 +1,6 @@
 (function(e){if("function"==typeof bootstrap)bootstrap("nedb",e);else if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else if("undefined"!=typeof ses){if(!ses.ok())return;ses.makeNedb=e}else"undefined"!=typeof window?window.Nedb=e():global.Nedb=e()})(function(){var define,ses,bootstrap,module,exports;
 return (function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
-(function(process){if (!process.EventEmitter) process.EventEmitter = function () {};
+var process=require("__browserify_process");if (!process.EventEmitter) process.EventEmitter = function () {};
 
 var EventEmitter = exports.EventEmitter = process.EventEmitter;
 var isArray = typeof Array.isArray === 'function'
@@ -184,7 +184,17 @@ EventEmitter.prototype.listeners = function(type) {
   return this._events[type];
 };
 
-})(require("__browserify_process"))
+EventEmitter.listenerCount = function(emitter, type) {
+  var ret;
+  if (!emitter._events || !emitter._events[type])
+    ret = 0;
+  else if (typeof emitter._events[type] === 'function')
+    ret = 1;
+  else
+    ret = emitter._events[type].length;
+  return ret;
+};
+
 },{"__browserify_process":3}],2:[function(require,module,exports){
 var events = require('events');
 
@@ -229,8 +239,8 @@ exports.inspect = function(obj, showHidden, depth, colors) {
           'regexp': 'red' }[styleType];
 
     if (style) {
-      return '\033[' + styles[style][0] + 'm' + str +
-             '\033[' + styles[style][1] + 'm';
+      return '\u001b[' + styles[style][0] + 'm' + str +
+             '\u001b[' + styles[style][1] + 'm';
     } else {
       return str;
     }
@@ -415,24 +425,18 @@ exports.inspect = function(obj, showHidden, depth, colors) {
 
 
 function isArray(ar) {
-  return ar instanceof Array ||
-         Array.isArray(ar) ||
-         (ar && ar !== Object.prototype && isArray(ar.__proto__));
+  return Array.isArray(ar) ||
+         (typeof ar === 'object' && Object.prototype.toString.call(ar) === '[object Array]');
 }
 
 
 function isRegExp(re) {
-  return re instanceof RegExp ||
-    (typeof re === 'object' && Object.prototype.toString.call(re) === '[object RegExp]');
+  typeof re === 'object' && Object.prototype.toString.call(re) === '[object RegExp]';
 }
 
 
 function isDate(d) {
-  if (d instanceof Date) return true;
-  if (typeof d !== 'object') return false;
-  var properties = Date.prototype && Object_getOwnPropertyNames(Date.prototype);
-  var proto = d.__proto__ && Object_getOwnPropertyNames(d.__proto__);
-  return JSON.stringify(proto) === JSON.stringify(properties);
+  return typeof d === 'object' && Object.prototype.toString.call(d) === '[object Date]';
 }
 
 function pad(n) {
@@ -780,7 +784,7 @@ Cursor.prototype.exec = function () {
 module.exports = Cursor;
 
 },{"./model":9,"underscore":16}],5:[function(require,module,exports){
-(function(){/**
+/**
  * Specific customUtils for the browser, where we don't have access to the Crypto and Buffer modules
  */
 
@@ -859,7 +863,6 @@ function uid (len) {
 
 module.exports.uid = uid;
 
-})()
 },{}],6:[function(require,module,exports){
 var customUtils = require('./customUtils')
   , model = require('./model')
@@ -1153,6 +1156,18 @@ Datastore.prototype._insert = function (newDoc, cb) {
 };
 
 /**
+ * Create a new _id that's not already in use
+ */
+Datastore.prototype.createNewId = function () {
+  var tentativeId = customUtils.uid(16);
+  // Try as many times as needed to get an unused _id. As explained in customUtils, the probability of this ever happening is extremely small, so this is O(1)
+  if (this.indexes._id.getMatching(tentativeId).length > 0) {
+    tentativeId = this.createNewId();
+  }
+  return tentativeId;
+};
+
+/**
  * Prepare a document (or array of documents) to be inserted in a database
  * @api private
  */
@@ -1163,7 +1178,7 @@ Datastore.prototype.prepareDocumentForInsertion = function (newDoc) {
     preparedDoc = [];
     newDoc.forEach(function (doc) { preparedDoc.push(self.prepareDocumentForInsertion(doc)); });
   } else {
-    newDoc._id = newDoc._id || customUtils.uid(16);
+    newDoc._id = newDoc._id || this.createNewId();
     preparedDoc = model.deepCopy(newDoc);
     model.checkObject(preparedDoc);
   }
@@ -1192,7 +1207,7 @@ Datastore.prototype._insertMultipleDocsInCache = function (newDocs) {
   var i, failingI, error
     , preparedDocs = this.prepareDocumentForInsertion(newDocs)
     ;
-  
+
   for (i = 0; i < preparedDocs.length; i += 1) {
     try {
       this.addToIndexes(preparedDocs[i]);
@@ -1441,10 +1456,11 @@ Datastore.prototype.remove = function () {
 
 
 
+
 module.exports = Datastore;
 
 },{"./cursor":4,"./customUtils":5,"./executor":7,"./indexes":8,"./model":9,"./persistence":10,"async":11,"underscore":16,"util":2}],7:[function(require,module,exports){
-(function(process){/**
+var process=require("__browserify_process");/**
  * Responsible for sequentially executing actions on the database
  */
 
@@ -1468,7 +1484,11 @@ function Executor () {
     // Always tell the queue task is complete. Execute callback if any was given.
     if (typeof lastArg === 'function') {
       callback = function () {
-        process.nextTick(cb);
+        if (typeof setImmediate === 'function') {
+           setImmediate(cb);
+        } else {
+          process.nextTick(cb);
+        }
         lastArg.apply(null, arguments);
       };
 
@@ -1518,7 +1538,6 @@ Executor.prototype.processBuffer = function () {
 // Interface
 module.exports = Executor;
 
-})(require("__browserify_process"))
 },{"__browserify_process":3,"async":11}],8:[function(require,module,exports){
 var BinarySearchTree = require('binary-search-tree').AVLTree
   , model = require('./model')
@@ -2617,7 +2636,7 @@ Persistence.prototype.loadDatabase = function (cb) {
 module.exports = Persistence;
 
 },{}],11:[function(require,module,exports){
-(function(process){/*global setImmediate: false, setTimeout: false, console: false */
+var process=require("__browserify_process");/*global setImmediate: false, setTimeout: false, console: false */
 (function () {
 
     var async = {};
@@ -3576,7 +3595,6 @@ module.exports = Persistence;
 
 }());
 
-})(require("__browserify_process"))
 },{"__browserify_process":3}],12:[function(require,module,exports){
 module.exports.BinarySearchTree = require('./lib/bst');
 module.exports.AVLTree = require('./lib/avltree');
@@ -4624,7 +4642,7 @@ function defaultCheckValueEquality (a, b) {
 module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
 },{}],16:[function(require,module,exports){
-(function(){//     Underscore.js 1.4.4
+//     Underscore.js 1.4.4
 //     http://underscorejs.org
 //     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
 //     Underscore may be freely distributed under the MIT license.
@@ -5851,7 +5869,6 @@ module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
 }).call(this);
 
-})()
 },{}]},{},[6])(6)
 });
 ;
