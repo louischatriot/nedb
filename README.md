@@ -8,7 +8,7 @@ can be used with a simple `require` statement. The API is a subset of MongoDB's.
 
 NeDB is not intended to be a replacement of large-scale databases such as MongoDB! Its goal is to provide you with a clean and easy way to query data and persist it to disk, for web applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a> and desktop applications built with <a href="https://github.com/rogerwang/node-webkit" target="_blank">Node Webkit</a>.
 
-NeDB was benchmarked against the popular client-side database <a href="http://www.taffydb.com/" target="_blank">TaffyDB</a> and <a href="https://github.com/louischatriot/taffydb-benchmark" target="_blank">NeDB is much, much faster</a>. That's why there is now <a href="#browser-version">a browser version</a>.
+NeDB was benchmarked against the popular client-side database <a href="http://www.taffydb.com/" target="_blank">TaffyDB</a> and <a href="https://github.com/louischatriot/taffydb-benchmark" target="_blank">NeDB is much, much faster</a>. That's why there is now <a href="#browser-version">a browser version</a>, which can also provide persistence.
 
 Check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log in the wiki</a> if you think nedb doesn't behave as the documentation describes! Most of the issues I get are due to non-latest version NeDBs.
 
@@ -40,6 +40,7 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 * <a href="#updating-documents">Updating documents</a>
 * <a href="#removing-documents">Removing documents</a>
 * <a href="#indexing">Indexing</a>
+* <a href="#browser-version">Browser version</a>
 
 ### Creating/loading a database
 You can use NeDB as an in-memory only datastore or as a persistent datastore. One datastore is the equivalent of a MongoDB collection. The constructor is used as follows `new Datastore(options)` where `options` is an object with the following fields:  
@@ -589,11 +590,11 @@ As of v0.8.0, you can use NeDB in the browser! You can find it and its minified 
 </script>
 ```
 
-It has been tested and is compatible with Chrome, Safari, Firefox, IE 10, IE 9. Please open an issue if you need compatibility with IE 8/IE 7, I think it will need some work and am not sure it is needed, since most complex webapplications - the ones that would need NeDB - only work on modern browsers. To launch the tests, simply open the file `browser-version/test/index.html` in a browser and you'll see the results of the tests for this browser.
+It has been tested and is compatible with Chrome, Safari, Firefox, IE 10, IE 9. Please open an issue if you need compatibility with IE 8/IE 7, I think it will need some work and am not sure it is needed, since most complex webapplications - the ones that would need NeDB - only work on modern browsers anyway. To launch the tests, simply open the file `browser-version/test/index.html` in a browser and you'll see the results of the tests for this browser.
 
 If you fork and modify nedb, you can build the browser version from the sources, the build script is `browser-version/build.js`.
 
-**The browser version is still young!** For now you can only use it as an in-memory database in browser environments, I'll implement persistence later.
+As of v0.11, NeDB is also persistent on the browser. To use this, simply create the collection with the `filename` option which will be the name of the `localStorage` variable storing data. **Browser persistence is still young! It has been tested on most major browsers but please report any bugs you find**
 
 
 ## Performance
