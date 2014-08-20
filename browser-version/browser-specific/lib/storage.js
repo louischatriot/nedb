@@ -70,7 +70,7 @@ function readFile (filename, options, callback) {
 }
 
 
-function unlink (filenqme, callback) {
+function unlink (filename, callback) {
   if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
 
   localStorage.removeItem(filename);
