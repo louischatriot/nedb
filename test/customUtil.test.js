@@ -7,29 +7,20 @@ var should = require('chai').should()
 
 describe('customUtils', function () {
 
-  describe('ensureFileDoesntExist', function () {
-  
-    it('Doesnt do anything if file already doesnt exist', function (done) {
-      customUtils.ensureFileDoesntExist('workspace/nonexisting', function (err) {
-        assert.isNull(err);
-        fs.existsSync('workspace/nonexisting').should.equal(false);
-        done();
-      });
+  describe('uid', function () {
+
+    it('Generates a string of the expected length', function () {
+      customUtils.uid(3).length.should.equal(3);
+      customUtils.uid(16).length.should.equal(16);
+      customUtils.uid(42).length.should.equal(42);
+      customUtils.uid(1000).length.should.equal(1000);
     });
 
-    it('Deletes file if it exists', function (done) {
-      fs.writeFileSync('workspace/existing', 'hello world', 'utf8');
-      fs.existsSync('workspace/existing').should.equal(true);
-    
-      customUtils.ensureFileDoesntExist('workspace/existing', function (err) {
-        assert.isNull(err);
-        fs.existsSync('workspace/existing').should.equal(false);
-        done();
-      });
+    // Very small probability of conflict
+    it('Generated uids should not be the same', function () {
+      customUtils.uid(56).should.not.equal(customUtils.uid(56));
     });
-    
+
   });
-
-
 
 });

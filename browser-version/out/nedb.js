@@ -195,7 +195,186 @@ EventEmitter.listenerCount = function(emitter, type) {
   return ret;
 };
 
-},{"__browserify_process":3}],2:[function(require,module,exports){
+},{"__browserify_process":4}],2:[function(require,module,exports){
+var process=require("__browserify_process");function filter (xs, fn) {
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        if (fn(xs[i], i, xs)) res.push(xs[i]);
+    }
+    return res;
+}
+
+// resolves . and .. elements in a path array with directory names there
+// must be no slashes, empty elements, or device names (c:\) in the array
+// (so also no leading and trailing slashes - it does not distinguish
+// relative and absolute paths)
+function normalizeArray(parts, allowAboveRoot) {
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = parts.length; i >= 0; i--) {
+    var last = parts[i];
+    if (last == '.') {
+      parts.splice(i, 1);
+    } else if (last === '..') {
+      parts.splice(i, 1);
+      up++;
+    } else if (up) {
+      parts.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (allowAboveRoot) {
+    for (; up--; up) {
+      parts.unshift('..');
+    }
+  }
+
+  return parts;
+}
+
+// Regex to split a filename into [*, dir, basename, ext]
+// posix version
+var splitPathRe = /^(.+\/(?!$)|\/)?((?:.+?)?(\.[^.]*)?)$/;
+
+// path.resolve([from ...], to)
+// posix version
+exports.resolve = function() {
+var resolvedPath = '',
+    resolvedAbsolute = false;
+
+for (var i = arguments.length; i >= -1 && !resolvedAbsolute; i--) {
+  var path = (i >= 0)
+      ? arguments[i]
+      : process.cwd();
+
+  // Skip empty and invalid entries
+  if (typeof path !== 'string' || !path) {
+    continue;
+  }
+
+  resolvedPath = path + '/' + resolvedPath;
+  resolvedAbsolute = path.charAt(0) === '/';
+}
+
+// At this point the path should be resolved to a full absolute path, but
+// handle relative paths to be safe (might happen when process.cwd() fails)
+
+// Normalize the path
+resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+    return !!p;
+  }), !resolvedAbsolute).join('/');
+
+  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+};
+
+// path.normalize(path)
+// posix version
+exports.normalize = function(path) {
+var isAbsolute = path.charAt(0) === '/',
+    trailingSlash = path.slice(-1) === '/';
+
+// Normalize the path
+path = normalizeArray(filter(path.split('/'), function(p) {
+    return !!p;
+  }), !isAbsolute).join('/');
+
+  if (!path && !isAbsolute) {
+    path = '.';
+  }
+  if (path && trailingSlash) {
+    path += '/';
+  }
+  
+  return (isAbsolute ? '/' : '') + path;
+};
+
+
+// posix version
+exports.join = function() {
+  var paths = Array.prototype.slice.call(arguments, 0);
+  return exports.normalize(filter(paths, function(p, index) {
+    return p && typeof p === 'string';
+  }).join('/'));
+};
+
+
+exports.dirname = function(path) {
+  var dir = splitPathRe.exec(path)[1] || '';
+  var isWindows = false;
+  if (!dir) {
+    // No dirname
+    return '.';
+  } else if (dir.length === 1 ||
+      (isWindows && dir.length <= 3 && dir.charAt(1) === ':')) {
+    // It is just a slash or a drive letter with a slash
+    return dir;
+  } else {
+    // It is a full dirname, strip trailing slash
+    return dir.substring(0, dir.length - 1);
+  }
+};
+
+
+exports.basename = function(path, ext) {
+  var f = splitPathRe.exec(path)[2] || '';
+  // TODO: make this comparison case-insensitive on windows?
+  if (ext && f.substr(-1 * ext.length) === ext) {
+    f = f.substr(0, f.length - ext.length);
+  }
+  return f;
+};
+
+
+exports.extname = function(path) {
+  return splitPathRe.exec(path)[3] || '';
+};
+
+exports.relative = function(from, to) {
+  from = exports.resolve(from).substr(1);
+  to = exports.resolve(to).substr(1);
+
+  function trim(arr) {
+    var start = 0;
+    for (; start < arr.length; start++) {
+      if (arr[start] !== '') break;
+    }
+
+    var end = arr.length - 1;
+    for (; end >= 0; end--) {
+      if (arr[end] !== '') break;
+    }
+
+    if (start > end) return [];
+    return arr.slice(start, end - start + 1);
+  }
+
+  var fromParts = trim(from.split('/'));
+  var toParts = trim(to.split('/'));
+
+  var length = Math.min(fromParts.length, toParts.length);
+  var samePartsLength = length;
+  for (var i = 0; i < length; i++) {
+    if (fromParts[i] !== toParts[i]) {
+      samePartsLength = i;
+      break;
+    }
+  }
+
+  var outputParts = [];
+  for (var i = samePartsLength; i < fromParts.length; i++) {
+    outputParts.push('..');
+  }
+
+  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+
+  return outputParts.join('/');
+};
+
+exports.sep = '/';
+
+},{"__browserify_process":4}],3:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -542,7 +721,7 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":1}],3:[function(require,module,exports){
+},{"events":1}],4:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -596,7 +775,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /**
  * Manage access to data, be it to find, update or remove it
  */
@@ -783,7 +962,7 @@ Cursor.prototype.exec = function () {
 // Interface
 module.exports = Cursor;
 
-},{"./model":9,"underscore":16}],5:[function(require,module,exports){
+},{"./model":10,"underscore":18}],6:[function(require,module,exports){
 /**
  * Specific customUtils for the browser, where we don't have access to the Crypto and Buffer modules
  */
@@ -863,7 +1042,7 @@ function uid (len) {
 
 module.exports.uid = uid;
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var customUtils = require('./customUtils')
   , model = require('./model')
   , async = require('async')
@@ -1459,7 +1638,7 @@ Datastore.prototype.remove = function () {
 
 module.exports = Datastore;
 
-},{"./cursor":4,"./customUtils":5,"./executor":7,"./indexes":8,"./model":9,"./persistence":10,"async":11,"underscore":16,"util":2}],7:[function(require,module,exports){
+},{"./cursor":5,"./customUtils":6,"./executor":8,"./indexes":9,"./model":10,"./persistence":11,"async":13,"underscore":18,"util":3}],8:[function(require,module,exports){
 var process=require("__browserify_process");/**
  * Responsible for sequentially executing actions on the database
  */
@@ -1538,7 +1717,7 @@ Executor.prototype.processBuffer = function () {
 // Interface
 module.exports = Executor;
 
-},{"__browserify_process":3,"async":11}],8:[function(require,module,exports){
+},{"__browserify_process":4,"async":13}],9:[function(require,module,exports){
 var BinarySearchTree = require('binary-search-tree').AVLTree
   , model = require('./model')
   , _ = require('underscore')
@@ -1834,7 +2013,7 @@ Index.prototype.getAll = function () {
 // Interface
 module.exports = Index;
 
-},{"./model":9,"binary-search-tree":12,"underscore":16,"util":2}],9:[function(require,module,exports){
+},{"./model":10,"binary-search-tree":14,"underscore":18,"util":3}],10:[function(require,module,exports){
 /**
  * Handle models (i.e. docs)
  * Serialization/deserialization
@@ -2593,49 +2772,442 @@ module.exports.match = match;
 module.exports.areThingsEqual = areThingsEqual;
 module.exports.compareThings = compareThings;
 
-},{"underscore":16,"util":2}],10:[function(require,module,exports){
-/**
+},{"underscore":18,"util":3}],11:[function(require,module,exports){
+var process=require("__browserify_process");/**
  * Handle every persistence-related task
  * The interface Datastore expects to be implemented is
  * * Persistence.loadDatabase(callback) and callback has signature err
  * * Persistence.persistNewState(newDocs, callback) where newDocs is an array of documents and callback has signature err
- *
- * Shim for the browser
  */
+
+var storage = require('./storage')
+  , path = require('path')
+  , model = require('./model')
+  , async = require('async')
+  , customUtils = require('./customUtils')
+  , Index = require('./indexes')
+  ;
+
 
 /**
  * Create a new Persistence object for database options.db
- * For now, no browser persistence supported, in-memory only mode forced
  * @param {Datastore} options.db
+ * @param {Boolean} options.nodeWebkitAppName Optional, specify the name of your NW app if you want options.filename to be relative to the directory where
+ *                                            Node Webkit stores application data such as cookies and local storage (the best place to store data in my opinion)
  */
 function Persistence (options) {
   this.db = options.db;
-  this.db.inMemoryOnly = true;
-  this.db.filename = null;
-  this.inMemoryOnly = true;
+  this.inMemoryOnly = this.db.inMemoryOnly;
+  this.filename = this.db.filename;
+  
+  if (!this.inMemoryOnly && this.filename) {
+    if (this.filename.charAt(this.filename.length - 1) === '~') {
+      throw "The datafile name can't end with a ~, which is reserved for automatic backup files";
+    } else {
+      this.tempFilename = this.filename + '~';
+      this.oldFilename = this.filename + '~~';
+    }
+  }
+
+  // For NW apps, store data in the same directory where NW stores application data
+  if (this.filename && options.nodeWebkitAppName) {
+    console.log("==================================================================");
+    console.log("WARNING: The nodeWebkitAppName option is deprecated");
+    console.log("To get the path to the directory where Node Webkit stores the data");
+    console.log("for your app, use the internal nw.gui module like this");
+    console.log("require('nw.gui').App.dataPath");
+    console.log("See https://github.com/rogerwang/node-webkit/issues/500");
+    console.log("==================================================================");
+    this.filename = Persistence.getNWAppFilename(options.nodeWebkitAppName, this.filename);
+    this.tempFilename = Persistence.getNWAppFilename(options.nodeWebkitAppName, this.tempFilename);
+    this.oldFilename = Persistence.getNWAppFilename(options.nodeWebkitAppName, this.oldFilename);
+  }
 };
 
 
 /**
- * No persistence in the browser (for now)
+ * Check if a directory exists and create it on the fly if it is not the case
+ * cb is optional, signature: err
+ */
+Persistence.ensureDirectoryExists = function (dir, cb) {
+  var callback = cb || function () {}
+    ;
+
+  storage.mkdirp(dir, function (err) { return callback(err); });
+};
+
+
+Persistence.ensureFileDoesntExist = function (file, callback) {
+  storage.exists(file, function (exists) {
+    if (!exists) { return callback(null); }
+    
+    storage.unlink(file, function (err) { return callback(err); });
+  });
+};
+
+
+/**
+ * Return the path the datafile if the given filename is relative to the directory where Node Webkit stores
+ * data for this application. Probably the best place to store data
+ */
+Persistence.getNWAppFilename = function (appName, relativeFilename) {
+  var home;
+
+  switch (process.platform) {
+    case 'win32':
+    case 'win64':
+      home = process.env.LOCALAPPDATA || process.env.APPDATA;
+      if (!home) { throw "Couldn't find the base application data folder"; }
+      home = path.join(home, appName);
+      break;
+    case 'darwin':
+      home = process.env.HOME;
+      if (!home) { throw "Couldn't find the base application data directory"; }
+      home = path.join(home, 'Library', 'Application Support', appName);
+      break;
+    case 'linux':
+      home = process.env.HOME;
+      if (!home) { throw "Couldn't find the base application data directory"; }
+      home = path.join(home, '.config', appName);
+      break;
+    default:
+      throw "Can't use the Node Webkit relative path for platform " + process.platform;
+      break;
+  }
+
+  return path.join(home, 'nedb-data', relativeFilename);
+}
+
+
+/**
+ * Persist cached database
+ * This serves as a compaction function since the cache always contains only the number of documents in the collection
+ * while the data file is append-only so it may grow larger
+ * @param {Function} cb Optional callback, signature: err
+ */
+Persistence.prototype.persistCachedDatabase = function (cb) {
+  var callback = cb || function () {}
+    , toPersist = ''
+    , self = this
+    ;
+
+  if (this.inMemoryOnly) { return callback(null); } 
+
+  this.db.getAllData().forEach(function (doc) {
+    toPersist += model.serialize(doc) + '\n';
+  });
+  Object.keys(this.db.indexes).forEach(function (fieldName) {
+    if (fieldName != "_id") {   // The special _id index is managed by datastore.js, the others need to be persisted
+      toPersist += model.serialize({ $$indexCreated: { fieldName: fieldName, unique: self.db.indexes[fieldName].unique, sparse: self.db.indexes[fieldName].sparse }}) + '\n';
+    }
+  });
+
+  async.waterfall([
+    async.apply(Persistence.ensureFileDoesntExist, self.tempFilename)
+  , async.apply(Persistence.ensureFileDoesntExist, self.oldFilename)
+  , function (cb) {
+      storage.exists(self.filename, function (exists) {
+        if (exists) {
+          storage.rename(self.filename, self.oldFilename, function (err) { return cb(err); });
+        } else {
+          return cb();
+        }
+      });  
+  }
+  , function (cb) {
+      storage.writeFile(self.tempFilename, toPersist, function (err) { return cb(err); });
+    }
+  , function (cb) {
+      storage.rename(self.tempFilename, self.filename, function (err) { return cb(err); });
+    }
+  , async.apply(Persistence.ensureFileDoesntExist, self.oldFilename)
+  ], function (err) { if (err) { return callback(err); } else { return callback(null); } })
+};
+
+
+/**
+ * Queue a rewrite of the datafile
+ */
+Persistence.prototype.compactDatafile = function () {
+  this.db.executor.push({ this: this, fn: this.persistCachedDatabase, arguments: [] });
+};
+
+
+/**
+ * Set automatic compaction every interval ms
+ * @param {Number} interval in milliseconds, with an enforced minimum of 5 seconds
+ */
+Persistence.prototype.setAutocompactionInterval = function (interval) {
+  var self = this
+    , minInterval = 5000
+    , realInterval = Math.max(interval || 0, minInterval)
+    ;
+
+  this.stopAutocompaction();
+
+  this.autocompactionIntervalId = setInterval(function () {
+    self.compactDatafile();
+  }, realInterval);
+};
+
+
+/**
+ * Stop autocompaction (do nothing if autocompaction was not running)
+ */
+Persistence.prototype.stopAutocompaction = function () {
+  if (this.autocompactionIntervalId) { clearInterval(this.autocompactionIntervalId); }
+};
+
+
+/**
+ * Persist new state for the given newDocs (can be insertion, update or removal)
+ * Use an append-only format
+ * @param {Array} newDocs Can be empty if no doc was updated/removed
+ * @param {Function} cb Optional, signature: err
  */
 Persistence.prototype.persistNewState = function (newDocs, cb) {
-  if (cb) { return cb(); }
+  var self = this
+    , toPersist = ''
+    , callback = cb || function () {}
+    ;
+
+  // In-memory only datastore
+  if (self.inMemoryOnly) { return callback(null); }
+
+  newDocs.forEach(function (doc) {
+    toPersist += model.serialize(doc) + '\n';
+  });
+
+  if (toPersist.length === 0) { return callback(null); }
+
+  storage.appendFile(self.filename, toPersist, 'utf8', function (err) {
+    return callback(err);
+  });
 };
 
 
 /**
- * No persistence in the browser (for now)
+ * From a database's raw data, return the corresponding
+ * machine understandable collection
+ */
+Persistence.treatRawData = function (rawData) {
+  var data = rawData.split('\n')
+    , dataById = {}
+    , tdata = []
+    , i
+    , indexes = {}
+    ;
+
+  for (i = 0; i < data.length; i += 1) {
+    var doc;
+
+    try {
+      doc = model.deserialize(data[i]);
+      if (doc._id) {
+        if (doc.$$deleted === true) {
+          delete dataById[doc._id];
+        } else {
+          dataById[doc._id] = doc;
+        }
+      } else if (doc.$$indexCreated && doc.$$indexCreated.fieldName != undefined) {
+        indexes[doc.$$indexCreated.fieldName] = doc.$$indexCreated;
+      } else if (typeof doc.$$indexRemoved === "string") {
+        delete indexes[doc.$$indexRemoved];
+      }
+    } catch (e) {
+    }
+  }
+
+  Object.keys(dataById).forEach(function (k) {
+    tdata.push(dataById[k]);
+  });
+
+  return { data: tdata, indexes: indexes };
+};
+
+
+/**
+ * Ensure that this.filename contains the most up-to-date version of the data
+ * Even if a loadDatabase crashed before
+ */
+Persistence.prototype.ensureDatafileIntegrity = function (callback) {
+  var self = this  ;
+
+  storage.exists(self.filename, function (filenameExists) {
+    // Write was successful
+    if (filenameExists) { return callback(null); }
+  
+    storage.exists(self.oldFilename, function (oldFilenameExists) {
+      // New database
+      if (!oldFilenameExists) {
+        return storage.writeFile(self.filename, '', 'utf8', function (err) { callback(err); });            
+      }
+    
+      // Write failed, use old version
+      storage.rename(self.oldFilename, self.filename, function (err) { return callback(err); });
+    });
+  });
+};
+
+
+/**
+ * Load the database
+ * 1) Create all indexes
+ * 2) Insert all data
+ * 3) Compact the database
+ * This means pulling data out of the data file or creating it if it doesn't exist
+ * Also, all data is persisted right away, which has the effect of compacting the database file
+ * This operation is very quick at startup for a big collection (60ms for ~10k docs)
+ * @param {Function} cb Optional callback, signature: err
  */
 Persistence.prototype.loadDatabase = function (cb) {
-  if (cb) { return cb(); }
+  var callback = cb || function () {}
+    , self = this
+    ;
+
+  self.db.resetIndexes();
+
+  // In-memory only datastore
+  if (self.inMemoryOnly) { return callback(null); }
+
+  async.waterfall([
+    function (cb) {
+      Persistence.ensureDirectoryExists(path.dirname(self.filename), function (err) {
+        self.ensureDatafileIntegrity(function (exists) {
+          storage.readFile(self.filename, 'utf8', function (err, rawData) {
+
+            if (err) { return cb(err); }
+            var treatedData = Persistence.treatRawData(rawData);
+
+            // Recreate all indexes in the datafile
+            Object.keys(treatedData.indexes).forEach(function (key) {
+              self.db.indexes[key] = new Index(treatedData.indexes[key]);
+            });
+
+            // Fill cached database (i.e. all indexes) with data
+            try {
+              self.db.resetIndexes(treatedData.data);
+            } catch (e) {
+              self.db.resetIndexes();   // Rollback any index which didn't fail
+              return cb(e);
+            }
+
+            self.db.persistence.persistCachedDatabase(cb);
+          });
+        });
+      });
+    }
+  ], function (err) {
+       if (err) { return callback(err); }
+
+       self.db.executor.processBuffer();
+       return callback(null);
+     });
 };
 
 
 // Interface
 module.exports = Persistence;
 
-},{}],11:[function(require,module,exports){
+},{"./customUtils":6,"./indexes":9,"./model":10,"./storage":12,"__browserify_process":4,"async":13,"path":2}],12:[function(require,module,exports){
+/**
+ * Way data is stored for this database
+ * For a Node.js/Node Webkit database it's the file system
+ * For a browser-side database it's localStorage when supported
+ *
+ * This version is the Node.js/Node Webkit version
+ */
+
+
+
+function exists (filename, callback) {
+  // In this specific case this always answers that the file doesn't exist
+  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
+
+  if (localStorage.getItem(filename) !== null) {
+    return callback(true);
+  } else {
+    return callback(false);
+  }
+}
+
+
+function rename (filename, newFilename, callback) {
+  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
+
+  if (localStorage.getItem(filename) === null) {
+    localStorage.removeItem(newFilename);
+  } else {
+    localStorage.setItem(newFilename, localStorage.getItem(filename));
+    localStorage.removeItem(filename);
+  }
+
+  return callback();
+}
+
+
+function writeFile (filename, contents, options, callback) {
+  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
+  
+  // Options do not matter in browser setup
+  if (typeof options === 'function') { callback = options; }
+
+  localStorage.setItem(filename, contents);
+  return callback();
+}
+
+
+function appendFile (filename, toAppend, options, callback) {
+  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
+  
+  // Options do not matter in browser setup
+  if (typeof options === 'function') { callback = options; }
+
+  var contents = localStorage.getItem(filename) || '';
+  contents += toAppend;
+
+  localStorage.setItem(filename, contents);
+  return callback();
+}
+
+
+function readFile (filename, options, callback) {
+  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
+  
+  // Options do not matter in browser setup
+  if (typeof options === 'function') { callback = options; }
+
+  var contents = localStorage.getItem(filename) || '';
+  return callback(null, contents);
+}
+
+
+function unlink (filename, callback) {
+  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
+
+  localStorage.removeItem(filename);
+  return callback();
+}
+
+
+// Nothing done, no directories will be used on the browser
+function mkdirp (dir, callback) {
+  return callback();
+}
+
+
+
+// Interface
+module.exports.exists = exists;
+module.exports.rename = rename;
+module.exports.writeFile = writeFile;
+module.exports.appendFile = appendFile;
+module.exports.readFile = readFile;
+module.exports.unlink = unlink;
+module.exports.mkdirp = mkdirp;
+
+
+},{}],13:[function(require,module,exports){
 var process=require("__browserify_process");/*global setImmediate: false, setTimeout: false, console: false */
 (function () {
 
@@ -3595,11 +4167,11 @@ var process=require("__browserify_process");/*global setImmediate: false, setTim
 
 }());
 
-},{"__browserify_process":3}],12:[function(require,module,exports){
+},{"__browserify_process":4}],14:[function(require,module,exports){
 module.exports.BinarySearchTree = require('./lib/bst');
 module.exports.AVLTree = require('./lib/avltree');
 
-},{"./lib/avltree":13,"./lib/bst":14}],13:[function(require,module,exports){
+},{"./lib/avltree":15,"./lib/bst":16}],15:[function(require,module,exports){
 /**
  * Self-balancing binary search tree using the AVL implementation
  */
@@ -4056,7 +4628,7 @@ AVLTree.prototype.delete = function (key, value) {
 // Interface
 module.exports = AVLTree;
 
-},{"./bst":14,"./customUtils":15,"underscore":16,"util":2}],14:[function(require,module,exports){
+},{"./bst":16,"./customUtils":17,"underscore":18,"util":3}],16:[function(require,module,exports){
 /**
  * Simple binary search tree
  */
@@ -4601,7 +5173,7 @@ BinarySearchTree.prototype.prettyPrint = function (printData, spacing) {
 // Interface
 module.exports = BinarySearchTree;
 
-},{"./customUtils":15}],15:[function(require,module,exports){
+},{"./customUtils":17}],17:[function(require,module,exports){
 /**
  * Return an array with the numbers from 0 to n-1, in a random order
  */
@@ -4641,7 +5213,7 @@ function defaultCheckValueEquality (a, b) {
 }
 module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 //     Underscore.js 1.4.4
 //     http://underscorejs.org
 //     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
@@ -5869,6 +6441,6 @@ module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
 }).call(this);
 
-},{}]},{},[6])(6)
+},{}]},{},[7])(7)
 });
 ;
