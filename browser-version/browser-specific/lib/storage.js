@@ -78,6 +78,12 @@ function unlink (filename, callback) {
 }
 
 
+// Nothing done, no directories will be used on the browser
+function mkdirp (dir, callback) {
+  return callback();
+}
+
+
 
 // Interface
 module.exports.exists = exists;
@@ -86,5 +92,5 @@ module.exports.writeFile = writeFile;
 module.exports.appendFile = appendFile;
 module.exports.readFile = readFile;
 module.exports.unlink = unlink;
-
+module.exports.mkdirp = mkdirp;
 

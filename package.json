@@ -36,10 +36,6 @@
   "scripts": {
     "test": "./node_modules/.bin/mocha --reporter spec --timeout 10000"
   },
-  "browser": {
-    "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
-    "./lib/storage.js": "./browser-version/browser-specific/lib/storage.js"
-  },
   "main": "index",
   "licence": "MIT"
 }

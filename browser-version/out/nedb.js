@@ -195,10 +195,7 @@ EventEmitter.listenerCount = function(emitter, type) {
   return ret;
 };
 
-},{"__browserify_process":5}],2:[function(require,module,exports){
-// nothing to see here... no file methods for the browser
-
-},{}],3:[function(require,module,exports){
+},{"__browserify_process":4}],2:[function(require,module,exports){
 var process=require("__browserify_process");function filter (xs, fn) {
     var res = [];
     for (var i = 0; i < xs.length; i++) {
@@ -377,7 +374,7 @@ exports.relative = function(from, to) {
 
 exports.sep = '/';
 
-},{"__browserify_process":5}],4:[function(require,module,exports){
+},{"__browserify_process":4}],3:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -724,7 +721,7 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":1}],5:[function(require,module,exports){
+},{"events":1}],4:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -778,7 +775,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /**
  * Manage access to data, be it to find, update or remove it
  */
@@ -965,7 +962,7 @@ Cursor.prototype.exec = function () {
 // Interface
 module.exports = Cursor;
 
-},{"./model":11,"underscore":20}],7:[function(require,module,exports){
+},{"./model":10,"underscore":18}],6:[function(require,module,exports){
 /**
  * Specific customUtils for the browser, where we don't have access to the Crypto and Buffer modules
  */
@@ -1045,7 +1042,7 @@ function uid (len) {
 
 module.exports.uid = uid;
 
-},{}],8:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var customUtils = require('./customUtils')
   , model = require('./model')
   , async = require('async')
@@ -1641,7 +1638,7 @@ Datastore.prototype.remove = function () {
 
 module.exports = Datastore;
 
-},{"./cursor":6,"./customUtils":7,"./executor":9,"./indexes":10,"./model":11,"./persistence":12,"async":14,"underscore":20,"util":4}],9:[function(require,module,exports){
+},{"./cursor":5,"./customUtils":6,"./executor":8,"./indexes":9,"./model":10,"./persistence":11,"async":13,"underscore":18,"util":3}],8:[function(require,module,exports){
 var process=require("__browserify_process");/**
  * Responsible for sequentially executing actions on the database
  */
@@ -1720,7 +1717,7 @@ Executor.prototype.processBuffer = function () {
 // Interface
 module.exports = Executor;
 
-},{"__browserify_process":5,"async":14}],10:[function(require,module,exports){
+},{"__browserify_process":4,"async":13}],9:[function(require,module,exports){
 var BinarySearchTree = require('binary-search-tree').AVLTree
   , model = require('./model')
   , _ = require('underscore')
@@ -2016,7 +2013,7 @@ Index.prototype.getAll = function () {
 // Interface
 module.exports = Index;
 
-},{"./model":11,"binary-search-tree":15,"underscore":20,"util":4}],11:[function(require,module,exports){
+},{"./model":10,"binary-search-tree":14,"underscore":18,"util":3}],10:[function(require,module,exports){
 /**
  * Handle models (i.e. docs)
  * Serialization/deserialization
@@ -2775,7 +2772,7 @@ module.exports.match = match;
 module.exports.areThingsEqual = areThingsEqual;
 module.exports.compareThings = compareThings;
 
-},{"underscore":20,"util":4}],12:[function(require,module,exports){
+},{"underscore":18,"util":3}],11:[function(require,module,exports){
 var process=require("__browserify_process");/**
  * Handle every persistence-related task
  * The interface Datastore expects to be implemented is
@@ -2783,12 +2780,10 @@ var process=require("__browserify_process");/**
  * * Persistence.persistNewState(newDocs, callback) where newDocs is an array of documents and callback has signature err
  */
 
-var fs = require('fs')
-  , storage = require('./storage')
+var storage = require('./storage')
   , path = require('path')
   , model = require('./model')
   , async = require('async')
-  , mkdirp = require('mkdirp')
   , customUtils = require('./customUtils')
   , Index = require('./indexes')
   ;
@@ -2838,10 +2833,7 @@ Persistence.ensureDirectoryExists = function (dir, cb) {
   var callback = cb || function () {}
     ;
 
-    // TODO: put in storage.js
-    return callback();
-
-  mkdirp(dir, function (err) { return callback(err); });
+  storage.mkdirp(dir, function (err) { return callback(err); });
 };
 
 
@@ -3117,7 +3109,7 @@ Persistence.prototype.loadDatabase = function (cb) {
 // Interface
 module.exports = Persistence;
 
-},{"./customUtils":7,"./indexes":10,"./model":11,"./storage":13,"__browserify_process":5,"async":14,"fs":2,"mkdirp":19,"path":3}],13:[function(require,module,exports){
+},{"./customUtils":6,"./indexes":9,"./model":10,"./storage":12,"__browserify_process":4,"async":13,"path":2}],12:[function(require,module,exports){
 /**
  * Way data is stored for this database
  * For a Node.js/Node Webkit database it's the file system
@@ -3198,6 +3190,12 @@ function unlink (filename, callback) {
 }
 
 
+// Nothing done, no directories will be used on the browser
+function mkdirp (dir, callback) {
+  return callback();
+}
+
+
 
 // Interface
 module.exports.exists = exists;
@@ -3206,10 +3204,10 @@ module.exports.writeFile = writeFile;
 module.exports.appendFile = appendFile;
 module.exports.readFile = readFile;
 module.exports.unlink = unlink;
+module.exports.mkdirp = mkdirp;
 
 
-
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 var process=require("__browserify_process");/*global setImmediate: false, setTimeout: false, console: false */
 (function () {
 
@@ -4169,11 +4167,11 @@ var process=require("__browserify_process");/*global setImmediate: false, setTim
 
 }());
 
-},{"__browserify_process":5}],15:[function(require,module,exports){
+},{"__browserify_process":4}],14:[function(require,module,exports){
 module.exports.BinarySearchTree = require('./lib/bst');
 module.exports.AVLTree = require('./lib/avltree');
 
-},{"./lib/avltree":16,"./lib/bst":17}],16:[function(require,module,exports){
+},{"./lib/avltree":15,"./lib/bst":16}],15:[function(require,module,exports){
 /**
  * Self-balancing binary search tree using the AVL implementation
  */
@@ -4630,7 +4628,7 @@ AVLTree.prototype.delete = function (key, value) {
 // Interface
 module.exports = AVLTree;
 
-},{"./bst":17,"./customUtils":18,"underscore":20,"util":4}],17:[function(require,module,exports){
+},{"./bst":16,"./customUtils":17,"underscore":18,"util":3}],16:[function(require,module,exports){
 /**
  * Simple binary search tree
  */
@@ -5175,7 +5173,7 @@ BinarySearchTree.prototype.prettyPrint = function (printData, spacing) {
 // Interface
 module.exports = BinarySearchTree;
 
-},{"./customUtils":18}],18:[function(require,module,exports){
+},{"./customUtils":17}],17:[function(require,module,exports){
 /**
  * Return an array with the numbers from 0 to n-1, in a random order
  */
@@ -5215,91 +5213,7 @@ function defaultCheckValueEquality (a, b) {
 }
 module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
-},{}],19:[function(require,module,exports){
-var process=require("__browserify_process");var path = require('path');
-var fs = require('fs');
-
-module.exports = mkdirP.mkdirp = mkdirP.mkdirP = mkdirP;
-
-function mkdirP (p, mode, f, made) {
-    if (typeof mode === 'function' || mode === undefined) {
-        f = mode;
-        mode = 0777 & (~process.umask());
-    }
-    if (!made) made = null;
-
-    var cb = f || function () {};
-    if (typeof mode === 'string') mode = parseInt(mode, 8);
-    p = path.resolve(p);
-
-    fs.mkdir(p, mode, function (er) {
-        if (!er) {
-            made = made || p;
-            return cb(null, made);
-        }
-        switch (er.code) {
-            case 'ENOENT':
-                mkdirP(path.dirname(p), mode, function (er, made) {
-                    if (er) cb(er, made);
-                    else mkdirP(p, mode, cb, made);
-                });
-                break;
-
-            // In the case of any other error, just see if there's a dir
-            // there already.  If so, then hooray!  If not, then something
-            // is borked.
-            default:
-                fs.stat(p, function (er2, stat) {
-                    // if the stat fails, then that's super weird.
-                    // let the original error be the failure reason.
-                    if (er2 || !stat.isDirectory()) cb(er, made)
-                    else cb(null, made);
-                });
-                break;
-        }
-    });
-}
-
-mkdirP.sync = function sync (p, mode, made) {
-    if (mode === undefined) {
-        mode = 0777 & (~process.umask());
-    }
-    if (!made) made = null;
-
-    if (typeof mode === 'string') mode = parseInt(mode, 8);
-    p = path.resolve(p);
-
-    try {
-        fs.mkdirSync(p, mode);
-        made = made || p;
-    }
-    catch (err0) {
-        switch (err0.code) {
-            case 'ENOENT' :
-                made = sync(path.dirname(p), mode, made);
-                sync(p, mode, made);
-                break;
-
-            // In the case of any other error, just see if there's a dir
-            // there already.  If so, then hooray!  If not, then something
-            // is borked.
-            default:
-                var stat;
-                try {
-                    stat = fs.statSync(p);
-                }
-                catch (err1) {
-                    throw err0;
-                }
-                if (!stat.isDirectory()) throw err0;
-                break;
-        }
-    }
-
-    return made;
-};
-
-},{"__browserify_process":5,"fs":2,"path":3}],20:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 //     Underscore.js 1.4.4
 //     http://underscorejs.org
 //     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
@@ -6527,6 +6441,6 @@ mkdirP.sync = function sync (p, mode, made) {
 
 }).call(this);
 
-},{}]},{},[8])(8)
+},{}]},{},[7])(7)
 });
 ;
