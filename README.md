@@ -495,7 +495,7 @@ db.update({ _id: 'id6' }, { $pull: { fruits: $in: ['apple', 'pear'] } }, {}, fun
 
 // $each can be used to $push or $addToSet multiple values at once
 // This example works the same way with $addToSet
-db.update({ _id: 'id6' }, { $push: { fruits: ['banana', 'orange'] } }, {}, function () {
+db.update({ _id: 'id6' }, { $push: { fruits: {$each: ['banana', 'orange'] } } }, {}, function () {
   // Now the fruits array is ['apple', 'orange', 'pear', 'banana', 'orange']
 });
 ```
