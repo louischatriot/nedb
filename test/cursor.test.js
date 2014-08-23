@@ -16,6 +16,8 @@ describe('Cursor', function () {
   var d;
 
   beforeEach(function (done) {
+
+    console.log("BLOUP");
     d = new Datastore({ filename: testDb });
     d.filename.should.equal(testDb);
     d.inMemoryOnly.should.equal(false);
@@ -32,7 +34,9 @@ describe('Cursor', function () {
       }
     , function (cb) {
         d.loadDatabase(function (err) {
+              console.log('--- Should fail here');
           assert.isNull(err);
+              console.log('--- didnt fail');
           d.getAllData().length.should.equal(0);
           return cb();
         });
@@ -57,6 +61,7 @@ describe('Cursor', function () {
     });
 
     it('Without query, an empty query or a simple query and no skip or limit', function (done) {
+      console.log("-----------------");
       async.waterfall([
         function (cb) {
         var cursor = new Cursor(d);
