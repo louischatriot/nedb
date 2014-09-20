@@ -594,7 +594,7 @@ It has been tested and is compatible with Chrome, Safari, Firefox, IE 10, IE 9. 
 
 If you fork and modify nedb, you can build the browser version from the sources, the build script is `browser-version/build.js`.
 
-As of v0.11, NeDB is also persistent on the browser. To use this, simply create the collection with the `filename` option which will be the name of the `localStorage` variable storing data. Persistence should work on all browsers where NeDB works.
+As of v0.11, NeDB is also persistent on the browser. To use this, simply create the collection with the `filename` option which will be the name of the `localStorage` variable storing data. Persistence should work on all browsers where NeDB works. Also, keep in mind that `localStorage` has size constraints, so it's probably a good idea to set recurring compaction every 2-5 minutes to save on space if your client app needs a lot of updates and deletes. See <a href="#compacting-the-database">database compaction</a> for more details on the append-only format used by NeDB.
 
 **Browser persistence is still young! It has been tested on most major browsers but please report any bugs you find**
 
