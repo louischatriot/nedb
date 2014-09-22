@@ -12,9 +12,12 @@ NeDB was benchmarked against the popular client-side database <a href="http://ww
 
 Check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log in the wiki</a> if you think nedb doesn't behave as the documentation describes! Most of the issues I get are due to non-latest version NeDBs.
 
-You want to help out? <a href="#contribute">You can contribute time or bitcoins, check out how!</a>
+## Support NeDB development
+No time to <a href="#help-out">help out</a>? You can support NeDB development by sending money or bitcoins!
 
 [![Donate to author](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=louis%2echatriot%40gmail%2ecom&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
+
+Bitcoin address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
 ## Installation, tests
 Module name on npm is `nedb`.
@@ -625,14 +628,11 @@ Connect and Express, backed by nedb
 * If you've outgrown NeDB, switching to MongoDB won't be too hard as it is the same API. Use <a href="https://github.com/louischatriot/nedb-to-mongodb" target="_blank">this utility</a> to transfer the data from a NeDB database to a MongoDB collection
 
 
-## Contribute!
-You want to help? You can contribute time or bitcoins.
-
-### Helping on the codebase
+## Help out
 Issues reporting and pull requests are always appreciated. For issues, make sure to always include a code snippet and describe the expected vs actual behavior. If you send a pull request, make sure to stick to NeDB's coding style and always test all the code you submit. You can look at the current tests to see how to do it
 
 ### Bitcoins
-You don't have time? You can support NeDB by sending bitcoins to this adress: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
+You don't have time? You can support NeDB by sending bitcoins to this adress: 
 
 
 ## License 
