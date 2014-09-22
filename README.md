@@ -15,7 +15,7 @@ Check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target
 ## Support NeDB development
 No time to <a href="#help-out">help out</a>? You can support NeDB development by sending money or bitcoins!
 
-[![Donate to author](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=louis%2echatriot%40gmail%2ecom&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
+Money: [![Donate to author](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=louis%2echatriot%40gmail%2ecom&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
 
 Bitcoin address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
