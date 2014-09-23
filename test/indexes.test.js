@@ -222,6 +222,33 @@ describe('Indexes', function () {
 	
 	});   // ==== End of 'Array fields' ==== //
 
+    describe('Compound Indexes', function () {
+
+      it('Supports arrays of fieldNames', function () {
+        var idx = new Index({ fieldName: ['tf', 'tf2'] })
+          , doc1 = { a: 5, tf: 'hello', tf2: 7}
+          , doc2 = { a: 8, tf: 'hello', tf2: 6}
+          , doc3 = { a: 2, tf: 'bloup', tf2: 3}
+          ;
+
+        idx.insert(doc1);
+        idx.insert(doc2);
+        idx.insert(doc3);
+
+        // The underlying BST now has 3 nodes which contain the docs where it's expected
+        idx.tree.getNumberOfKeys().should.equal(3);
+        assert.deepEqual(idx.tree.search({tf: 'hello', tf2: 7}), [{ a: 5, tf: 'hello', tf2: 7}]);
+        assert.deepEqual(idx.tree.search({tf: 'hello', tf2: 6}), [{ a: 8, tf: 'hello', tf2: 6}]);
+        assert.deepEqual(idx.tree.search({tf: 'bloup', tf2: 3}), [{ a: 2, tf: 'bloup', tf2: 3}]);
+
+        // The nodes contain pointers to the actual documents
+        idx.tree.search({tf: 'hello', tf2: 6})[0].should.equal(doc2);
+        idx.tree.search({tf: 'bloup', tf2: 3})[0].a = 42;
+        doc3.a.should.equal(42);
+      });
+
+    });
+
   });   // ==== End of 'Insertion' ==== //
 
 
