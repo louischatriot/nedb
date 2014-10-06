@@ -10,8 +10,6 @@ var should = require('chai').should()
   , Persistence = require('../lib/persistence')
   ;
 
-var sinon = require("sinon");
-var sinonChai = require("sinon-chai");
 describe('Database', function () {
   var d;
 
@@ -54,7 +52,7 @@ describe('Database', function () {
     dbef.inMemoryOnly.should.equal(true);
   });
 
-  it.only('Custom id Generator', function (done) {
+  it('Custom id Generator', function (done) {
     var db = new Datastore({idGenerator: gen})
       , c
       ;
