@@ -10,7 +10,8 @@ var should = require('chai').should()
   , Persistence = require('../lib/persistence')
   ;
 
-
+var sinon = require("sinon");
+var sinonChai = require("sinon-chai");
 describe('Database', function () {
   var d;
 
@@ -53,45 +54,61 @@ describe('Database', function () {
     dbef.inMemoryOnly.should.equal(true);
   });
 
+  it.only('Custom id Generator', function (done) {
+    var db = new Datastore({idGenerator: gen})
+      , c
+      ;
+
+    function gen() {
+     c = Date.now().toString();
+     return c;
+    }
+
+    db.insert({foo: "bar"}, function(err, doc) {
+     doc._id.should.equal(c);
+     done();
+    })
+  });
+
   describe('Autoloading', function () {
-  
+
     it('Can autoload a database and query it right away', function (done) {
       var fileStr = model.serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + model.serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n'
         , autoDb = 'workspace/auto.db'
         , db
         ;
-      
+
       fs.writeFileSync(autoDb, fileStr, 'utf8');
       db = new Datastore({ filename: autoDb, autoload: true })
-      
+
       db.find({}, function (err, docs) {
         assert.isNull(err);
         docs.length.should.equal(2);
         done();
       });
     });
-    
+
     it('Throws if autoload fails', function (done) {
       var fileStr = model.serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + model.serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n' + '{"$$indexCreated":{"fieldName":"a","unique":true}}'
         , autoDb = 'workspace/auto.db'
         , db
         ;
-      
+
       fs.writeFileSync(autoDb, fileStr, 'utf8');
-      
+
       // Check the loadDatabase generated an error
       function onload (err) {
         err.errorType.should.equal('uniqueViolated');
         done();
       }
-      
+
       db = new Datastore({ filename: autoDb, autoload: true, onload: onload })
-      
+
       db.find({}, function (err, docs) {
         done("Find should not be executed since autoload failed");
-      });    
+      });
     });
- 
+
   });
 
   describe('Insert', function () {
@@ -207,7 +224,7 @@ describe('Database', function () {
 
         d.insert({ _id: 'test', otherstuff: 42 }, function (err) {
           err.errorType.should.equal('uniqueViolated');
-        
+
           done();
         });
       });
@@ -223,18 +240,18 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can insert an array of documents at once', function (done) {
       var docs = [{ a: 5, b: 'hello' }, { a: 42, b: 'world' }];
-    
+
       d.insert(docs, function (err) {
         d.find({}, function (err, docs) {
           var data;
-        
+
           docs.length.should.equal(2);
           _.find(docs, function (doc) { return doc.a === 5; }).b.should.equal('hello');
           _.find(docs, function (doc) { return doc.a === 42; }).b.should.equal('world');
-          
+
           // The data has been persisted correctly
           data = _.filter(fs.readFileSync(testDb, 'utf8').split('\n'), function (line) { return line.length > 0; });
           data.length.should.equal(2);
@@ -242,20 +259,20 @@ describe('Database', function () {
           model.deserialize(data[0]).b.should.equal('hello');
           model.deserialize(data[1]).a.should.equal(42);
           model.deserialize(data[1]).b.should.equal('world');
-                    
+
           done();
         });
       });
     });
-    
+
     it('If a bulk insert violates a constraint, all changes are rolled back', function (done) {
       var docs = [{ a: 5, b: 'hello' }, { a: 42, b: 'world' }, { a: 5, b: 'bloup' }, { a: 7 }];
-    
+
       d.ensureIndex({ fieldName: 'a', unique: true });
-    
+
       d.insert(docs, function (err) {
         err.errorType.should.equal('uniqueViolated');
-      
+
         d.find({}, function (err, docs) {
           // Datafile only contains index definition
           var datafileContents = model.deserialize(fs.readFileSync(testDb, 'utf8'));
@@ -267,7 +284,7 @@ describe('Database', function () {
         });
       });
     });
-    
+
     /**
      * Complicated behavior here. Basically we need to test that when a user function throws an exception, it is not caught
      * in NeDB and the callback called again, transforming a user error into a NeDB error.
@@ -286,18 +303,18 @@ describe('Database', function () {
         ;
 
       process.removeAllListeners('uncaughtException');
-      
+
       process.on('uncaughtException', function MINE (ex) {
         for (i = 0; i < currentUncaughtExceptionHandlers.length; i += 1) {
           process.on('uncaughtException', currentUncaughtExceptionHandlers[i]);
         }
-      
+
         ex.should.equal('SOME EXCEPTION');
         done();
       });
 
       d.insert({ a: 5 }, function () {
-        d.findOne({ a : 5}, function (err, doc) {            
+        d.findOne({ a : 5}, function (err, doc) {
           if (tryCount === 0) {
             tryCount += 1;
             throw 'SOME EXCEPTION';
@@ -305,7 +322,7 @@ describe('Database', function () {
             done('Callback was called twice');
           }
         });
-      });      
+      });
     });
 
   });   // ==== End of 'Insert' ==== //
@@ -609,7 +626,7 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can use sort, skip and limit if the callback is not passed to find but to exec', function (done) {
       d.insert({ a: 2, hello: 'world' }, function () {
         d.insert({ a: 24, hello: 'earth' }, function () {
@@ -624,7 +641,7 @@ describe('Database', function () {
               });
             });
           });
-        });      
+        });
       });
     });
 
@@ -637,7 +654,7 @@ describe('Database', function () {
               d.findOne({}).sort({ a: 1 }).exec(function (err, doc) {
                 assert.isNull(err);
                 doc.hello.should.equal('world');
-                
+
                 // A query
                 d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).exec(function (err, doc) {
                   assert.isNull(err);
@@ -809,7 +826,7 @@ describe('Database', function () {
       });
     });
 
-  }); 
+  });
 
   describe('Update', function () {
 
@@ -981,13 +998,13 @@ describe('Database', function () {
             d.find({}, function (err, docs) {
               docs.length.should.equal(1);   // Default option for upsert is false
               docs[0].something.should.equal("created ok");
-              
+
               // Modifying the returned upserted document doesn't modify the database
               newDoc.newField = true;
               d.find({}, function (err, docs) {
                 docs[0].something.should.equal("created ok");
                 assert.isUndefined(docs[0].newField);
-              
+
                 done();
               });
             });
@@ -1202,7 +1219,7 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can update without the options arg (will use defaults then)', function (done) {
       d.insert({ a:1, hello: 'world' }, function (err, doc1) {
         d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
@@ -1215,11 +1232,11 @@ describe('Database', function () {
                   , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
                   , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
                   ;
-                  
+
                 d1.a.should.equal(1);
                 d2.a.should.equal(12);
                 d3.a.should.equal(5);
-                
+
                 done();
               });
             });
@@ -1431,7 +1448,7 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can remove without the options arg (will use defaults then)', function (done) {
       d.insert({ a:1, hello: 'world' }, function (err, doc1) {
         d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
@@ -1444,11 +1461,11 @@ describe('Database', function () {
                   , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
                   , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
                   ;
-                  
+
                 d1.a.should.equal(1);
                 assert.isUndefined(d2);
                 d3.a.should.equal(5);
-                
+
                 done();
               });
             });
@@ -1492,33 +1509,33 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('ensureIndex can be called twice on the same field, the second call will ahve no effect', function (done) {
         Object.keys(d.indexes).length.should.equal(1);
         Object.keys(d.indexes)[0].should.equal("_id");
-      
+
         d.insert({ planet: "Earth" }, function () {
           d.insert({ planet: "Mars" }, function () {
             d.find({}, function (err, docs) {
               docs.length.should.equal(2);
-              
+
               d.ensureIndex({ fieldName: "planet" }, function (err) {
                 assert.isNull(err);
                 Object.keys(d.indexes).length.should.equal(2);
-                Object.keys(d.indexes)[0].should.equal("_id");   
-                Object.keys(d.indexes)[1].should.equal("planet");   
+                Object.keys(d.indexes)[0].should.equal("_id");
+                Object.keys(d.indexes)[1].should.equal("planet");
 
                 d.indexes.planet.getAll().length.should.equal(2);
-                
+
                 // This second call has no effect, documents don't get inserted twice in the index
                 d.ensureIndex({ fieldName: "planet" }, function (err) {
                   assert.isNull(err);
                   Object.keys(d.indexes).length.should.equal(2);
-                  Object.keys(d.indexes)[0].should.equal("_id");   
-                  Object.keys(d.indexes)[1].should.equal("planet");   
+                  Object.keys(d.indexes)[0].should.equal("_id");
+                  Object.keys(d.indexes)[1].should.equal("planet");
 
-                  d.indexes.planet.getAll().length.should.equal(2);                
-                  
+                  d.indexes.planet.getAll().length.should.equal(2);
+
                   done();
                 });
               });
@@ -1694,19 +1711,19 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('Can remove an index', function (done) {
         d.ensureIndex({ fieldName: 'e' }, function (err) {
           assert.isNull(err);
-          
+
           Object.keys(d.indexes).length.should.equal(2);
           assert.isNotNull(d.indexes.e);
-          
+
           d.removeIndex("e", function (err) {
             assert.isNull(err);
             Object.keys(d.indexes).length.should.equal(1);
-            assert.isUndefined(d.indexes.e); 
- 
+            assert.isUndefined(d.indexes.e);
+
             done();
           });
         });
@@ -1714,7 +1731,7 @@ describe('Database', function () {
 
     });   // ==== End of 'ensureIndex and index initialization in database loading' ==== //
 
-    
+
     describe('Indexing newly inserted documents', function () {
 
       it('Newly inserted documents are indexed', function (done) {
@@ -2196,41 +2213,41 @@ describe('Database', function () {
       });
 
     });   // ==== End of 'Updating indexes upon document remove' ==== //
-    
-    
+
+
     describe('Persisting indexes', function () {
-    
+
       it('Indexes are persisted to a separate file and recreated upon reload', function (done) {
         var persDb = "workspace/persistIndexes.db"
           , db
           ;
-        
+
         if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
         db = new Datastore({ filename: persDb, autoload: true });
-        
+
         Object.keys(db.indexes).length.should.equal(1);
         Object.keys(db.indexes)[0].should.equal("_id");
-        
+
         db.insert({ planet: "Earth" }, function (err) {
           assert.isNull(err);
           db.insert({ planet: "Mars" }, function (err) {
             assert.isNull(err);
-            
+
             db.ensureIndex({ fieldName: "planet" }, function (err) {
               Object.keys(db.indexes).length.should.equal(2);
               Object.keys(db.indexes)[0].should.equal("_id");
-              Object.keys(db.indexes)[1].should.equal("planet");              
+              Object.keys(db.indexes)[1].should.equal("planet");
               db.indexes._id.getAll().length.should.equal(2);
               db.indexes.planet.getAll().length.should.equal(2);
               db.indexes.planet.fieldName.should.equal("planet");
-              
+
               // After a reload the indexes are recreated
               db = new Datastore({ filename: persDb });
               db.loadDatabase(function (err) {
                 assert.isNull(err);
                 Object.keys(db.indexes).length.should.equal(2);
                 Object.keys(db.indexes)[0].should.equal("_id");
-                Object.keys(db.indexes)[1].should.equal("planet");                
+                Object.keys(db.indexes)[1].should.equal("planet");
                 db.indexes._id.getAll().length.should.equal(2);
                 db.indexes.planet.getAll().length.should.equal(2);
                 db.indexes.planet.fieldName.should.equal("planet");
@@ -2241,44 +2258,44 @@ describe('Database', function () {
                   assert.isNull(err);
                   Object.keys(db.indexes).length.should.equal(2);
                   Object.keys(db.indexes)[0].should.equal("_id");
-                  Object.keys(db.indexes)[1].should.equal("planet");                
+                  Object.keys(db.indexes)[1].should.equal("planet");
                   db.indexes._id.getAll().length.should.equal(2);
                   db.indexes.planet.getAll().length.should.equal(2);
                   db.indexes.planet.fieldName.should.equal("planet");
-              
-                  done();                
+
+                  done();
                 });
               });
             });
           });
         });
       });
-    
+
       it('Indexes are persisted with their options and recreated even if some db operation happen between loads', function (done) {
         var persDb = "workspace/persistIndexes.db"
           , db
           ;
-        
+
         if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
         db = new Datastore({ filename: persDb, autoload: true });
-        
+
         Object.keys(db.indexes).length.should.equal(1);
         Object.keys(db.indexes)[0].should.equal("_id");
-        
+
         db.insert({ planet: "Earth" }, function (err) {
           assert.isNull(err);
           db.insert({ planet: "Mars" }, function (err) {
             assert.isNull(err);
-            
+
             db.ensureIndex({ fieldName: "planet", unique: true, sparse: false }, function (err) {
               Object.keys(db.indexes).length.should.equal(2);
               Object.keys(db.indexes)[0].should.equal("_id");
-              Object.keys(db.indexes)[1].should.equal("planet");              
+              Object.keys(db.indexes)[1].should.equal("planet");
               db.indexes._id.getAll().length.should.equal(2);
               db.indexes.planet.getAll().length.should.equal(2);
               db.indexes.planet.unique.should.equal(true);
               db.indexes.planet.sparse.should.equal(false);
-              
+
               db.insert({ planet: "Jupiter" }, function (err) {
                 assert.isNull(err);
 
@@ -2288,12 +2305,12 @@ describe('Database', function () {
                   assert.isNull(err);
                   Object.keys(db.indexes).length.should.equal(2);
                   Object.keys(db.indexes)[0].should.equal("_id");
-                  Object.keys(db.indexes)[1].should.equal("planet");                
+                  Object.keys(db.indexes)[1].should.equal("planet");
                   db.indexes._id.getAll().length.should.equal(3);
                   db.indexes.planet.getAll().length.should.equal(3);
                   db.indexes.planet.unique.should.equal(true);
                   db.indexes.planet.sparse.should.equal(false);
-                  
+
                   db.ensureIndex({ fieldName: 'bloup', unique: false, sparse: true }, function (err) {
                     assert.isNull(err);
                     Object.keys(db.indexes).length.should.equal(3);
@@ -2304,9 +2321,9 @@ describe('Database', function () {
                     db.indexes.planet.getAll().length.should.equal(3);
                     db.indexes.bloup.getAll().length.should.equal(0);
                     db.indexes.planet.unique.should.equal(true);
-                    db.indexes.planet.sparse.should.equal(false);                  
+                    db.indexes.planet.sparse.should.equal(false);
                     db.indexes.bloup.unique.should.equal(false);
-                    db.indexes.bloup.sparse.should.equal(true);                  
+                    db.indexes.bloup.sparse.should.equal(true);
 
                     // After another reload the indexes are still there (i.e. they are preserved during autocompaction)
                     db = new Datastore({ filename: persDb });
@@ -2323,8 +2340,8 @@ describe('Database', function () {
                       db.indexes.planet.sparse.should.equal(false);
                       db.indexes.bloup.unique.should.equal(false);
                       db.indexes.bloup.sparse.should.equal(true);
-                  
-                      done();                
+
+                      done();
                     });
                   });
                 });
@@ -2333,23 +2350,23 @@ describe('Database', function () {
           });
         });
       });
-    
+
       it('Indexes can also be removed and the remove persisted', function (done) {
         var persDb = "workspace/persistIndexes.db"
           , db
           ;
-        
+
         if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
         db = new Datastore({ filename: persDb, autoload: true });
-        
+
         Object.keys(db.indexes).length.should.equal(1);
         Object.keys(db.indexes)[0].should.equal("_id");
-        
+
         db.insert({ planet: "Earth" }, function (err) {
           assert.isNull(err);
           db.insert({ planet: "Mars" }, function (err) {
             assert.isNull(err);
-            
+
             db.ensureIndex({ fieldName: "planet" }, function (err) {
               assert.isNull(err);
               db.ensureIndex({ fieldName: "another" }, function (err) {
@@ -2361,19 +2378,19 @@ describe('Database', function () {
                 db.indexes._id.getAll().length.should.equal(2);
                 db.indexes.planet.getAll().length.should.equal(2);
                 db.indexes.planet.fieldName.should.equal("planet");
-                
+
                 // After a reload the indexes are recreated
                 db = new Datastore({ filename: persDb });
                 db.loadDatabase(function (err) {
                   assert.isNull(err);
                   Object.keys(db.indexes).length.should.equal(3);
                   Object.keys(db.indexes)[0].should.equal("_id");
-                  Object.keys(db.indexes)[1].should.equal("planet");  
-                  Object.keys(db.indexes)[2].should.equal("another");                 
+                  Object.keys(db.indexes)[1].should.equal("planet");
+                  Object.keys(db.indexes)[2].should.equal("another");
                   db.indexes._id.getAll().length.should.equal(2);
                   db.indexes.planet.getAll().length.should.equal(2);
                   db.indexes.planet.fieldName.should.equal("planet");
-                  
+
                   // Index is removed
                   db.removeIndex("planet", function (err) {
                     assert.isNull(err);
@@ -2390,7 +2407,7 @@ describe('Database', function () {
                       Object.keys(db.indexes)[0].should.equal("_id");
                       Object.keys(db.indexes)[1].should.equal("another");
                       db.indexes._id.getAll().length.should.equal(2);
-                  
+
                       // After another reload the indexes are still there (i.e. they are preserved during autocompaction)
                       db = new Datastore({ filename: persDb });
                       db.loadDatabase(function (err) {
@@ -2399,8 +2416,8 @@ describe('Database', function () {
                         Object.keys(db.indexes)[0].should.equal("_id");
                         Object.keys(db.indexes)[1].should.equal("another");
                         db.indexes._id.getAll().length.should.equal(2);
-                    
-                        done();                
+
+                        done();
                       });
                     });
                   });
@@ -2410,8 +2427,8 @@ describe('Database', function () {
           });
         });
       });
-      
-    });   // ==== End of 'Persisting indexes' ====    
+
+    });   // ==== End of 'Persisting indexes' ====
 
   });   // ==== End of 'Using indexes' ==== //
 
