@@ -57,6 +57,7 @@ need to call `loadDatabase`). Any command
 issued before load is finished is buffered and will be executed when
 load is done.
 * `onload` (optional): if you use autoloading, this is the handler called after the `loadDatabase`. It takes one `error` argument. If you use autoloading without specifying this handler, and an error happens during load, an error will be thrown.
+* `idGenerator` (optional): if set, this function will be used for generating IDs. It takes one `length`argument and should return a unique string.
 * `nodeWebkitAppName` (optional, **DEPRECATED**): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows. Now that you can use `require('nw.gui').App.dataPath` in Node Webkit to get the path to the data directory for your application, you should not use this option anymore and it will be removed.
 
 If you use a persistent datastore without the `autoload` option, you need to call `loadDatabase` manually.
@@ -115,7 +116,7 @@ Keep in mind that compaction takes a bit of time (not too much: 130ms for 50k re
 
 ### Inserting documents
 The native types are `String`, `Number`, `Boolean`, `Date` and `null`. You can also use
-arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from 
+arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from
 MongoDB which transforms `undefined` in `null`, something I find counter-intuitive).  
 
 If the document does not contain an `_id` field, NeDB will automatically generated one for you (a 16-characters alphanumerical string). The `_id` of a document, once set, cannot be modified.
@@ -584,7 +585,7 @@ As of v0.8.0, you can use NeDB in the browser! You can find it and its minified 
 <script src="nedb.min.js"></script>
 <script>
   var db = new Nedb();   // Create an in-memory only datastore
-  
+
   db.insert({ planet: 'Earth' });
   db.insert({ planet: 'Mars' });
 
@@ -632,9 +633,9 @@ Connect and Express, backed by nedb
 Issues reporting and pull requests are always appreciated. For issues, make sure to always include a code snippet and describe the expected vs actual behavior. If you send a pull request, make sure to stick to NeDB's coding style and always test all the code you submit. You can look at the current tests to see how to do it
 
 ### Bitcoins
-You don't have time? You can support NeDB by sending bitcoins to this adress: 
+You don't have time? You can support NeDB by sending bitcoins to this adress:
 
 
-## License 
+## License
 
 See [License](LICENSE)
