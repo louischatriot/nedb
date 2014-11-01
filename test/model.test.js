@@ -82,6 +82,7 @@ describe('Model', function () {
       b = model.serialize(a);
       c = model.deserialize(b);
       b.indexOf('\n').should.equal(-1);
+      b.should.equal('{"test":{"$$date":' + d.getTime() + '}}');
       util.isDate(c.test).should.equal(true);
       c.test.getTime().should.equal(d.getTime());
     });
@@ -1039,6 +1040,7 @@ describe('Model', function () {
         model.match({ a: 5 }, { a: { $ne: 4 } }).should.equal(true);
         model.match({ a: 5 }, { a: { $ne: 5 } }).should.equal(false);
         model.match({ a: 5 }, { b: { $ne: 5 } }).should.equal(true);
+        model.match({ a: false }, { a: { $ne: false } }).should.equal(false);
       });
 
       it('$in', function () {

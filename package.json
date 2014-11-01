@@ -1,6 +1,6 @@
 {
   "name": "nedb",
-  "version": "0.10.5",
+  "version": "0.11.1",
   "author": {
     "name": "Louis Chatriot",
     "email": "louis.chatriot@gmail.com"
@@ -22,7 +22,7 @@
   "dependencies": {
     "async": "0.2.10",
     "underscore": "~1.4.4",
-    "binary-search-tree": "0.2.3",
+    "binary-search-tree": "0.2.4",
     "mkdirp": "~0.3.5"
   },
   "devDependencies": {
@@ -35,10 +35,6 @@
   },
   "scripts": {
     "test": "./node_modules/.bin/mocha --reporter spec --timeout 10000"
-  },
-  "browser": {
-    "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
-    "./lib/persistence.js": "./browser-version/browser-specific/lib/persistence.js"
   },
   "main": "index",
   "licence": "MIT"

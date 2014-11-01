@@ -491,9 +491,9 @@ describe('Persistence', function () {
       var dbFile = 'workspace/test2.db', theDb, theDb2, doc1, doc2;
       
       async.waterfall([
-        async.apply(customUtils.ensureFileDoesntExist, dbFile)
-      , async.apply(customUtils.ensureFileDoesntExist, dbFile + '~')
-      , async.apply(customUtils.ensureFileDoesntExist, dbFile + '~~')
+        async.apply(Persistence.ensureFileDoesntExist, dbFile)
+      , async.apply(Persistence.ensureFileDoesntExist, dbFile + '~')
+      , async.apply(Persistence.ensureFileDoesntExist, dbFile + '~~')
       , function (cb) {
         theDb = new Datastore({ filename: dbFile });
         theDb.loadDatabase(cb);
@@ -616,5 +616,30 @@ describe('Persistence', function () {
     });
   
   });   // ==== End of 'Prevent dataloss when persisting data' ====
+
+
+  describe('ensureFileDoesntExist', function () {
+  
+    it('Doesnt do anything if file already doesnt exist', function (done) {
+      Persistence.ensureFileDoesntExist('workspace/nonexisting', function (err) {
+        assert.isNull(err);
+        fs.existsSync('workspace/nonexisting').should.equal(false);
+        done();
+      });
+    });
+
+    it('Deletes file if it exists', function (done) {
+      fs.writeFileSync('workspace/existing', 'hello world', 'utf8');
+      fs.existsSync('workspace/existing').should.equal(true);
+    
+      Persistence.ensureFileDoesntExist('workspace/existing', function (err) {
+        assert.isNull(err);
+        fs.existsSync('workspace/existing').should.equal(false);
+        done();
+      });
+    });
+    
+  });   // ==== End of 'ensureFileDoesntExist' ====
+
 
 });
