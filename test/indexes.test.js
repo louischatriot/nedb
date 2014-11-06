@@ -34,9 +34,44 @@ describe('Indexes', function () {
       doc3.a.should.equal(42);
     });
 
+    it('Can insert pointers to documents in the index correctly when they have compound fields', function () {
+      var idx = new Index({ fieldName: ['tf', 'tg'] })
+        , doc1 = { a: 5, tf: 'hello', tg: 'world' }
+        , doc2 = { a: 8, tf: 'hello', tg: 'bloup' }
+        , doc3 = { a: 2, tf: 'bloup', tg: 'bloup' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+
+      // The underlying BST now has 3 nodes which contain the docs where it's expected
+      idx.tree.getNumberOfKeys().should.equal(3);
+      assert.deepEqual(idx.tree.search({tf: 'hello', tg: 'world'}), [{ a: 5, tf: 'hello', tg: 'world' }]);
+      assert.deepEqual(idx.tree.search({tf: 'hello', tg: 'bloup'}), [{ a: 8, tf: 'hello', tg: 'bloup' }]);
+      assert.deepEqual(idx.tree.search({tf: 'bloup', tg: 'bloup'}), [{ a: 2, tf: 'bloup', tg: 'bloup' }]);
+      
+      // The nodes contain pointers to the actual documents
+      idx.tree.search({tf: 'hello', tg: 'bloup'})[0].should.equal(doc2);
+      idx.tree.search({tf: 'bloup', tg: 'bloup'})[0].a = 42;
+      doc3.a.should.equal(42);
+
+    });
+
     it('Inserting twice for the same fieldName in a unique index will result in an error thrown', function () {
       var idx = new Index({ fieldName: 'tf', unique: true })
         , doc1 = { a: 5, tf: 'hello' }
+        ;
+
+      idx.insert(doc1);
+      idx.tree.getNumberOfKeys().should.equal(1);
+      (function () { idx.insert(doc1); }).should.throw();
+    });
+
+    it('Inserting twice for the same compound fieldName in a unique index will result in an error thrown', function () {
+      var idx = new Index({ fieldName: ['tf', 'tg'], unique: true })
+        , doc1 = { a: 5, tf: 'hello', tg: 'world' }
         ;
 
       idx.insert(doc1);
