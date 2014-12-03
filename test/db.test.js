@@ -267,6 +267,14 @@ describe('Database', function () {
         });
       });
     });
+
+    it('Can insert a doc with id 0', function (done) {
+      d.insert({ _id: 0, hello: 'world' }, function (err, doc) {
+        doc._id.should.equal(0);
+        doc.hello.should.equal('world');
+        done();
+      });
+    });
     
     /**
      * Complicated behavior here. Basically we need to test that when a user function throws an exception, it is not caught
