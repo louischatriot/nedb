@@ -1028,7 +1028,6 @@ describe('Database', function () {
 
     it('Cannot perform upsert with badly formatted fields', function(done) {
       d.update({_id: '1234'}, { $set: { $$badfield: 5 }}, { upsert: true }, function(err, doc) {
-        console.log('foo!');
         assert.isDefined(err);
         done();
       })
