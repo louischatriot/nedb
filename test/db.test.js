@@ -1020,7 +1020,7 @@ describe('Database', function () {
         });
       });
       
-      it('If the update query contains modifiers, it is applied to the object resulting from removing all operator from the find query', function (done) {
+      it('If the update query contains modifiers, it is applied to the object resulting from removing all operators from the find query 1', function (done) {
         d.update({ $or: [{ a: 4 }, { a: 5 }] }, { $set: { hello: 'world' }, $inc: { bloup: 3 } }, { upsert: true }, function (err) {
           d.find({ hello: 'world' }, function (err, docs) {
             assert.isNull(err);
@@ -1033,6 +1033,22 @@ describe('Database', function () {
           });
         });
       });
+      
+      it('If the update query contains modifiers, it is applied to the object resulting from removing all operators from the find query 2', function (done) {
+        d.update({ $or: [{ a: 4 }, { a: 5 }], cac: 'rrr' }, { $set: { hello: 'world' }, $inc: { bloup: 3 } }, { upsert: true }, function (err) {
+          d.find({ hello: 'world' }, function (err, docs) {
+            assert.isNull(err);
+            docs.length.should.equal(1);
+            var doc = docs[0];
+            Object.keys(doc).length.should.equal(4);
+            doc.cac.should.equal('rrr');
+            doc.hello.should.equal('world');
+            doc.bloup.should.equal(3);
+            done();
+          });
+        });
+      });
+
 
     });   // ==== End of 'Upserts' ==== //
 
