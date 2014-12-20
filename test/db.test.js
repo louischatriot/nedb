@@ -971,38 +971,66 @@ describe('Database', function () {
       ], done);
     });
 
-    it('Can perform upserts if needed', function (done) {
-      d.update({ impossible: 'db is empty anyway' }, { newDoc: true }, {}, function (err, nr, upsert) {
-        assert.isNull(err);
-        nr.should.equal(0);
-        assert.isUndefined(upsert);
+    describe.skip('Upserts', function () {
+    
+      it('Can perform upserts if needed', function (done) {
+        d.update({ impossible: 'db is empty anyway' }, { newDoc: true }, {}, function (err, nr, upsert) {
+          assert.isNull(err);
+          nr.should.equal(0);
+          assert.isUndefined(upsert);
 
-        d.find({}, function (err, docs) {
-          docs.length.should.equal(0);   // Default option for upsert is false
+          d.find({}, function (err, docs) {
+            docs.length.should.equal(0);   // Default option for upsert is false
 
-          d.update({ impossible: 'db is empty anyway' }, { something: "created ok" }, { upsert: true }, function (err, nr, newDoc) {
-            assert.isNull(err);
-            nr.should.equal(1);
-            newDoc.something.should.equal("created ok");
-            assert.isDefined(newDoc._id);
+            d.update({ impossible: 'db is empty anyway' }, { something: "created ok" }, { upsert: true }, function (err, nr, newDoc) {
+              assert.isNull(err);
+              nr.should.equal(1);
+              newDoc.something.should.equal("created ok");
+              assert.isDefined(newDoc._id);
 
-            d.find({}, function (err, docs) {
-              docs.length.should.equal(1);   // Default option for upsert is false
-              docs[0].something.should.equal("created ok");
-              
-              // Modifying the returned upserted document doesn't modify the database
-              newDoc.newField = true;
               d.find({}, function (err, docs) {
+                docs.length.should.equal(1);   // Default option for upsert is false
                 docs[0].something.should.equal("created ok");
-                assert.isUndefined(docs[0].newField);
-              
-                done();
+                
+                // Modifying the returned upserted document doesn't modify the database
+                newDoc.newField = true;
+                d.find({}, function (err, docs) {
+                  docs[0].something.should.equal("created ok");
+                  assert.isUndefined(docs[0].newField);
+                
+                  done();
+                });
               });
             });
           });
         });
       });
-    });
+      
+      it('If the update query is a normal object with no modifiers, it is the doc that will be upserted', function (done) {
+        d.update({ $or: [{ a: 4 }, { a: 5 }] }, { hello: 'world', bloup: 'blap' }, { upsert: true }, function (err) {
+          d.findOne({}, function (err, doc) {
+            assert.isNull(err);
+            Object.keys(doc).length.should.equal(3);
+            doc.hello.should.equal('world');
+            doc.bloup.should.equal('blap');
+            done();
+          });
+        });
+      });
+      
+      it('If the update query contains modifiers, it is applied to the object resulting from removing all operator fro; the find query', function (done) {
+        d.update({ $or: [{ a: 4 }, { a: 5 }] }, { hello: 'world', $inc: { bloup: 3 } }, { upsert: true }, function (err) {
+          d.findOne({ hello: 'world' }, function (err, doc) {
+            assert.isNull(err);
+            Object.keys(doc).length.should.equal(3);
+            doc.hello.should.equal('world');
+            doc.bloup.should.equal(3);
+            done();
+          });
+        });
+      });
+
+    });   // ==== End of 'Upserts' ==== //
 
     it('Cannot perform update if the update query is not either registered-modifiers-only or copy-only, or contain badly formatted fields', function (done) {
       d.insert({ something: 'yup' }, function () {

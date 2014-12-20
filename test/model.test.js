@@ -249,6 +249,17 @@ describe('Model', function () {
       res.subobj.a.should.equal('b');
       res.subobj.b.should.equal('c');
     });
+    
+    it('Should deep copy the contents of an array', function () {
+      var a = [{ hello: 'world' }]
+        , b = model.deepCopy(a)
+        ;
+        
+      b[0].hello.should.equal('world');
+      b[0].hello = 'another';
+      b[0].hello.should.equal('another');
+      a[0].hello.should.equal('world');      
+    });
 
   });   // ==== End of 'Deep copying' ==== //
   
