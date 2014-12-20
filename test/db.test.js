@@ -971,7 +971,7 @@ describe('Database', function () {
       ], done);
     });
 
-    describe.skip('Upserts', function () {
+    describe('Upserts', function () {
     
       it('Can perform upserts if needed', function (done) {
         d.update({ impossible: 'db is empty anyway' }, { newDoc: true }, {}, function (err, nr, upsert) {
@@ -1008,8 +1008,10 @@ describe('Database', function () {
       
       it('If the update query is a normal object with no modifiers, it is the doc that will be upserted', function (done) {
         d.update({ $or: [{ a: 4 }, { a: 5 }] }, { hello: 'world', bloup: 'blap' }, { upsert: true }, function (err) {
-          d.findOne({}, function (err, doc) {
+          d.find({}, function (err, docs) {
             assert.isNull(err);
+            docs.length.should.equal(1);
+            var doc = docs[0];
             Object.keys(doc).length.should.equal(3);
             doc.hello.should.equal('world');
             doc.bloup.should.equal('blap');
@@ -1018,10 +1020,12 @@ describe('Database', function () {
         });
       });
       
-      it('If the update query contains modifiers, it is applied to the object resulting from removing all operator fro; the find query', function (done) {
-        d.update({ $or: [{ a: 4 }, { a: 5 }] }, { hello: 'world', $inc: { bloup: 3 } }, { upsert: true }, function (err) {
-          d.findOne({ hello: 'world' }, function (err, doc) {
+      it('If the update query contains modifiers, it is applied to the object resulting from removing all operator from the find query', function (done) {
+        d.update({ $or: [{ a: 4 }, { a: 5 }] }, { $set: { hello: 'world' }, $inc: { bloup: 3 } }, { upsert: true }, function (err) {
+          d.find({ hello: 'world' }, function (err, docs) {
             assert.isNull(err);
+            docs.length.should.equal(1);
+            var doc = docs[0];
             Object.keys(doc).length.should.equal(3);
             doc.hello.should.equal('world');
             doc.bloup.should.equal(3);
