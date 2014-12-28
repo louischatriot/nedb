@@ -146,6 +146,34 @@ describe('Cursor', function () {
       });
     });
 
+    it('With toArray', function (done) {
+      var cursor = new Cursor(d);
+      cursor.limit(4).skip(1);
+      cursor.toArray(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(4);
+        // No way to predict which results are returned of course ...
+        done();
+      });
+    });
+
+    it('With stream', function (done) {
+      var cursor = new Cursor(d);
+      cursor.limit(4).skip(1);
+      var stream = cursor.stream();
+      stream.on('error', function (err) {
+        assert.ok(false, 'An error occurred.');
+      });
+      var data = [];
+      stream.on('data', function(item) {
+        data.push(item);
+      });
+      stream.on('end', function() {
+        data.length.should.equal(4);
+        done();
+      });
+    });
+
   });   // ===== End of 'Without sorting' =====
 
 
