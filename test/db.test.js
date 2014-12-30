@@ -1048,6 +1048,13 @@ describe('Database', function () {
           });
         });
       });
+      
+      it('Performing upsert with badly formatted fields yields a standard error not an exception', function(done) {
+        d.update({_id: '1234'}, { $set: { $$badfield: 5 }}, { upsert: true }, function(err, doc) {
+          assert.isDefined(err);
+          done();
+        })
+      });
 
 
     });   // ==== End of 'Upserts' ==== //
