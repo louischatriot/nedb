@@ -46,7 +46,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ _id: "3", nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -61,7 +61,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   'garbage\n' +
                   model.serialize({ _id: "3", nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -75,7 +75,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -89,7 +89,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ _id: "1", nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -104,7 +104,7 @@ describe('Persistence', function () {
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ _id: "1", $$deleted: true }) + '\n' +
                   model.serialize({ _id: "3", today: now })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -118,7 +118,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", $$deleted: true }) + '\n' +
                   model.serialize({ _id: "3", today: now })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -132,8 +132,8 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ $$indexCreated: { fieldName: "test", unique: true } }) + '\n' +
                   model.serialize({ _id: "3", today: now })
-      , treatedData = Persistence.treatRawData(rawData).data
-      , indexes = Persistence.treatRawData(rawData).indexes
+      , treatedData = d.persistence.treatRawData(rawData).data
+      , indexes = d.persistence.treatRawData(rawData).indexes
       ;
 
     Object.keys(indexes).length.should.equal(1);
@@ -268,6 +268,86 @@ describe('Persistence', function () {
     });
   });
   
+  describe.only('Data can be persisted using serialization hooks', function () {
+  
+    it("A serialization hook can be used to transform data before writing new state to disk", function (done) {
+      var as = function (s) { return "before_" + s + "_after"; }
+        , hookTestFilename = 'workspace/hookTest.db'
+        , d = new Datastore({ filename: hookTestFilename, autoload: true
+                             , afterSerialization: as
+                             })
+        ;
+        
+      d.insert({ hello: "world" }, function () {
+        var _data = fs.readFileSync(hookTestFilename, 'utf8')
+          , data = _data.split('\n')
+          , doc0 = data[0].substring(7, data[0].length - 6)
+          ;
+        
+        data.length.should.equal(2);
+        
+        data[0].substring(0, 7).should.equal('before_');
+        data[0].substring(data[0].length - 6).should.equal('_after');
+
+        doc0 = model.deserialize(doc0);
+        Object.keys(doc0).length.should.equal(2);
+        doc0.hello.should.equal('world');
+
+        d.insert({ p: 'Mars' }, function () {
+          var _data = fs.readFileSync(hookTestFilename, 'utf8')
+            , data = _data.split('\n')
+            , doc0 = data[0].substring(7, data[0].length - 6)
+            , doc1 = data[1].substring(7, data[1].length - 6)
+            ;
+          
+          data.length.should.equal(3);
+          
+          data[0].substring(0, 7).should.equal('before_');
+          data[0].substring(data[0].length - 6).should.equal('_after');
+          data[1].substring(0, 7).should.equal('before_');
+          data[1].substring(data[1].length - 6).should.equal('_after');
+
+          doc0 = model.deserialize(doc0);
+          Object.keys(doc0).length.should.equal(2);
+          doc0.hello.should.equal('world');        
+
+          doc1 = model.deserialize(doc1);
+          Object.keys(doc1).length.should.equal(2);
+          doc1.p.should.equal('Mars');
+
+          d.ensureIndex({ fieldName: 'idefix' }, function () {
+            var _data = fs.readFileSync(hookTestFilename, 'utf8')
+              , data = _data.split('\n')
+              , doc0 = data[0].substring(7, data[0].length - 6)
+              , doc1 = data[1].substring(7, data[1].length - 6)
+              , idx = data[2].substring(7, data[2].length - 6)
+              ;
+            
+            data.length.should.equal(4);
+            
+            data[0].substring(0, 7).should.equal('before_');
+            data[0].substring(data[0].length - 6).should.equal('_after');
+            data[1].substring(0, 7).should.equal('before_');
+            data[1].substring(data[1].length - 6).should.equal('_after');
+
+            doc0 = model.deserialize(doc0);
+            Object.keys(doc0).length.should.equal(2);
+            doc0.hello.should.equal('world');        
+
+            doc1 = model.deserialize(doc1);
+            Object.keys(doc1).length.should.equal(2);
+            doc1.p.should.equal('Mars');
+          
+            idx = model.deserialize(idx);
+            assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix' } });
+            
+            done();
+          });          
+        });
+      });
+    });
+  
+  });
   
   describe('Prevent dataloss when persisting data', function () {
 
