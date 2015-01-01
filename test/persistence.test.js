@@ -267,8 +267,39 @@ describe('Persistence', function () {
       });
     });
   });
+
+  it("When treating raw data, refuse to proceed if too much data is corrupt, to avoid data loss", function (done) {
+    var corruptTestFilename = 'workspace/corruptTest.db'
+      , fakeData = '{"_id":"one","hello":"world"}\n' + 'Some corrupt data\n' + '{"_id":"two","hello":"earth"}\n' + '{"_id":"three","hello":"you"}\n'
+      , d
+      ;
+    fs.writeFileSync(corruptTestFilename, fakeData, "utf8");
+
+    // Default corruptAlertThreshold
+    d = new Datastore({ filename: corruptTestFilename });
+    d.loadDatabase(function (err) {
+      assert.isDefined(err);
+      assert.isNotNull(err);
+
+      fs.writeFileSync(corruptTestFilename, fakeData, "utf8");
+      d = new Datastore({ filename: corruptTestFilename, corruptAlertThreshold: 1 });
+      d.loadDatabase(function (err) {
+        assert.isNull(err);
+      
+        fs.writeFileSync(corruptTestFilename, fakeData, "utf8");
+        d = new Datastore({ filename: corruptTestFilename, corruptAlertThreshold: 0 });
+        d.loadDatabase(function (err) {
+          assert.isDefined(err);
+          assert.isNotNull(err);
+
+          done();
+        });
+      });
+    });    
+  });
   
-  describe.only('Data can be persisted using serialization hooks', function () {
+  
+  describe('Serialization hooks', function () {
     var as = function (s) { return "before_" + s + "_after"; }
       , bd = function (s) { return s.substring(7, s.length - 6); } 
   
@@ -316,9 +347,8 @@ describe('Persistence', function () {
 
         done();
       });
-    
     });
-  
+    
     it("A serialization hook can be used to transform data before writing new state to disk", function (done) {
       var hookTestFilename = 'workspace/hookTest.db'
       Persistence.ensureFileDoesntExist(hookTestFilename, function () {
@@ -507,7 +537,7 @@ describe('Persistence', function () {
       });
     });
     
-  });
+  });   // ==== End of 'Serialization hooks' ==== //
   
   describe('Prevent dataloss when persisting data', function () {
 
