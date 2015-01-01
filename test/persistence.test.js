@@ -275,11 +275,16 @@ describe('Persistence', function () {
     it("Declaring only one hook will throw an exception to prevent data loss", function (done) {
       var hookTestFilename = 'workspace/hookTest.db'
       Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        fs.writeFileSync(hookTestFilename, "Some content", "utf8");
+      
         (function () {
           new Datastore({ filename: hookTestFilename, autoload: true
                         , afterSerialization: as
                         });
         }).should.throw();
+        
+        // Data file left untouched
+        fs.readFileSync(hookTestFilename, "utf8").should.equal("Some content");
         
         (function () {
           new Datastore({ filename: hookTestFilename, autoload: true
@@ -287,8 +292,31 @@ describe('Persistence', function () {
                         });
         }).should.throw();
 
+        // Data file left untouched
+        fs.readFileSync(hookTestFilename, "utf8").should.equal("Some content");
+
         done();
       });
+    });
+    
+    it("Declaring two hooks that are not reverse of one another will cause an exception to prevent data loss", function (done) {
+      var hookTestFilename = 'workspace/hookTest.db'
+      Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        fs.writeFileSync(hookTestFilename, "Some content", "utf8");
+      
+        (function () {
+          new Datastore({ filename: hookTestFilename, autoload: true
+                        , afterSerialization: as
+                        , beforeDeserialization: function (s) { return s; }
+                        });
+        }).should.throw();
+
+        // Data file left untouched
+        fs.readFileSync(hookTestFilename, "utf8").should.equal("Some content");
+
+        done();
+      });
+    
     });
   
     it("A serialization hook can be used to transform data before writing new state to disk", function (done) {
