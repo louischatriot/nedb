@@ -268,67 +268,61 @@ describe('Persistence', function () {
     });
   });
   
-  describe('Data can be persisted using serialization hooks', function () {
+  describe.only('Data can be persisted using serialization hooks', function () {
     var as = function (s) { return "before_" + s + "_after"; }
       , bd = function (s) { return s.substring(7, s.length - 6); } 
   
+    it("Declaring only one hook will throw an exception to prevent data loss", function (done) {
+      var hookTestFilename = 'workspace/hookTest.db'
+      Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        (function () {
+          new Datastore({ filename: hookTestFilename, autoload: true
+                        , afterSerialization: as
+                        });
+        }).should.throw();
+        
+        (function () {
+          new Datastore({ filename: hookTestFilename, autoload: true
+                        , beforeDeserialization: bd
+                        });
+        }).should.throw();
+
+        done();
+      });
+    });
   
     it("A serialization hook can be used to transform data before writing new state to disk", function (done) {
       var hookTestFilename = 'workspace/hookTest.db'
-      fs.unlinkSync(hookTestFilename);
-      
-      var d = new Datastore({ filename: hookTestFilename, autoload: true
-                             , afterSerialization: as
-                             , beforeDeserialization: bd
-                             })
-        ;
-        
-      d.insert({ hello: "world" }, function () {
-        var _data = fs.readFileSync(hookTestFilename, 'utf8')
-          , data = _data.split('\n')
-          , doc0 = bd(data[0])
+      Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        var d = new Datastore({ filename: hookTestFilename, autoload: true
+                               , afterSerialization: as
+                               , beforeDeserialization: bd
+                               })
           ;
-        
-        data.length.should.equal(2);
-        
-        data[0].substring(0, 7).should.equal('before_');
-        data[0].substring(data[0].length - 6).should.equal('_after');
-
-        doc0 = model.deserialize(doc0);
-        Object.keys(doc0).length.should.equal(2);
-        doc0.hello.should.equal('world');
-
-        d.insert({ p: 'Mars' }, function () {
+          
+        d.insert({ hello: "world" }, function () {
           var _data = fs.readFileSync(hookTestFilename, 'utf8')
             , data = _data.split('\n')
             , doc0 = bd(data[0])
-            , doc1 = bd(data[1])
             ;
           
-          data.length.should.equal(3);
+          data.length.should.equal(2);
           
           data[0].substring(0, 7).should.equal('before_');
           data[0].substring(data[0].length - 6).should.equal('_after');
-          data[1].substring(0, 7).should.equal('before_');
-          data[1].substring(data[1].length - 6).should.equal('_after');
 
           doc0 = model.deserialize(doc0);
           Object.keys(doc0).length.should.equal(2);
-          doc0.hello.should.equal('world');        
+          doc0.hello.should.equal('world');
 
-          doc1 = model.deserialize(doc1);
-          Object.keys(doc1).length.should.equal(2);
-          doc1.p.should.equal('Mars');
-
-          d.ensureIndex({ fieldName: 'idefix' }, function () {
+          d.insert({ p: 'Mars' }, function () {
             var _data = fs.readFileSync(hookTestFilename, 'utf8')
               , data = _data.split('\n')
               , doc0 = bd(data[0])
               , doc1 = bd(data[1])
-              , idx = bd(data[2])
               ;
             
-            data.length.should.equal(4);
+            data.length.should.equal(3);
             
             data[0].substring(0, 7).should.equal('before_');
             data[0].substring(data[0].length - 6).should.equal('_after');
@@ -342,72 +336,96 @@ describe('Persistence', function () {
             doc1 = model.deserialize(doc1);
             Object.keys(doc1).length.should.equal(2);
             doc1.p.should.equal('Mars');
-          
-            idx = model.deserialize(idx);
-            assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix' } });
+
+            d.ensureIndex({ fieldName: 'idefix' }, function () {
+              var _data = fs.readFileSync(hookTestFilename, 'utf8')
+                , data = _data.split('\n')
+                , doc0 = bd(data[0])
+                , doc1 = bd(data[1])
+                , idx = bd(data[2])
+                ;
+              
+              data.length.should.equal(4);
+              
+              data[0].substring(0, 7).should.equal('before_');
+              data[0].substring(data[0].length - 6).should.equal('_after');
+              data[1].substring(0, 7).should.equal('before_');
+              data[1].substring(data[1].length - 6).should.equal('_after');
+
+              doc0 = model.deserialize(doc0);
+              Object.keys(doc0).length.should.equal(2);
+              doc0.hello.should.equal('world');        
+
+              doc1 = model.deserialize(doc1);
+              Object.keys(doc1).length.should.equal(2);
+              doc1.p.should.equal('Mars');
             
-            done();
-          });          
+              idx = model.deserialize(idx);
+              assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix' } });
+              
+              done();
+            });          
+          });
         });
       });
     });
     
     it("Use serialization hook when persisting cached database or compacting", function (done) {
       var hookTestFilename = 'workspace/hookTest.db'
-      fs.unlinkSync(hookTestFilename);
-      
-      var d = new Datastore({ filename: hookTestFilename, autoload: true
-                             , afterSerialization: as
-                             , beforeDeserialization: bd
-                             })
-        ;
+      Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        var d = new Datastore({ filename: hookTestFilename, autoload: true
+                               , afterSerialization: as
+                               , beforeDeserialization: bd
+                               })
+          ;
 
-      d.insert({ hello: "world" }, function () {
-        d.update({ hello: "world" }, { $set: { hello: "earth" } }, {}, function () {      
-          d.ensureIndex({ fieldName: 'idefix' }, function () {
-            var _data = fs.readFileSync(hookTestFilename, 'utf8')
-              , data = _data.split('\n')
-              , doc0 = bd(data[0])
-              , doc1 = bd(data[1])
-              , idx = bd(data[2])
-              , _id
-              ;
-            
-            data.length.should.equal(4);
-            
-            doc0 = model.deserialize(doc0);
-            Object.keys(doc0).length.should.equal(2);
-            doc0.hello.should.equal('world');        
-            
-            doc1 = model.deserialize(doc1);
-            Object.keys(doc1).length.should.equal(2);
-            doc1.hello.should.equal('earth');
-
-            doc0._id.should.equal(doc1._id);
-            _id = doc0._id;
-            
-            idx = model.deserialize(idx);
-            assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix' } });
-
-            d.persistence.persistCachedDatabase(function () {
+        d.insert({ hello: "world" }, function () {
+          d.update({ hello: "world" }, { $set: { hello: "earth" } }, {}, function () {      
+            d.ensureIndex({ fieldName: 'idefix' }, function () {
               var _data = fs.readFileSync(hookTestFilename, 'utf8')
                 , data = _data.split('\n')
                 , doc0 = bd(data[0])
-                , idx = bd(data[1])
+                , doc1 = bd(data[1])
+                , idx = bd(data[2])
+                , _id
                 ;
-                
-              data.length.should.equal(3);
+              
+              data.length.should.equal(4);
               
               doc0 = model.deserialize(doc0);
               Object.keys(doc0).length.should.equal(2);
-              doc0.hello.should.equal('earth');
+              doc0.hello.should.equal('world');        
+              
+              doc1 = model.deserialize(doc1);
+              Object.keys(doc1).length.should.equal(2);
+              doc1.hello.should.equal('earth');
 
-              doc0._id.should.equal(_id);
+              doc0._id.should.equal(doc1._id);
+              _id = doc0._id;
               
               idx = model.deserialize(idx);
-              assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix', unique: false, sparse: false } });
-            
-              done();
+              assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix' } });
+
+              d.persistence.persistCachedDatabase(function () {
+                var _data = fs.readFileSync(hookTestFilename, 'utf8')
+                  , data = _data.split('\n')
+                  , doc0 = bd(data[0])
+                  , idx = bd(data[1])
+                  ;
+                  
+                data.length.should.equal(3);
+                
+                doc0 = model.deserialize(doc0);
+                Object.keys(doc0).length.should.equal(2);
+                doc0.hello.should.equal('earth');
+
+                doc0._id.should.equal(_id);
+                
+                idx = model.deserialize(idx);
+                assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix', unique: false, sparse: false } });
+              
+                done();
+              });
             });
           });
         });
@@ -416,47 +434,47 @@ describe('Persistence', function () {
     
     it("Deserialization hook is correctly used when loading data", function (done) {
       var hookTestFilename = 'workspace/hookTest.db'
-      fs.unlinkSync(hookTestFilename);
-      
-      var d = new Datastore({ filename: hookTestFilename, autoload: true
-                             , afterSerialization: as
-                             , beforeDeserialization: bd
-                             })
-        ;
+      Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        var d = new Datastore({ filename: hookTestFilename, autoload: true
+                               , afterSerialization: as
+                               , beforeDeserialization: bd
+                               })
+          ;
 
-      d.insert({ hello: "world" }, function (err, doc) {
-        var _id = doc._id;
-        d.insert({ yo: "ya" }, function () {
-          d.update({ hello: "world" }, { $set: { hello: "earth" } }, {}, function () {
-            d.remove({ yo: "ya" }, {}, function () {
-              d.ensureIndex({ fieldName: 'idefix' }, function () {
-                var _data = fs.readFileSync(hookTestFilename, 'utf8')
-                  , data = _data.split('\n')
-                  ;
+        d.insert({ hello: "world" }, function (err, doc) {
+          var _id = doc._id;
+          d.insert({ yo: "ya" }, function () {
+            d.update({ hello: "world" }, { $set: { hello: "earth" } }, {}, function () {
+              d.remove({ yo: "ya" }, {}, function () {
+                d.ensureIndex({ fieldName: 'idefix' }, function () {
+                  var _data = fs.readFileSync(hookTestFilename, 'utf8')
+                    , data = _data.split('\n')
+                    ;
 
-                data.length.should.equal(6);
+                  data.length.should.equal(6);
 
-                // Everything is deserialized correctly, including deletes and indexes
-                var d = new Datastore({ filename: hookTestFilename
-                                       , afterSerialization: as
-                                       , beforeDeserialization: bd
-                                       })
-                  ;                
-                d.loadDatabase(function () {
-                  d.find({}, function (err, docs) {
-                    docs.length.should.equal(1);
-                    docs[0].hello.should.equal("earth");
-                    docs[0]._id.should.equal(_id);
-                    
-                    Object.keys(d.indexes).length.should.equal(2);
-                    Object.keys(d.indexes).indexOf("idefix").should.not.equal(-1);
+                  // Everything is deserialized correctly, including deletes and indexes
+                  var d = new Datastore({ filename: hookTestFilename
+                                         , afterSerialization: as
+                                         , beforeDeserialization: bd
+                                         })
+                    ;                
+                  d.loadDatabase(function () {
+                    d.find({}, function (err, docs) {
+                      docs.length.should.equal(1);
+                      docs[0].hello.should.equal("earth");
+                      docs[0]._id.should.equal(_id);
+                      
+                      Object.keys(d.indexes).length.should.equal(2);
+                      Object.keys(d.indexes).indexOf("idefix").should.not.equal(-1);
 
-                    done();
+                      done();
+                    });
                   });
                 });
               });
-            });
-          });  
+            });  
+          });
         });
       });
     });
