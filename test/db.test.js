@@ -53,6 +53,63 @@ describe('Database', function () {
     dbef.inMemoryOnly.should.equal(true);
   });
 
+  describe('Events', function () {
+
+    describe('Changes', function () {
+
+      it('Emits an \'inserted\' event on insert', function (done) {
+        var testDoc = { 'message': _.random(1000) };
+
+        d.changes().once('inserted', function (err, doc) {
+          assert.isNull(err);
+          doc.message.should.equal(testDoc.message);
+          done();
+        });
+
+        d.insert(testDoc, function (err, insertedDoc) {
+          assert.isNull(err);
+        });
+      });
+
+      it('Emits a \'removed\' event on remove', function (done) {
+        var testDoc = { 'message': _.random(1000) };
+
+        d.changes().once('removed', function (err, doc) {
+          assert.isNull(err);
+          doc.message.should.equal(testDoc.message);
+          done();
+        });
+
+        d.insert(testDoc, function (err, insertedDoc) {
+          assert.isNull(err);
+          d.remove(insertedDoc, function (err, removedDoc) {
+            assert.isNull(err);
+          });
+        });
+      });
+
+      it('Emits an \'updated\' event on update', function (done) {
+        var testDoc = { 'message': _.random(1000) };
+        var updatedMessage = testDoc.message + _.random(1000);
+
+        d.changes().once('updated', function (err, originalDoc, updatedDoc) {
+          assert.isNull(err);
+          originalDoc.message.should.equal(testDoc.message);
+          updatedDoc.message.should.equal(updatedMessage);
+          done();
+        });
+
+        d.insert(testDoc, function (err, insertedDoc) {
+          assert.isNull(err);
+          d.update(insertedDoc, { 'message': updatedMessage }, function (err, updatedDoc) {
+            assert.isNull(err);
+          });
+        });
+      });
+    });
+  });
+
+
   describe('Autoloading', function () {
   
     it('Can autoload a database and query it right away', function (done) {
