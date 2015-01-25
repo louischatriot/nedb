@@ -60,9 +60,8 @@ describe('Database', function () {
       it('Emits an \'inserted\' event on insert', function (done) {
         var testDoc = { 'message': _.random(1000) };
 
-        d.changes().once('inserted', function (err, doc) {
-          assert.isNull(err);
-          doc.message.should.equal(testDoc.message);
+        d.changes().once('inserted', function (insertedDoc) {
+          insertedDoc.message.should.equal(testDoc.message);
           done();
         });
 
@@ -72,17 +71,15 @@ describe('Database', function () {
       });
 
       it('Emits a \'removed\' event on remove', function (done) {
-        var testDoc = { 'message': _.random(1000) };
-
-        d.changes().once('removed', function (err, doc) {
+        d.insert({ 'message': _.random(1000) }, function(err, testDoc) {
           assert.isNull(err);
-          doc.message.should.equal(testDoc.message);
-          done();
-        });
 
-        d.insert(testDoc, function (err, insertedDoc) {
-          assert.isNull(err);
-          d.remove(insertedDoc, function (err, removedDoc) {
+          d.changes().once('removed', function (removedDoc) {
+            removedDoc._id.should.equal(testDoc._id);
+            done();
+          });
+
+          d.remove(testDoc, function (err, removedDoc) {
             assert.isNull(err);
           });
         });
@@ -92,8 +89,7 @@ describe('Database', function () {
         var testDoc = { 'message': _.random(1000) };
         var updatedMessage = testDoc.message + _.random(1000);
 
-        d.changes().once('updated', function (err, originalDoc, updatedDoc) {
-          assert.isNull(err);
+        d.changes().once('updated', function (originalDoc, updatedDoc) {
           originalDoc.message.should.equal(testDoc.message);
           updatedDoc.message.should.equal(updatedMessage);
           done();
