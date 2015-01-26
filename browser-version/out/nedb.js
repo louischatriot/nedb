@@ -2111,7 +2111,7 @@ function serialize (obj) {
     checkKey(k, v);
     // Hackish way of checking if object is Date (this way it works between execution contexts in node-webkit).
     // We can't use value directly because for dates it is already string in this function (date.toJSON was already called), so we use this
-    if (typeof v.getTime === 'function') { return { $$date: v.getTime() }; }
+    if (v && typeof v.getTime === 'function') { return { $$date: v.getTime() }; }
     return v;
   });
   return JSON.stringify(obj);
