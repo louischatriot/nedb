@@ -296,3 +296,63 @@ describe('Indexing', function () {
 
 
 
+describe('localStorage', function () {
+  var db = new Nedb({
+    filename: 'Test',
+    autoload: true
+  });
+
+  it('Able to create a database object in the browser', function (done) {
+    assert.equal(db.inMemoryOnly, false);
+    assert.equal(db.persistence.inMemoryOnly, false);
+    done();
+  });
+
+  it('Insert objects with Array properties', function (done) {
+    db.remove({}, { multi: true }, function () {
+      db.insert({ u : 5, a: [ 3, 4 ] }, function (err) {
+        assert.isNull(err);
+
+        db.findOne({ u: 5 }, function (er, doc) {
+          assert.isNull(er);
+          assert.equal(doc.u, 5);
+          assert.equal(doc.a[0], 3);
+          assert.equal(doc.a[1], 4);
+          done();
+        });
+      });
+    });
+  });
+
+  it('Insertion and querying', function (done) {
+    db.remove({}, {multi:true}, function (e) {
+      db.insert({ a: 4 }, function (err, newDoc1) {
+        assert.isNull(err);
+        db.insert({ a: 40 }, function (err, newDoc2) {
+          assert.isNull(err);
+          db.insert({ a: 400 }, function (err, newDoc3) {
+            assert.isNull(err);
+
+            db.find({ a: { $gt: 36 } }, function (err, docs) {
+              var doc2 = _.find(docs, function (doc) { return doc._id === newDoc2._id; })
+                , doc3 = _.find(docs, function (doc) { return doc._id === newDoc3._id; })
+                ;
+
+              assert.isNull(err);
+              assert.equal(docs.length, 2);
+              assert.equal(doc2.a, 40);
+              assert.equal(doc3.a, 400);
+
+              db.find({ a: { $lt: 36 } }, function (err, docs) {
+                assert.isNull(err);
+                assert.equal(docs.length, 1);
+                assert.equal(docs[0].a, 4);
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});   // ==== End of 'localStorage' ==== //
