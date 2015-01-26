@@ -95,7 +95,7 @@ function deserialize (rawData) {
 function walkObj (obj, cb) {
   if (obj instanceof Array) {
     obj.forEach(function (o) {
-      walkObj(obj, cb);
+      walkObj(o, cb);
     });
   } else if (typeof obj === 'object' && typeof obj !== null) {
     Object.keys(obj).forEach(function (k){
