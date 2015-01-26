@@ -46,7 +46,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ _id: "3", nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -61,7 +61,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   'garbage\n' +
                   model.serialize({ _id: "3", nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -75,7 +75,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -89,7 +89,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ _id: "1", nested: { today: now } })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -104,7 +104,7 @@ describe('Persistence', function () {
                   model.serialize({ _id: "2", hello: 'world' }) + '\n' +
                   model.serialize({ _id: "1", $$deleted: true }) + '\n' +
                   model.serialize({ _id: "3", today: now })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -118,7 +118,7 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ _id: "2", $$deleted: true }) + '\n' +
                   model.serialize({ _id: "3", today: now })
-      , treatedData = Persistence.treatRawData(rawData).data
+      , treatedData = d.persistence.treatRawData(rawData).data
       ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
@@ -132,8 +132,8 @@ describe('Persistence', function () {
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
                   model.serialize({ $$indexCreated: { fieldName: "test", unique: true } }) + '\n' +
                   model.serialize({ _id: "3", today: now })
-      , treatedData = Persistence.treatRawData(rawData).data
-      , indexes = Persistence.treatRawData(rawData).indexes
+      , treatedData = d.persistence.treatRawData(rawData).data
+      , indexes = d.persistence.treatRawData(rawData).indexes
       ;
 
     Object.keys(indexes).length.should.equal(1);
@@ -267,7 +267,277 @@ describe('Persistence', function () {
       });
     });
   });
+
+  it("When treating raw data, refuse to proceed if too much data is corrupt, to avoid data loss", function (done) {
+    var corruptTestFilename = 'workspace/corruptTest.db'
+      , fakeData = '{"_id":"one","hello":"world"}\n' + 'Some corrupt data\n' + '{"_id":"two","hello":"earth"}\n' + '{"_id":"three","hello":"you"}\n'
+      , d
+      ;
+    fs.writeFileSync(corruptTestFilename, fakeData, "utf8");
+
+    // Default corruptAlertThreshold
+    d = new Datastore({ filename: corruptTestFilename });
+    d.loadDatabase(function (err) {
+      assert.isDefined(err);
+      assert.isNotNull(err);
+
+      fs.writeFileSync(corruptTestFilename, fakeData, "utf8");
+      d = new Datastore({ filename: corruptTestFilename, corruptAlertThreshold: 1 });
+      d.loadDatabase(function (err) {
+        assert.isNull(err);
+      
+        fs.writeFileSync(corruptTestFilename, fakeData, "utf8");
+        d = new Datastore({ filename: corruptTestFilename, corruptAlertThreshold: 0 });
+        d.loadDatabase(function (err) {
+          assert.isDefined(err);
+          assert.isNotNull(err);
+
+          done();
+        });
+      });
+    });    
+  });
   
+  
+  describe('Serialization hooks', function () {
+    var as = function (s) { return "before_" + s + "_after"; }
+      , bd = function (s) { return s.substring(7, s.length - 6); } 
+  
+    it("Declaring only one hook will throw an exception to prevent data loss", function (done) {
+      var hookTestFilename = 'workspace/hookTest.db'
+      Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        fs.writeFileSync(hookTestFilename, "Some content", "utf8");
+      
+        (function () {
+          new Datastore({ filename: hookTestFilename, autoload: true
+                        , afterSerialization: as
+                        });
+        }).should.throw();
+        
+        // Data file left untouched
+        fs.readFileSync(hookTestFilename, "utf8").should.equal("Some content");
+        
+        (function () {
+          new Datastore({ filename: hookTestFilename, autoload: true
+                        , beforeDeserialization: bd
+                        });
+        }).should.throw();
+
+        // Data file left untouched
+        fs.readFileSync(hookTestFilename, "utf8").should.equal("Some content");
+
+        done();
+      });
+    });
+    
+    it("Declaring two hooks that are not reverse of one another will cause an exception to prevent data loss", function (done) {
+      var hookTestFilename = 'workspace/hookTest.db'
+      Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        fs.writeFileSync(hookTestFilename, "Some content", "utf8");
+      
+        (function () {
+          new Datastore({ filename: hookTestFilename, autoload: true
+                        , afterSerialization: as
+                        , beforeDeserialization: function (s) { return s; }
+                        });
+        }).should.throw();
+
+        // Data file left untouched
+        fs.readFileSync(hookTestFilename, "utf8").should.equal("Some content");
+
+        done();
+      });
+    });
+    
+    it("A serialization hook can be used to transform data before writing new state to disk", function (done) {
+      var hookTestFilename = 'workspace/hookTest.db'
+      Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        var d = new Datastore({ filename: hookTestFilename, autoload: true
+                               , afterSerialization: as
+                               , beforeDeserialization: bd
+                               })
+          ;
+          
+        d.insert({ hello: "world" }, function () {
+          var _data = fs.readFileSync(hookTestFilename, 'utf8')
+            , data = _data.split('\n')
+            , doc0 = bd(data[0])
+            ;
+          
+          data.length.should.equal(2);
+          
+          data[0].substring(0, 7).should.equal('before_');
+          data[0].substring(data[0].length - 6).should.equal('_after');
+
+          doc0 = model.deserialize(doc0);
+          Object.keys(doc0).length.should.equal(2);
+          doc0.hello.should.equal('world');
+
+          d.insert({ p: 'Mars' }, function () {
+            var _data = fs.readFileSync(hookTestFilename, 'utf8')
+              , data = _data.split('\n')
+              , doc0 = bd(data[0])
+              , doc1 = bd(data[1])
+              ;
+            
+            data.length.should.equal(3);
+            
+            data[0].substring(0, 7).should.equal('before_');
+            data[0].substring(data[0].length - 6).should.equal('_after');
+            data[1].substring(0, 7).should.equal('before_');
+            data[1].substring(data[1].length - 6).should.equal('_after');
+
+            doc0 = model.deserialize(doc0);
+            Object.keys(doc0).length.should.equal(2);
+            doc0.hello.should.equal('world');        
+
+            doc1 = model.deserialize(doc1);
+            Object.keys(doc1).length.should.equal(2);
+            doc1.p.should.equal('Mars');
+
+            d.ensureIndex({ fieldName: 'idefix' }, function () {
+              var _data = fs.readFileSync(hookTestFilename, 'utf8')
+                , data = _data.split('\n')
+                , doc0 = bd(data[0])
+                , doc1 = bd(data[1])
+                , idx = bd(data[2])
+                ;
+              
+              data.length.should.equal(4);
+              
+              data[0].substring(0, 7).should.equal('before_');
+              data[0].substring(data[0].length - 6).should.equal('_after');
+              data[1].substring(0, 7).should.equal('before_');
+              data[1].substring(data[1].length - 6).should.equal('_after');
+
+              doc0 = model.deserialize(doc0);
+              Object.keys(doc0).length.should.equal(2);
+              doc0.hello.should.equal('world');        
+
+              doc1 = model.deserialize(doc1);
+              Object.keys(doc1).length.should.equal(2);
+              doc1.p.should.equal('Mars');
+            
+              idx = model.deserialize(idx);
+              assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix' } });
+              
+              done();
+            });          
+          });
+        });
+      });
+    });
+    
+    it("Use serialization hook when persisting cached database or compacting", function (done) {
+      var hookTestFilename = 'workspace/hookTest.db'
+      Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        var d = new Datastore({ filename: hookTestFilename, autoload: true
+                               , afterSerialization: as
+                               , beforeDeserialization: bd
+                               })
+          ;
+
+        d.insert({ hello: "world" }, function () {
+          d.update({ hello: "world" }, { $set: { hello: "earth" } }, {}, function () {      
+            d.ensureIndex({ fieldName: 'idefix' }, function () {
+              var _data = fs.readFileSync(hookTestFilename, 'utf8')
+                , data = _data.split('\n')
+                , doc0 = bd(data[0])
+                , doc1 = bd(data[1])
+                , idx = bd(data[2])
+                , _id
+                ;
+              
+              data.length.should.equal(4);
+              
+              doc0 = model.deserialize(doc0);
+              Object.keys(doc0).length.should.equal(2);
+              doc0.hello.should.equal('world');        
+              
+              doc1 = model.deserialize(doc1);
+              Object.keys(doc1).length.should.equal(2);
+              doc1.hello.should.equal('earth');
+
+              doc0._id.should.equal(doc1._id);
+              _id = doc0._id;
+              
+              idx = model.deserialize(idx);
+              assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix' } });
+
+              d.persistence.persistCachedDatabase(function () {
+                var _data = fs.readFileSync(hookTestFilename, 'utf8')
+                  , data = _data.split('\n')
+                  , doc0 = bd(data[0])
+                  , idx = bd(data[1])
+                  ;
+                  
+                data.length.should.equal(3);
+                
+                doc0 = model.deserialize(doc0);
+                Object.keys(doc0).length.should.equal(2);
+                doc0.hello.should.equal('earth');
+
+                doc0._id.should.equal(_id);
+                
+                idx = model.deserialize(idx);
+                assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix', unique: false, sparse: false } });
+              
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+    
+    it("Deserialization hook is correctly used when loading data", function (done) {
+      var hookTestFilename = 'workspace/hookTest.db'
+      Persistence.ensureFileDoesntExist(hookTestFilename, function () {
+        var d = new Datastore({ filename: hookTestFilename, autoload: true
+                               , afterSerialization: as
+                               , beforeDeserialization: bd
+                               })
+          ;
+
+        d.insert({ hello: "world" }, function (err, doc) {
+          var _id = doc._id;
+          d.insert({ yo: "ya" }, function () {
+            d.update({ hello: "world" }, { $set: { hello: "earth" } }, {}, function () {
+              d.remove({ yo: "ya" }, {}, function () {
+                d.ensureIndex({ fieldName: 'idefix' }, function () {
+                  var _data = fs.readFileSync(hookTestFilename, 'utf8')
+                    , data = _data.split('\n')
+                    ;
+
+                  data.length.should.equal(6);
+
+                  // Everything is deserialized correctly, including deletes and indexes
+                  var d = new Datastore({ filename: hookTestFilename
+                                         , afterSerialization: as
+                                         , beforeDeserialization: bd
+                                         })
+                    ;                
+                  d.loadDatabase(function () {
+                    d.find({}, function (err, docs) {
+                      docs.length.should.equal(1);
+                      docs[0].hello.should.equal("earth");
+                      docs[0]._id.should.equal(_id);
+                      
+                      Object.keys(d.indexes).length.should.equal(2);
+                      Object.keys(d.indexes).indexOf("idefix").should.not.equal(-1);
+
+                      done();
+                    });
+                  });
+                });
+              });
+            });  
+          });
+        });
+      });
+    });
+    
+  });   // ==== End of 'Serialization hooks' ==== //
   
   describe('Prevent dataloss when persisting data', function () {
 

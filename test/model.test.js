@@ -249,6 +249,33 @@ describe('Model', function () {
       res.subobj.a.should.equal('b');
       res.subobj.b.should.equal('c');
     });
+    
+    it('Should deep copy the contents of an array', function () {
+      var a = [{ hello: 'world' }]
+        , b = model.deepCopy(a)
+        ;
+        
+      b[0].hello.should.equal('world');
+      b[0].hello = 'another';
+      b[0].hello.should.equal('another');
+      a[0].hello.should.equal('world');      
+    });
+    
+    it('Without the strictKeys option, everything gets deep copied', function () {
+      var a = { a: 4, $e: 'rrr', 'eee.rt': 42, nested: { yes: 1, 'tt.yy': 2, $nopenope: 3 }, array: [{ 'rr.hh': 1 }, { yes: true }, { $yes: false }] }
+        , b = model.deepCopy(a)
+        ;
+        
+      assert.deepEqual(a, b);
+    });
+    
+    it('With the strictKeys option, only valid keys gets deep copied', function () {
+      var a = { a: 4, $e: 'rrr', 'eee.rt': 42, nested: { yes: 1, 'tt.yy': 2, $nopenope: 3 }, array: [{ 'rr.hh': 1 }, { yes: true }, { $yes: false }] }
+        , b = model.deepCopy(a, true)
+        ;
+        
+      assert.deepEqual(b, { a: 4, nested: { yes: 1 }, array: [{}, { yes: true }, {}] });
+    });
 
   });   // ==== End of 'Deep copying' ==== //
   
