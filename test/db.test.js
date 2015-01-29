@@ -1056,6 +1056,26 @@ describe('Database', function () {
         })
       });
 
+      it('Performing upsert of document with index on key other than `_id`', function(done) {
+        d.ensureIndex({ fieldName: 'Id', unique: true }, function (err) {
+          assert.isNull(err);
+          d.insert({ Id: '1234', a: 1 }, function (err, newDoc) {
+            assert.isNull(err);
+            assert.isDefined(newDoc);
+            newDoc.Id.should.equal('1234');
+            newDoc.a.should.equal(1);
+            d.update({ Id: '1234' }, { Id: '1234', a: 2 }, { upsert: true }, function (err, numReplaced, newDoc2) {
+              assert.isNull(err);
+              numReplaced.should.equal(1);
+              assert.isDefined(newDoc2);
+              newDoc2.should.have.property('a', 2);
+              newDoc2.should.have.property('Id', '1234');
+              done();
+            });
+          });
+        });
+      });
+
 
     });   // ==== End of 'Upserts' ==== //
 
