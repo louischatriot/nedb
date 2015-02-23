@@ -740,7 +740,8 @@ process.nextTick = (function () {
     if (canPost) {
         var queue = [];
         window.addEventListener('message', function (ev) {
-            if (ev.source === window && ev.data === 'process-tick') {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
                 ev.stopPropagation();
                 if (queue.length > 0) {
                     var fn = queue.shift();
@@ -783,13 +784,13 @@ var model = require('./model')
   , _ = require('underscore')
   ;
 
-
+ 
 
 /**
  * Create a new cursor for this collection
  * @param {Datastore} db - The datastore this cursor is bound to
  * @param {Query} query - The query this cursor will operate on
- * @param {Function} execDn - Handler to be executed after cursor has found the results and before the callback passed to find/findOne/update/remove
+ * @param {Function} execDn - Handler to be executed  after cursor has found the results and before the callback passed to find/findOne/update/remove
  */
 function Cursor (db, query, execFn) {
   this.db = db;
@@ -815,6 +816,13 @@ Cursor.prototype.skip = function(skip) {
   return this;
 };
 
+/**
+ * Aggregate on results
+ */
+Cursor.prototype.group = function (group) {
+  this._group = group;
+  return this;
+};
 
 /**
  * Sort results of the query
@@ -887,18 +895,18 @@ Cursor.prototype._exec = function(callback) {
     , error = null
     , i, keys, key
     ;
-
+  
   try {
     for (i = 0; i < candidates.length; i += 1) {
       if (model.match(candidates[i], this.query)) {
         // If a sort is defined, wait for the results to be sorted before applying limit and skip
-        if (!this._sort) {
+        if (!this._sort && !this._group) {
           if (this._skip && this._skip > skipped) {
             skipped += 1;
           } else {
             res.push(candidates[i]);
             added += 1;
-            if (this._limit && this._limit <= added) { break; }
+            if (this._limit && this._limit <= added) { break; }                  
           }
         } else {
           res.push(candidates[i]);
@@ -909,10 +917,19 @@ Cursor.prototype._exec = function(callback) {
     return callback(err);
   }
 
+  //Apply grouping
+  if (this._group) {
+    try {
+      res = model.aggregate(res, this._group);
+    } catch (err) {
+      return callback(err);
+    }
+  }
+
   // Apply all sorts
   if (this._sort) {
     keys = Object.keys(this._sort);
-
+    
     // Sorting
     var criteria = [];
     for (i = 0; i < keys.length; i++) {
@@ -930,11 +947,13 @@ Cursor.prototype._exec = function(callback) {
       }
       return 0;
     });
-
+  }
+    
     // Applying limit and skip
-    var limit = this._limit || res.length
-      , skip = this._skip || 0;
-
+  if (this._sort || this._group) {
+    var limit = this._limit || res.length,
+    skip = this._skip || 0;
+      
     res = res.slice(skip, skip + limit);
   }
 
@@ -945,7 +964,6 @@ Cursor.prototype._exec = function(callback) {
     error = e;
     res = undefined;
   }
-
   if (this.execFn) {
     return this.execFn(error, res, callback);
   } else {
@@ -961,7 +979,6 @@ Cursor.prototype.exec = function () {
 
 // Interface
 module.exports = Cursor;
-
 },{"./model":10,"underscore":18}],6:[function(require,module,exports){
 /**
  * Specific customUtils for the browser, where we don't have access to the Crypto and Buffer modules
@@ -1099,7 +1116,7 @@ function Datastore (options) {
   // binary is always well-balanced
   this.indexes = {};
   this.indexes._id = new Index({ fieldName: '_id', unique: true });
-  
+
   // Queue a load of the database right away and call the onload handler
   // By default (no onload handler), if there is an error there, no operation will be possible so warn the user by throwing an exception
   if (this.autoload) { this.loadDatabase(options.onload || function (err) {
@@ -1172,17 +1189,17 @@ Datastore.prototype.ensureIndex = function (options, cb) {
 /**
  * Remove an index
  * @param {String} fieldName
- * @param {Function} cb Optional callback, signature: err 
+ * @param {Function} cb Optional callback, signature: err
  */
 Datastore.prototype.removeIndex = function (fieldName, cb) {
   var callback = cb || function () {};
-  
+
   delete this.indexes[fieldName];
-  
+
   this.persistence.persistNewState([{ $$indexRemoved: fieldName }], function (err) {
     if (err) { return callback(err); }
     return callback(null);
-  });  
+  });
 };
 
 
@@ -1361,7 +1378,7 @@ Datastore.prototype.prepareDocumentForInsertion = function (newDoc) {
     preparedDoc = model.deepCopy(newDoc);
     model.checkObject(preparedDoc);
   }
-  
+
   return preparedDoc;
 };
 
@@ -1373,7 +1390,7 @@ Datastore.prototype._insertInCache = function (newDoc) {
   if (util.isArray(newDoc)) {
     this._insertMultipleDocsInCache(newDoc);
   } else {
-    this.addToIndexes(this.prepareDocumentForInsertion(newDoc));  
+    this.addToIndexes(this.prepareDocumentForInsertion(newDoc));
   }
 };
 
@@ -1396,12 +1413,12 @@ Datastore.prototype._insertMultipleDocsInCache = function (newDocs) {
       break;
     }
   }
-  
+
   if (error) {
     for (i = 0; i < failingI; i += 1) {
       this.removeFromIndexes(preparedDocs[i]);
     }
-    
+
     throw error;
   }
 };
@@ -1568,7 +1585,7 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
     } catch (err) {
       return callback(err);
     }
-	
+
 	// Change the docs in memory
 	try {
       self.updateIndexes(modifications);
@@ -2339,7 +2356,7 @@ lastStepModifierFunctions.$pop = function (obj, field, value) {
  */
 lastStepModifierFunctions.$pull = function (obj, field, value) {
   var arr, i;
-  
+
   if (!util.isArray(obj[field])) { throw "Can't $pull an element from non-array values"; }
 
   arr = obj[field];
@@ -2455,7 +2472,7 @@ function getDotValue (obj, field) {
   if (fieldParts.length === 0) { return obj; }
 
   if (fieldParts.length === 1) { return obj[fieldParts[0]]; }
-  
+
   if (util.isArray(obj[fieldParts[0]])) {
     // If the next field is an integer, return only this item of the array
     i = parseInt(fieldParts[1], 10);
@@ -2550,7 +2567,7 @@ comparisonFunctions.$gte = function (a, b) {
 };
 
 comparisonFunctions.$ne = function (a, b) {
-  if (!a) { return true; }
+  if (a === undefined) { return true; }
   return !areThingsEqual(a, b);
 };
 
@@ -2683,13 +2700,13 @@ function match (obj, query) {
   if (isPrimitiveType(obj) || isPrimitiveType(query)) {
     return matchQueryPart({ needAKey: obj }, 'needAKey', query);
   }
-    
+
   // Normal query
   queryKeys = Object.keys(query);
   for (i = 0; i < queryKeys.length; i += 1) {
     queryKey = queryKeys[i];
     queryValue = query[queryKey];
-  
+
     if (queryKey[0] === '$') {
       if (!logicalOperators[queryKey]) { throw "Unknown logical operator " + queryKey; }
       if (!logicalOperators[queryKey](obj, queryValue)) { return false; }
@@ -2714,7 +2731,7 @@ function matchQueryPart (obj, queryKey, queryValue, treatObjAsValue) {
   if (util.isArray(objValue) && !treatObjAsValue) {
     // Check if we are using an array-specific comparison function
     if (queryValue !== null && typeof queryValue === 'object' && !util.isRegExp(queryValue)) {
-      keys = Object.keys(queryValue);      
+      keys = Object.keys(queryValue);
       for (i = 0; i < keys.length; i += 1) {
         if (arrayComparisonFunctions[keys[i]]) { return matchQueryPart(obj, queryKey, queryValue, true); }
       }
@@ -2759,6 +2776,132 @@ function matchQueryPart (obj, queryKey, queryValue, treatObjAsValue) {
   return true;
 }
 
+function aggregate(res, group) {
+  var nested = {},
+    flattened = [],
+        outKeys = [],
+        keyHash = {},
+        keys = null,
+    i, j, k, l, handle, sub, entry, nodeKeys, hash, djb2, str;
+
+  if (!_.isFunction(group.reduce)) {
+    throw new Error("A reduce function must be provided.");
+  }
+
+  if (!group.initial) {
+    throw new Error("An initial vector must be provided.");
+  }
+
+  if (group.finalize && !_.isFunction(group.finalize)) {
+    throw new Error("'finalize', if provided, must be a function.");
+  }
+
+  if (group.key) {
+    keys = _.filter(_.keys(group.key), function (key) {
+      return group.key[key];
+    });
+    if (_.isEmpty(keys)) {
+      throw new Error("At least one key should be enabled.");
+    }
+    for (i = 0; i < keys.length; ++i) {
+      outKeys.push(keys[i].replace(/\./g, '_'));
+      keys[i] = keys[i].split('.');
+    }
+  }
+
+  if (keys) {
+    for (i = 0; i < res.length; ++i) {
+      handle = nested;
+      for (j = 0; j < keys.length; ++j) {
+        sub = _getValue(res[i], keys[j]);
+        if (!handle[sub]) {
+          if (j === keys.length - 1) {
+            handle[sub] = deepCopy(group.initial);
+          } else {
+            handle[sub] = {};
+          }
+        }
+        if (j === keys.length - 1) {
+          group.reduce(res[i], handle[sub]);
+        }
+        handle = handle[sub];
+      }
+    }
+    // console.dir(nested);
+    _walk(nested, 0, []);
+  }
+  else {
+    flattened = [_.reduce(res, function(memo, item){
+      group.reduce(item, memo);
+      return memo;
+    }, deepCopy(group.initial))];
+    if (group.finalize) group.finalize(flattened[0]);
+  }
+  return flattened;
+
+  function _getValue(item, key) {
+    try {
+      for (k = 0; k < key.length; ++k) {
+        item = item[key[k]];
+        if (k === key.length - 1) {
+          hash = (group.noHashKeys || _.isEmpty(item) || isPrimitiveType(item)) ? JSON.stringify(item) : _djb2(item);
+        }
+      }
+      keyHash[hash] = item;
+      return hash;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function _walk(node, depth, path) {
+    if (depth === keys.length) {
+      if (group.finalize) group.finalize(node);
+
+      entry = {};
+      for (i = 0; i < path.length; ++i) {
+        entry[outKeys[i]] = keyHash[path[i]];
+      }
+
+      nodeKeys = Object.keys(node);
+      for (i = 0; i < nodeKeys.length; ++i) {
+        entry[nodeKeys[i]] = node[nodeKeys[i]];
+      }
+
+      flattened.push(entry);
+    } else {
+      for (var key in node) {
+        _walk(node[key], depth + 1, path.concat([key]));
+      }
+    }
+  }
+
+  function _djb2(obj) {
+    str = JSON.stringify(_sortObject(obj));
+    djb2 = 5381;
+    for (l = 0; l < str.length; l++) {
+        djb2 = ((djb2 << 5) + djb2) + str.charCodeAt(l);
+    }
+    return djb2;
+  }
+
+  function _sortObject(object){
+    var sortedObj = {},
+    keys = _.keys(object);
+
+    keys = _.sortBy(keys, _.identity);
+
+    _.each(keys, function(key) {
+    if(!isPrimitiveType(object[key])){
+      sortedObj[key] = _sortObject(object[key]);
+    } else {
+      sortedObj[key] = object[key];
+    }
+    });
+
+    return sortedObj;
+  }
+}
 
 // Interface
 module.exports.serialize = serialize;
@@ -2771,6 +2914,7 @@ module.exports.getDotValue = getDotValue;
 module.exports.match = match;
 module.exports.areThingsEqual = areThingsEqual;
 module.exports.compareThings = compareThings;
+module.exports.aggregate = aggregate;
 
 },{"underscore":18,"util":3}],11:[function(require,module,exports){
 var process=require("__browserify_process");/**
