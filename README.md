@@ -635,7 +635,7 @@ Connect and Express, backed by nedb
 Issues reporting and pull requests are always appreciated. For issues, make sure to always include a code snippet and describe the expected vs actual behavior. If you send a pull request, make sure to stick to NeDB's coding style and always test all the code you submit. You can look at the current tests to see how to do it
 
 ### Bitcoins
-You don't have time? You can support NeDB by sending bitcoins to this adress: 
+You don't have time? You can support NeDB by sending bitcoins to this address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
 
 ## License 
