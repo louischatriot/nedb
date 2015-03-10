@@ -740,7 +740,8 @@ process.nextTick = (function () {
     if (canPost) {
         var queue = [];
         window.addEventListener('message', function (ev) {
-            if (ev.source === window && ev.data === 'process-tick') {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
                 ev.stopPropagation();
                 if (queue.length > 0) {
                     var fn = queue.shift();
@@ -1063,6 +1064,8 @@ var customUtils = require('./customUtils')
  *                                            Node Webkit stores application data such as cookies and local storage (the best place to store data in my opinion)
  * @param {Boolean} options.autoload Optional, defaults to false
  * @param {Function} options.onload Optional, if autoload is used this will be called after the load database with the error object as parameter. If you don't pass it the error will be thrown
+ * @param {Function} options.afterSerialization and options.beforeDeserialization Optional, serialization hooks
+ * @param {Number} options.corruptAlertThreshold Optional, threshold after which an alert is thrown if too much data is corrupt
  */
 function Datastore (options) {
   var filename;
@@ -1087,7 +1090,11 @@ function Datastore (options) {
   }
 
   // Persistence handling
-  this.persistence = new Persistence({ db: this, nodeWebkitAppName: options.nodeWebkitAppName });
+  this.persistence = new Persistence({ db: this, nodeWebkitAppName: options.nodeWebkitAppName
+                                      , afterSerialization: options.afterSerialization
+                                      , beforeDeserialization: options.beforeDeserialization
+                                      , corruptAlertThreshold: options.corruptAlertThreshold
+                                      });
 
   // This new executor is ready if we don't use persistence
   // If we do, it will only be ready once loadDatabase is called
@@ -1162,6 +1169,7 @@ Datastore.prototype.ensureIndex = function (options, cb) {
     return callback(e);
   }
 
+  // We may want to force all options to be persisted including defaults, not just the ones passed the index creation function
   this.persistence.persistNewState([{ $$indexCreated: options }], function (err) {
     if (err) { return callback(err); }
     return callback(null);
@@ -1357,7 +1365,9 @@ Datastore.prototype.prepareDocumentForInsertion = function (newDoc) {
     preparedDoc = [];
     newDoc.forEach(function (doc) { preparedDoc.push(self.prepareDocumentForInsertion(doc)); });
   } else {
-    newDoc._id = newDoc._id || this.createNewId();
+    if (newDoc._id === undefined) {
+      newDoc._id = this.createNewId();
+    }
     preparedDoc = model.deepCopy(newDoc);
     model.checkObject(preparedDoc);
   }
@@ -1542,7 +1552,23 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
       if (docs.length === 1) {
         return cb();
       } else {
-        return self._insert(model.modify(query, updateQuery), function (err, newDoc) {
+        var toBeInserted;
+        
+        try {
+          model.checkObject(updateQuery);
+          // updateQuery is a simple object with no modifier, use it as the document to insert
+          toBeInserted = updateQuery;
+        } catch (e) {
+          // updateQuery contains modifiers, use the find query as the base,
+          // strip it from all operators and update it according to updateQuery
+          try {
+            toBeInserted = model.modify(model.deepCopy(query, true), updateQuery);
+          } catch (err) {
+            return callback(err);
+          }
+        }
+
+        return self._insert(toBeInserted, function (err, newDoc) {
           if (err) { return callback(err); }
           return callback(null, 1, newDoc);
         });
@@ -2115,8 +2141,10 @@ function deserialize (rawData) {
 
 /**
  * Deep copy a DB object
+ * The optional strictKeys flag (defaulting to false) indicates whether to copy everything or only fields
+ * where the keys are valid, i.e. don't begin with $ and don't contain a .
  */
-function deepCopy (obj) {
+function deepCopy (obj, strictKeys) {
   var res;
 
   if ( typeof obj === 'boolean' ||
@@ -2129,14 +2157,16 @@ function deepCopy (obj) {
 
   if (util.isArray(obj)) {
     res = [];
-    obj.forEach(function (o) { res.push(o); });
+    obj.forEach(function (o) { res.push(deepCopy(o, strictKeys)); });
     return res;
   }
 
   if (typeof obj === 'object') {
     res = {};
     Object.keys(obj).forEach(function (k) {
-      res[k] = deepCopy(obj[k]);
+      if (!strictKeys || (k[0] !== '$' && k.indexOf('.') === -1)) {
+        res[k] = deepCopy(obj[k], strictKeys);
+      }
     });
     return res;
   }
@@ -2390,7 +2420,6 @@ Object.keys(lastStepModifierFunctions).forEach(function (modifier) {
 
 /**
  * Modify a DB object according to an update query
- * For now the updateQuery only replaces the object
  */
 function modify (obj, updateQuery) {
   var keys = Object.keys(updateQuery)
@@ -2432,6 +2461,7 @@ function modify (obj, updateQuery) {
 
   // Check result is valid and return it
   checkObject(newDoc);
+  
   if (obj._id !== newDoc._id) { throw "You can't change a document's _id"; }
   return newDoc;
 };
@@ -2550,7 +2580,7 @@ comparisonFunctions.$gte = function (a, b) {
 };
 
 comparisonFunctions.$ne = function (a, b) {
-  if (!a) { return true; }
+  if (a === undefined) { return true; }
   return !areThingsEqual(a, b);
 };
 
@@ -2796,9 +2826,12 @@ var storage = require('./storage')
  *                                            Node Webkit stores application data such as cookies and local storage (the best place to store data in my opinion)
  */
 function Persistence (options) {
+  var i, j, randomString;
+  
   this.db = options.db;
   this.inMemoryOnly = this.db.inMemoryOnly;
   this.filename = this.db.filename;
+  this.corruptAlertThreshold = options.corruptAlertThreshold !== undefined ? options.corruptAlertThreshold : 0.1;
   
   if (!this.inMemoryOnly && this.filename) {
     if (this.filename.charAt(this.filename.length - 1) === '~') {
@@ -2809,6 +2842,24 @@ function Persistence (options) {
     }
   }
 
+  // After serialization and before deserialization hooks with some basic sanity checks
+  if (options.afterSerialization && !options.beforeDeserialization) {
+    throw "Serialization hook defined but deserialization hook undefined, cautiously refusing to start NeDB to prevent dataloss";
+  }
+  if (!options.afterSerialization && options.beforeDeserialization) {
+    throw "Serialization hook undefined but deserialization hook defined, cautiously refusing to start NeDB to prevent dataloss";
+  }
+  this.afterSerialization = options.afterSerialization || function (s) { return s; };
+  this.beforeDeserialization = options.beforeDeserialization || function (s) { return s; };
+  for (i = 1; i < 30; i += 1) {
+    for (j = 0; j < 10; j += 1) {
+      randomString = customUtils.uid(i);
+      if (this.beforeDeserialization(this.afterSerialization(randomString)) !== randomString) {
+        throw "beforeDeserialization is not the reverse of afterSerialization, cautiously refusing to start NeDB to prevent dataloss";
+      }
+    }
+  }
+  
   // For NW apps, store data in the same directory where NW stores application data
   if (this.filename && options.nodeWebkitAppName) {
     console.log("==================================================================");
@@ -2894,11 +2945,11 @@ Persistence.prototype.persistCachedDatabase = function (cb) {
   if (this.inMemoryOnly) { return callback(null); } 
 
   this.db.getAllData().forEach(function (doc) {
-    toPersist += model.serialize(doc) + '\n';
+    toPersist += self.afterSerialization(model.serialize(doc)) + '\n';
   });
   Object.keys(this.db.indexes).forEach(function (fieldName) {
     if (fieldName != "_id") {   // The special _id index is managed by datastore.js, the others need to be persisted
-      toPersist += model.serialize({ $$indexCreated: { fieldName: fieldName, unique: self.db.indexes[fieldName].unique, sparse: self.db.indexes[fieldName].sparse }}) + '\n';
+      toPersist += self.afterSerialization(model.serialize({ $$indexCreated: { fieldName: fieldName, unique: self.db.indexes[fieldName].unique, sparse: self.db.indexes[fieldName].sparse }})) + '\n';
     }
   });
 
@@ -2975,7 +3026,7 @@ Persistence.prototype.persistNewState = function (newDocs, cb) {
   if (self.inMemoryOnly) { return callback(null); }
 
   newDocs.forEach(function (doc) {
-    toPersist += model.serialize(doc) + '\n';
+    toPersist += self.afterSerialization(model.serialize(doc)) + '\n';
   });
 
   if (toPersist.length === 0) { return callback(null); }
@@ -2990,19 +3041,20 @@ Persistence.prototype.persistNewState = function (newDocs, cb) {
  * From a database's raw data, return the corresponding
  * machine understandable collection
  */
-Persistence.treatRawData = function (rawData) {
+Persistence.prototype.treatRawData = function (rawData) {
   var data = rawData.split('\n')
     , dataById = {}
     , tdata = []
     , i
     , indexes = {}
+    , corruptItems = -1   // Last line of every data file is usually blank so not really corrupt
     ;
-
+    
   for (i = 0; i < data.length; i += 1) {
     var doc;
-
+    
     try {
-      doc = model.deserialize(data[i]);
+      doc = model.deserialize(this.beforeDeserialization(data[i]));
       if (doc._id) {
         if (doc.$$deleted === true) {
           delete dataById[doc._id];
@@ -3015,7 +3067,13 @@ Persistence.treatRawData = function (rawData) {
         delete indexes[doc.$$indexRemoved];
       }
     } catch (e) {
+      corruptItems += 1;
     }
+  }
+    
+  // A bit lenient on corruption
+  if (data.length > 0 && corruptItems / data.length > this.corruptAlertThreshold) {
+    throw "More than 10% of the data file is corrupt, the wrong beforeDeserialization hook may be used. Cautiously refusing to start NeDB to prevent dataloss"
   }
 
   Object.keys(dataById).forEach(function (k) {
@@ -3075,10 +3133,14 @@ Persistence.prototype.loadDatabase = function (cb) {
       Persistence.ensureDirectoryExists(path.dirname(self.filename), function (err) {
         self.ensureDatafileIntegrity(function (exists) {
           storage.readFile(self.filename, 'utf8', function (err, rawData) {
-
             if (err) { return cb(err); }
-            var treatedData = Persistence.treatRawData(rawData);
-
+            
+            try {
+              var treatedData = self.treatRawData(rawData);
+            } catch (e) {
+              return cb(e);
+            }
+            
             // Recreate all indexes in the datafile
             Object.keys(treatedData.indexes).forEach(function (key) {
               self.db.indexes[key] = new Index(treatedData.indexes[key]);

@@ -295,4 +295,21 @@ describe('Indexing', function () {
 });   // ==== End of 'Indexing' ==== //
 
 
+describe('Persistent in-browser database', function () {
+
+  it('Create a localStorage-enabled database and insert to it, results are recorded in localStorage', function (done) {
+    localStorage.removeItem('test');   // Clean start state
+    var d = new Nedb({ filename: 'test', autoload: true });
+
+    d.insert({ test: true }, function (err) {
+      assert.isNull(err);
+      var contents = localStorage.getItem('test');
+      contents = JSON.parse(contents);
+      assert.equal(contents.test, true);
+      done();
+    });
+  });
+
+});   // ===== End of 'persistent in-browser database' =====
+
 
