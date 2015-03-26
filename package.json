@@ -37,5 +37,10 @@
     "test": "./node_modules/.bin/mocha --reporter spec --timeout 10000"
   },
   "main": "index",
+  "browser": {
+    "main": "lib/datastore.js",
+    "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
+    "./lib/storage.js": "./browser-version/browser-specific/lib/storage.js"
+  },
   "licence": "MIT"
 }
