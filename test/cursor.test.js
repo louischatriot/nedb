@@ -97,7 +97,7 @@ describe('Cursor', function () {
       }
       ], done);
     });
-    
+
     it('With an empty collection', function (done) {
       async.waterfall([
         function (cb) {
@@ -113,7 +113,7 @@ describe('Cursor', function () {
         }
       ], done);
     });
-    
+
     it('With a limit', function (done) {
       var cursor = new Cursor(d);
       cursor.limit(3);
@@ -177,7 +177,7 @@ describe('Cursor', function () {
         for (i = 0; i < docs.length - 1; i += 1) {
           assert(docs[i].age < docs[i + 1].age)
         }
-        
+
         cursor.sort({ age: -1 });
         cursor.exec(function (err, docs) {
           assert.isNull(err);
@@ -187,10 +187,10 @@ describe('Cursor', function () {
           }
 
           done();
-        });          
+        });
       });
     });
-    
+
     it('With an empty collection', function (done) {
       async.waterfall([
         function (cb) {
@@ -207,9 +207,9 @@ describe('Cursor', function () {
         }
       ], done);
     });
-    
+
     it('Ability to chain sorting and exec', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -237,7 +237,7 @@ describe('Cursor', function () {
     });
 
     it('Using limit and sort', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -264,7 +264,7 @@ describe('Cursor', function () {
     });
 
     it('Using a limit higher than total number of docs shouldnt cause an error', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -283,7 +283,7 @@ describe('Cursor', function () {
     });
 
     it('Using limit and skip with sort', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -317,9 +317,9 @@ describe('Cursor', function () {
         }
       ], done);
     });
-    
+
     it('Using too big a limit and a skip with sort', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -336,7 +336,7 @@ describe('Cursor', function () {
     });
 
     it('Using too big a skip with sort should return no result', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -372,7 +372,7 @@ describe('Cursor', function () {
         }
       ], done);
     });
-    
+
     it('Sorting strings', function (done) {
       async.waterfall([
         function (cb) {
@@ -384,7 +384,7 @@ describe('Cursor', function () {
                 d.insert({ name: 'sue' }, function () {
                   return cb();
                 });
-              });            
+              });
             });
           });
         }
@@ -410,10 +410,10 @@ describe('Cursor', function () {
         }
       ], done);
     });
-    
+
     it('Sorting nested fields with dates', function (done) {
       var doc1, doc2, doc3;
-      
+
       async.waterfall([
         function (cb) {
           d.remove({}, { multi: true }, function (err) {
@@ -427,7 +427,7 @@ describe('Cursor', function () {
                   doc3 = _doc3;
                   return cb();
                 });
-              });            
+              });
             });
           });
         }
@@ -453,8 +453,8 @@ describe('Cursor', function () {
         }
       ], done);
     });
-    
-    it('Sorting when some fields are undefined', function (done) {      
+
+    it('Sorting when some fields are undefined', function (done) {
       async.waterfall([
         function (cb) {
           d.remove({}, { multi: true }, function (err) {
@@ -467,7 +467,7 @@ describe('Cursor', function () {
                     return cb();
                   });
                 });
-              });            
+              });
             });
           });
         }
@@ -499,8 +499,8 @@ describe('Cursor', function () {
         }
       ], done);
     });
-    
-    it('Sorting when all fields are undefined', function (done) {      
+
+    it('Sorting when all fields are undefined', function (done) {
       async.waterfall([
         function (cb) {
           d.remove({}, { multi: true }, function (err) {
@@ -511,7 +511,7 @@ describe('Cursor', function () {
                 d.insert({ name: 'sue' }, function () {
                   return cb();
                 });
-              });            
+              });
             });
           });
         }
@@ -547,7 +547,7 @@ describe('Cursor', function () {
                     });
                   });
                 });
-              });            
+              });
             });
           });
         }
@@ -555,7 +555,7 @@ describe('Cursor', function () {
           var cursor = new Cursor(d, {});
           cursor.sort({ name: 1, age: -1 }).exec(function (err, docs) {
             docs.length.should.equal(5);
-            
+
             docs[0].nid.should.equal(2);
             docs[1].nid.should.equal(1);
             docs[2].nid.should.equal(5);
@@ -568,7 +568,7 @@ describe('Cursor', function () {
           var cursor = new Cursor(d, {});
           cursor.sort({ name: 1, age: 1 }).exec(function (err, docs) {
             docs.length.should.equal(5);
-            
+
             docs[0].nid.should.equal(2);
             docs[1].nid.should.equal(5);
             docs[2].nid.should.equal(1);
@@ -581,7 +581,7 @@ describe('Cursor', function () {
           var cursor = new Cursor(d, {});
           cursor.sort({ age: 1, name: 1 }).exec(function (err, docs) {
             docs.length.should.equal(5);
-            
+
             docs[0].nid.should.equal(3);
             docs[1].nid.should.equal(4);
             docs[2].nid.should.equal(5);
@@ -594,7 +594,7 @@ describe('Cursor', function () {
           var cursor = new Cursor(d, {});
           cursor.sort({ age: 1, name: -1 }).exec(function (err, docs) {
             docs.length.should.equal(5);
-            
+
             docs[0].nid.should.equal(3);
             docs[1].nid.should.equal(4);
             docs[2].nid.should.equal(5);
@@ -610,12 +610,12 @@ describe('Cursor', function () {
         , companies = [ 'acme', 'milkman', 'zoinks' ]
         , entities = []
         ;
-    
+
       async.waterfall([
         function (cb) {
           d.remove({}, { multi: true }, function (err) {
             if (err) { return cb(err); }
-            
+
             id = 1;
             for (i = 0; i < companies.length; i++) {
               for (j = 5; j <= 100; j += 5) {
@@ -775,12 +775,65 @@ describe('Cursor', function () {
 
   });   // ==== End of 'Projections' ====
 
+
+  describe('Casting', function () {
+      var doc1, doc2, doc3, doc4, doc0;
+
+      function TestConstructor () {
+          this.age = null;
+          this.name = null;
+          this.planet = null;
+      }
+
+      beforeEach(function (done) {
+        d.insert({ age: 5, name: 'Jo', planet: 'B' }, function (err, _doc0) {
+          doc0 = _doc0;
+          d.insert({ age: 57, name: 'Louis', planet: 'R' }, function (err, _doc1) {
+            doc1 = _doc1;
+            d.insert({ age: 52, name: 'Grafitti', moon: 'C' }, function (err, _doc2) {
+              doc2 = _doc2;
+              d.insert({ age: 23, name: 'LM', moon: 'S' }, function (err, _doc3) {
+                doc3 = _doc3;
+                d.insert({ age: 89, planet: 'Earth' }, function (err, _doc4) {
+                  doc4 = _doc4;
+                  return done();
+                });
+              });
+            });
+          });
+        });
+      });
+
+      it('Returned objects are instanceof provided constructor', function (done) {
+          var cursor = new Cursor(d, {});
+          cursor.cast(TestConstructor);
+          cursor.exec(function (err, objects) {
+            assert.isNull(err);
+            assert.strictEqual(objects[0] instanceof TestConstructor, true);
+            assert.strictEqual(objects[1] instanceof TestConstructor, true);
+            assert.strictEqual(objects[2] instanceof TestConstructor, true);
+            assert.strictEqual(objects[3] instanceof TestConstructor, true);
+            assert.strictEqual(objects[4] instanceof TestConstructor, true);
+            done();
+          });
+      });
+
+      it('Returned objects do not contain extranous properties', function (done) {
+          var cursor = new Cursor(d, {});
+          cursor.cast(TestConstructor);
+          cursor.exec(function (err, objects) {
+            assert.isNull(err);
+
+            objects.forEach(function (object) {
+              var keys = Object.keys(object);
+              assert.strictEqual(keys.length, 3);
+              assert.strictEqual(keys.indexOf('age') >= 0, true);
+              assert.strictEqual(keys.indexOf('name') >= 0, true);
+              assert.strictEqual(keys.indexOf('planet') >= 0, true);
+            });
+
+            done();
+          });
+      });
+  });   // ==== End of 'Casting'
 });
-
-
-
-
-
-
-
-

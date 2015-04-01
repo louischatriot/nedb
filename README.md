@@ -40,6 +40,7 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
   * <a href="#logical-operators-or-and-not-where">Logical operators $or, $and, $not, $where</a>
   * <a href="#sorting-and-paginating">Sorting and paginating</a>
   * <a href="#projections">Projections</a>
+  * <a href="#casting">Casting</a>
 * <a href="#counting-documents">Counting documents</a>
 * <a href="#updating-documents">Updating documents</a>
 * <a href="#removing-documents">Removing documents</a>
@@ -59,7 +60,7 @@ load is done.
 * `onload` (optional): if you use autoloading, this is the handler called after the `loadDatabase`. It takes one `error` argument. If you use autoloading without specifying this handler, and an error happens during load, an error will be thrown.
 * `afterSerialization` (optional): hook you can use to transform data after it was serialized and before it is written to disk. Can be used for example to encrypt data before writing database to disk. This function takes a string as parameter (one line of an NeDB data file) and outputs the transformed string, **which must absolutely not contain a `\n` character** (or data will be lost)
 * `beforeDeserialization` (optional): reverse of `afterSerialization`. Make sure to include both and not just one or you risk data loss. For the same reason, make sure both functions are inverses of one another. Some failsafe mechanisms are in place to prevent data loss if you misuse the serialization hooks: NeDB checks that never one is declared without the other, and checks that they are reverse of one another by testing on random strings of various lengths. In addition, if too much data is detected as corrupt, NeDB will refuse to start as it could mean you're not using the deserialization hook corresponding to the serialization hook used before (see below)
-* `corruptAlertThreshold` (optional): between 0 and 1, defaults to 10%. NeDB will refuse to start if more than this percentage of the datafile is corrupt. 0 means you don't tolerate any corruption, 1 means you don't care 
+* `corruptAlertThreshold` (optional): between 0 and 1, defaults to 10%. NeDB will refuse to start if more than this percentage of the datafile is corrupt. 0 means you don't tolerate any corruption, 1 means you don't care
 * `nodeWebkitAppName` (optional, **DEPRECATED**): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows. Now that you can use `require('nw.gui').App.dataPath` in Node Webkit to get the path to the data directory for your application, you should not use this option anymore and it will be removed.
 
 If you use a persistent datastore without the `autoload` option, you need to call `loadDatabase` manually.
@@ -118,7 +119,7 @@ Keep in mind that compaction takes a bit of time (not too much: 130ms for 50k re
 
 ### Inserting documents
 The native types are `String`, `Number`, `Boolean`, `Date` and `null`. You can also use
-arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from 
+arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from
 MongoDB which transforms `undefined` in `null`, something I find counter-intuitive).  
 
 If the document does not contain an `_id` field, NeDB will automatically generated one for you (a 16-characters alphanumerical string). The `_id` of a document, once set, cannot be modified.
@@ -348,6 +349,26 @@ db.find({ system: 'solar' }).sort({ planet: -1 }).exec(function (err, docs) {
 db.find({}).sort({ firstField: 1, secondField: -1 }) ...   // You understand how this works!
 ```
 
+#### Casting
+
+Using the `Cursor` object, you may also cast results to a type by providing a constructor function.
+
+```javascript
+function Model () {
+    this.planet = null;
+    this.system = null;
+    this.inhabited = null;
+}
+
+db.find({}).cast(Model).exec(function (err, models) {
+    // models is array of type Model
+});
+
+```
+
+`cast` will only use properties defined on the prototype of the type. For example, the `_id` property is not present on `Model` so it will not be copied.
+
+
 #### Projections
 You can give `find` and `findOne` an optional second argument, `projections`. The syntax is the same as MongoDB: `{ a: 1, b: 1 }` to return only the `a` and `b` fields, `{ a: 0, b: 0 }` to omit these two fields. You cannot use both modes at the time, except for `_id` which is by default always returned and which you can choose to omit.
 
@@ -380,7 +401,6 @@ db.find({ planet: 'Mars' }).projection({ planet: 1, system: 1 }).exec(function (
   // docs is [{ planet: 'Mars', system: 'solar', _id: 'id1' }]
 });
 ```
-
 
 
 ### Counting documents
@@ -587,7 +607,7 @@ As of v0.8.0, you can use NeDB in the browser! You can find it and its minified 
 <script src="nedb.min.js"></script>
 <script>
   var db = new Nedb();   // Create an in-memory only datastore
-  
+
   db.insert({ planet: 'Earth' });
   db.insert({ planet: 'Mars' });
 
@@ -638,6 +658,6 @@ Issues reporting and pull requests are always appreciated. For issues, make sure
 You don't have time? You can support NeDB by sending bitcoins to this address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
 
-## License 
+## License
 
 See [License](LICENSE)
