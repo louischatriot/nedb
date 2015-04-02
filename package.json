@@ -38,7 +38,6 @@
   },
   "main": "index",
   "browser": {
-    "main": "lib/datastore.js",
     "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
     "./lib/storage.js": "./browser-version/browser-specific/lib/storage.js"
   },
