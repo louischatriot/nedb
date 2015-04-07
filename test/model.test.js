@@ -373,6 +373,14 @@ describe('Model', function () {
 
         _.isEqual(modified, { yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } }).should.equal(true);
       });
+
+      it('Can set arrays', function () {
+        var obj = { yup: 'yes', fruits: ['oranges'] }
+          , updateQuery = { $set: { fruits: ['apples', 'cherries'] } }
+          , modified = model.modify(obj, updateQuery);
+          console.log(modified);
+          _.isEqual(modified, { yup: 'yes', fruits: ['apples', 'cherries'] }).should.equal(true);
+      });
     });   // End of '$set modifier'
     
     describe('$unset modifier', function () {
