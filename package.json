@@ -1,6 +1,6 @@
 {
   "name": "nedb",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": {
     "name": "Louis Chatriot",
     "email": "louis.chatriot@gmail.com"
@@ -38,5 +38,9 @@
     "test": "./node_modules/.bin/mocha --reporter spec --timeout 10000"
   },
   "main": "index",
+  "browser": {
+    "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
+    "./lib/storage.js": "./browser-version/browser-specific/lib/storage.js"
+  },
   "licence": "MIT"
 }

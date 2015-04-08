@@ -3,8 +3,8 @@
 <img src="http://i.imgur.com/GdeQBmc.png" style="width: 25%; height: 25%; float: left;">
 
 **Embedded persistent database for Node.js, written in Javascript, with no dependency** (except npm
-modules of course). You can **think of it as a SQLite for Node.js projects**, which
-can be used with a simple `require` statement. The API is a subset of MongoDB's. You can use it as a persistent or an in-memory only datastore.
+modules), which
+can be used with a simple `require` statement. The API is a subset of MongoDB's. You can use it as a persistent or an in-memory only datastore, and it can also be used in all recent browsers (Chrome, Firefox, Safari, IE9+).
 
 NeDB is not intended to be a replacement of large-scale databases such as MongoDB! Its goal is to provide you with a clean and easy way to query data and persist it to disk, for web applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a> and desktop applications built with <a href="https://github.com/rogerwang/node-webkit" target="_blank">Node Webkit</a>.
 
@@ -635,7 +635,7 @@ Connect and Express, backed by nedb
 Issues reporting and pull requests are always appreciated. For issues, make sure to always include a code snippet and describe the expected vs actual behavior. If you send a pull request, make sure to stick to NeDB's coding style and always test all the code you submit. You can look at the current tests to see how to do it
 
 ### Bitcoins
-You don't have time? You can support NeDB by sending bitcoins to this adress: 
+You don't have time? You can support NeDB by sending bitcoins to this address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
 
 ## License 
