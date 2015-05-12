@@ -132,21 +132,21 @@ describe('Model', function () {
       b = model.serialize(e3);
       b = model.serialize(e4);
     });
-    
+
     it('Can serialize string fields with a new line without breaking the DB', function (done) {
       var db1, db2
         , badString = "world\r\nearth\nother\rline"
         ;
-      
+
       if (fs.existsSync('workspace/test1.db')) { fs.unlinkSync('workspace/test1.db'); }
       fs.existsSync('workspace/test1.db').should.equal(false);
       db1 = new Datastore({ filename: 'workspace/test1.db' });
-      
+
       db1.loadDatabase(function (err) {
         assert.isNull(err);
         db1.insert({ hello: badString }, function (err) {
           assert.isNull(err);
-        
+
           db2 = new Datastore({ filename: 'workspace/test1.db' });
           db2.loadDatabase(function (err) {
             assert.isNull(err);
@@ -201,7 +201,7 @@ describe('Model', function () {
 
       model.checkObject(obj);
     });
-    
+
     it('Can check if an object is a primitive or not', function () {
       model.isPrimitiveType(5).should.equal(true);
       model.isPrimitiveType('sdsfdfs').should.equal(true);
@@ -249,36 +249,36 @@ describe('Model', function () {
       res.subobj.a.should.equal('b');
       res.subobj.b.should.equal('c');
     });
-    
+
     it('Should deep copy the contents of an array', function () {
       var a = [{ hello: 'world' }]
         , b = model.deepCopy(a)
         ;
-        
+
       b[0].hello.should.equal('world');
       b[0].hello = 'another';
       b[0].hello.should.equal('another');
-      a[0].hello.should.equal('world');      
+      a[0].hello.should.equal('world');
     });
-    
+
     it('Without the strictKeys option, everything gets deep copied', function () {
       var a = { a: 4, $e: 'rrr', 'eee.rt': 42, nested: { yes: 1, 'tt.yy': 2, $nopenope: 3 }, array: [{ 'rr.hh': 1 }, { yes: true }, { $yes: false }] }
         , b = model.deepCopy(a)
         ;
-        
+
       assert.deepEqual(a, b);
     });
-    
+
     it('With the strictKeys option, only valid keys gets deep copied', function () {
       var a = { a: 4, $e: 'rrr', 'eee.rt': 42, nested: { yes: 1, 'tt.yy': 2, $nopenope: 3 }, array: [{ 'rr.hh': 1 }, { yes: true }, { $yes: false }] }
         , b = model.deepCopy(a, true)
         ;
-        
+
       assert.deepEqual(b, { a: 4, nested: { yes: 1 }, array: [{}, { yes: true }, {}] });
     });
 
   });   // ==== End of 'Deep copying' ==== //
-  
+
 
   describe('Modifying documents', function () {
 
@@ -374,12 +374,12 @@ describe('Model', function () {
         _.isEqual(modified, { yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } }).should.equal(true);
       });
     });   // End of '$set modifier'
-    
+
     describe('$unset modifier', function () {
-    
+
       it('Can delete a field, not throwing an error if the field doesnt exist', function () {
         var obj, updateQuery, modified;
-      
+
         obj = { yup: 'yes', other: 'also' }
         updateQuery = { $unset: { yup: true } }
         modified = model.modify(obj, updateQuery);
@@ -389,32 +389,32 @@ describe('Model', function () {
         updateQuery = { $unset: { nope: true } }
         modified = model.modify(obj, updateQuery);
         assert.deepEqual(modified, obj);
-        
+
         obj = { yup: 'yes', other: 'also' }
         updateQuery = { $unset: { nope: true, other: true } }
         modified = model.modify(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes' });
       });
-      
+
       it('Can unset sub-fields and entire nested documents', function () {
         var obj, updateQuery, modified;
-      
+
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { nested: true } }
         modified = model.modify(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes' });
-      
+
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { 'nested.a': true } }
         modified = model.modify(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes', nested: { b: 'yeah' } });
-      
+
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { 'nested.a': true, 'nested.b': true } }
         modified = model.modify(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes', nested: {} });
       });
-      
+
     });   // End of '$unset modifier'
 
     describe('$inc modifier', function () {
@@ -661,15 +661,15 @@ describe('Model', function () {
         modified = model.modify(obj, { $pull: { arr: { b: 3 } } });
         assert.deepEqual(modified, { arr: [{ b: 2 }] });
       });
-      
+
       it('Can use any kind of nedb query with $pull', function () {
         var obj = { arr: [4, 7, 12, 2], other: 'yup' }
           , modified
           ;
-      
+
         modified = model.modify(obj, { $pull: { arr: { $gte: 5 } } });
         assert.deepEqual(modified, { arr: [4, 2], other: 'yup' });
-        
+
         obj = { arr: [{ b: 4 }, { b: 7 }, { b: 1 }], other: 'yeah' };
         modified = model.modify(obj, { $pull: { arr: { b: { $gte: 5} } } });
         assert.deepEqual(modified, { arr: [{ b: 4 }, { b: 1 }], other: 'yeah' });
@@ -872,27 +872,27 @@ describe('Model', function () {
         assert.isUndefined(model.getDotValue({ hello: 'world' }, 'helloo'));
         assert.isUndefined(model.getDotValue({ hello: 'world', type: { planet: true } }, 'type.plane'));
       });
-      
+
       it("Can navigate inside arrays with dot notation, and return the array of values in that case", function () {
         var dv;
-        
+
         // Simple array of subdocuments
         dv = model.getDotValue({ planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] }, 'planets.name');
         assert.deepEqual(dv, ['Earth', 'Mars', 'Pluton']);
-        
+
         // Nested array of subdocuments
         dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] } }, 'data.planets.number');
         assert.deepEqual(dv, [3, 2, 9]);
-        
+
         // Nested array in a subdocument of an array (yay, inception!)
         // TODO: make sure MongoDB doesn't flatten the array (it wouldn't make sense)
         dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', numbers: [ 1, 3 ] }, { name: 'Mars', numbers: [ 7 ] }, { name: 'Pluton', numbers: [ 9, 5, 1 ] } ] } }, 'data.planets.numbers');
         assert.deepEqual(dv, [[ 1, 3 ], [ 7 ], [ 9, 5, 1 ]]);
       });
-      
+
       it("Can get a single value out of an array using its index", function () {
         var dv;
-        
+
         // Simple index in dot notation
         dv = model.getDotValue({ planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] }, 'planets.1');
         assert.deepEqual(dv, { name: 'Mars', number: 2 });
@@ -904,7 +904,7 @@ describe('Model', function () {
         // Index in nested array
         dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] } }, 'data.planets.2');
         assert.deepEqual(dv, { name: 'Pluton', number: 9 });
-        
+
         // Dot notation with index in the middle
         dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] } }, 'data.planets.0.name');
         dv.should.equal('Earth');
@@ -940,7 +940,7 @@ describe('Model', function () {
         model.match({ a: { b: 5 } }, { a: { b: { $lt: 10 } } }).should.equal(false);
         (function () { model.match({ a: { b: 5 } }, { a: { $or: [ { b: 10 }, { b: 5 } ] } }) }).should.throw();
       });
-      
+
       it("Can match for field equality inside an array with the dot notation", function () {
         model.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'node' }).should.equal(false);
         model.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'embedded' }).should.equal(true);
@@ -976,14 +976,23 @@ describe('Model', function () {
         model.match({ test: 'true' }, { test: { $regex: /t[ru]e/ } }).should.equal(false);
       });
 
-      it('Will throw if $regex operator is used with a non regex value', function () {
+      it('Can match strings using the $regex operator with string regex and options', function () {
+
+        model.match({ test: 'true' }, { test: { $regex: 'true' } }).should.equal(true);
+
+        model.match({ test: 'True' }, { test: { $regex: 'true', $options: 'i' } }).should.equal(true);
+
+      });
+
+      it('Will throw if $regex operator is used with a non regex or non-string value', function () {
         (function () {
           model.match({ test: 'true' }, { test: { $regex: 42 } })
         }).should.throw();
 
         (function () {
-          model.match({ test: 'true' }, { test: { $regex: 'true' } })
+          model.match({ test: 'true' }, { test: { $regex: true } })
         }).should.throw();
+
       });
 
       it('Can use the $regex operator in cunjunction with other operators', function () {
@@ -1113,7 +1122,7 @@ describe('Model', function () {
 
     });
 
-    
+
     describe('Query operator array $size', function () {
 
         it('Can query on the size of an array field', function () {
@@ -1122,7 +1131,7 @@ describe('Model', function () {
           model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 1 } }).should.equal(false);
           model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 2 } }).should.equal(false);
           model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 3 } }).should.equal(true);
-            
+
           // Nested documents
           model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 0 } }).should.equal(false);
           model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 1 } }).should.equal(false);
@@ -1151,14 +1160,14 @@ describe('Model', function () {
         it('Using $size operator on a non-array field should prevent match but not throw', function () {
           model.match({ a: 5 }, { a: { $size: 1 } }).should.equal(false);
         });
-        
+
         it('Can use $size several times in the same matcher', function () {
           model.match({ childrens: [ 'Riri', 'Fifi', 'Loulou' ] }, { "childrens": { $size: 3, $size: 3 } }).should.equal(true);
           model.match({ childrens: [ 'Riri', 'Fifi', 'Loulou' ] }, { "childrens": { $size: 3, $size: 4 } }).should.equal(false);   // Of course this can never be true
         });
-        
+
     });
-    
+
 
     describe('Logical operators $or, $and, $not', function () {
 
@@ -1215,7 +1224,7 @@ describe('Model', function () {
       it('Should throw an error if the $where function returns a non-boolean', function () {
         (function () { model.match({ a: 4 }, { $where: function () { return 'not a boolean'; } }); }).should.throw();
       });
-      
+
       it('Should be able to do the complex matching it must be used for', function () {
         var checkEmail = function() {
           if (!this.firstName || !this.lastName) { return false; }
@@ -1269,23 +1278,23 @@ describe('Model', function () {
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 4 } }).should.equal(true);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 8 } }).should.equal(true);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 13 } }).should.equal(true);
-        
+
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.name": 'Louis' }).should.equal(false);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.name": 'Louie' }).should.equal(true);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.name": 'Lewi' }).should.equal(false);
       });
-      
+
       it('Can query for a specific element inside arrays thanks to dot notation', function () {
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.0.name": 'Louie' }).should.equal(false);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.1.name": 'Louie' }).should.equal(false);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.2.name": 'Louie' }).should.equal(true);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.3.name": 'Louie' }).should.equal(false);
       });
-      
+
       it('A single array-specific operator and the query is treated as array specific', function () {
         (function () { model.match({ childrens: [ 'Riri', 'Fifi', 'Loulou' ] }, { "childrens": { "Fifi": true, $size: 3 } })}).should.throw();
       });
-      
+
       it('Can mix queries on array fields and non array filds with array specific operators', function () {
         model.match({ uncle: 'Donald', nephews: [ 'Riri', 'Fifi', 'Loulou' ] }, { nephews: { $size: 2 }, uncle: 'Donald' }).should.equal(false);
         model.match({ uncle: 'Donald', nephews: [ 'Riri', 'Fifi', 'Loulou' ] }, { nephews: { $size: 3 }, uncle: 'Donald' }).should.equal(true);
@@ -1295,7 +1304,7 @@ describe('Model', function () {
         model.match({ uncle: 'Donald', nephews: [ 'Riri', 'Fifi', 'Loulou' ] }, { nephews: { $size: 3 }, uncle: 'Donald' }).should.equal(true);
         model.match({ uncle: 'Donald', nephews: [ 'Riri', 'Fifi', 'Loulou' ] }, { nephews: { $size: 3 }, uncle: 'Daisy' }).should.equal(false);
       });
-      
+
     });
 
   });   // ==== End of 'Querying' ==== //
