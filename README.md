@@ -629,6 +629,7 @@ of a lower speed).
 Connect and Express, backed by nedb
 * If you mostly use NeDB for logging purposes and don't want the memory footprint of your application to grow too large, you can use <a href="https://github.com/louischatriot/nedb-logger" target="_blank">NeDB Logger</a> to insert documents in a NeDB-readable database
 * If you've outgrown NeDB, switching to MongoDB won't be too hard as it is the same API. Use <a href="https://github.com/louischatriot/nedb-to-mongodb" target="_blank">this utility</a> to transfer the data from a NeDB database to a MongoDB collection
+* An ODM for NeDB: <a href="https://github.com/scottwrobinson/camo">Camo</a>
 
 
 ## Help out
