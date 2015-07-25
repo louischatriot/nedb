@@ -1056,7 +1056,38 @@ describe('Database', function () {
         })
       });
 
+      it('Performing upsert with an array field sets the array in an existing doc', function(done) {
+        d.insert({a: 42}, function (err, doc) {
+          d.update({a: 42}, { $set: { fruits: ['apples', 'cherries'] } }, { upsert: true }, function(err) {
+            assert.isNull(err);
+            d.find({a: 42}, function (err, docs) {
+              assert.isNull(err);
+              docs.length.should.equal(1);
+              var doc = docs[0];
+              doc.fruits.should.eql(['apples', 'cherries']);
+              done();
+            });
+          })
+        });
+      });
 
+      it('Performing upsert with an array field sets the array in an non-existing doc', function(done) {
+        d.findOne({a:42}, function (err, doc) {
+          assert.isDefined(err);
+          assert.isNull(doc);
+          d.update({a: 42}, { $set: { fruits: ['apples', 'cherries'] } }, { upsert: true }, function(err) {
+            assert.isNull(err);
+            d.find({a: 42}, function (err, docs) {
+              assert.isNull(err);
+              docs.length.should.equal(1);
+              var doc = docs[0];
+              console.log(JSON.stringify(doc));
+              doc.fruits.should.eql(['apples', 'cherries']);
+              done();
+            });
+          })
+        });
+      });
     });   // ==== End of 'Upserts' ==== //
 
     it('Cannot perform update if the update query is not either registered-modifiers-only or copy-only, or contain badly formatted fields', function (done) {
