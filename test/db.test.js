@@ -251,21 +251,24 @@ describe('Database', function () {
     it('If a bulk insert violates a constraint, all changes are rolled back', function (done) {
       var docs = [{ a: 5, b: 'hello' }, { a: 42, b: 'world' }, { a: 5, b: 'bloup' }, { a: 7 }];
     
-      d.ensureIndex({ fieldName: 'a', unique: true });
-    
-      d.insert(docs, function (err) {
-        err.errorType.should.equal('uniqueViolated');
-      
-        d.find({}, function (err, docs) {
-          // Datafile only contains index definition
-          var datafileContents = model.deserialize(fs.readFileSync(testDb, 'utf8'));
-          assert.deepEqual(datafileContents, { $$indexCreated: { fieldName: 'a', unique: true } });
+      d.ensureIndex({ fieldName: 'a', unique: true }, function () {   // Important to specify callback here to make sure filesystem synced
+        d.insert(docs, function (err) {
+          err.errorType.should.equal('uniqueViolated');
+        
+          d.find({}, function (err, docs) {
+            // Datafile only contains index definition
+            var datafileContents = model.deserialize(fs.readFileSync(testDb, 'utf8'));
+            assert.deepEqual(datafileContents, { $$indexCreated: { fieldName: 'a', unique: true } });
 
-          docs.length.should.equal(0);
+            docs.length.should.equal(0);
 
-          done();
+            done();
+          });
         });
+
+
       });
+      
     });
 
     it('Can insert a doc with id 0', function (done) {
