@@ -11,7 +11,7 @@ var model = require('../lib/model')
 
 describe('Model', function () {
 
-  describe.only('Serialization, deserialization', function () {
+  describe('Serialization, deserialization', function () {
 
     it('Can serialize and deserialize strings', function () {
       var a, b, c;
