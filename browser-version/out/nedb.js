@@ -2066,6 +2066,10 @@ var util = require('util')
  * But you really need to want it to trigger such behaviour, even when warned not to use '$' at the beginning of the field names...
  */
 function checkKey (k, v) {
+  if (typeof k === 'number') {
+    k = k.toString();
+  }
+
   if (k[0] === '$' && !(k === '$$date' && typeof v === 'number') && !(k === '$$deleted' && v === true) && !(k === '$$indexCreated') && !(k === '$$indexRemoved')) {
     throw 'Field names cannot begin with the $ character';
   }
@@ -2106,10 +2110,10 @@ function checkObject (obj) {
  */
 function serialize (obj) {
   var res;
-  
+
   res = JSON.stringify(obj, function (k, v) {
     checkKey(k, v);
-    
+
     if (v === undefined) { return undefined; }
     if (v === null) { return null; }
 
@@ -2369,7 +2373,7 @@ lastStepModifierFunctions.$pop = function (obj, field, value) {
  */
 lastStepModifierFunctions.$pull = function (obj, field, value) {
   var arr, i;
-  
+
   if (!util.isArray(obj[field])) { throw "Can't $pull an element from non-array values"; }
 
   arr = obj[field];
@@ -2461,7 +2465,7 @@ function modify (obj, updateQuery) {
 
   // Check result is valid and return it
   checkObject(newDoc);
-  
+
   if (obj._id !== newDoc._id) { throw "You can't change a document's _id"; }
   return newDoc;
 };
@@ -2485,7 +2489,7 @@ function getDotValue (obj, field) {
   if (fieldParts.length === 0) { return obj; }
 
   if (fieldParts.length === 1) { return obj[fieldParts[0]]; }
-  
+
   if (util.isArray(obj[fieldParts[0]])) {
     // If the next field is an integer, return only this item of the array
     i = parseInt(fieldParts[1], 10);
@@ -2713,13 +2717,13 @@ function match (obj, query) {
   if (isPrimitiveType(obj) || isPrimitiveType(query)) {
     return matchQueryPart({ needAKey: obj }, 'needAKey', query);
   }
-    
+
   // Normal query
   queryKeys = Object.keys(query);
   for (i = 0; i < queryKeys.length; i += 1) {
     queryKey = queryKeys[i];
     queryValue = query[queryKey];
-  
+
     if (queryKey[0] === '$') {
       if (!logicalOperators[queryKey]) { throw "Unknown logical operator " + queryKey; }
       if (!logicalOperators[queryKey](obj, queryValue)) { return false; }
@@ -2744,7 +2748,7 @@ function matchQueryPart (obj, queryKey, queryValue, treatObjAsValue) {
   if (util.isArray(objValue) && !treatObjAsValue) {
     // Check if we are using an array-specific comparison function
     if (queryValue !== null && typeof queryValue === 'object' && !util.isRegExp(queryValue)) {
-      keys = Object.keys(queryValue);      
+      keys = Object.keys(queryValue);
       for (i = 0; i < keys.length; i += 1) {
         if (arrayComparisonFunctions[keys[i]]) { return matchQueryPart(obj, queryKey, queryValue, true); }
       }
