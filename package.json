@@ -41,5 +41,5 @@
     "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
     "./lib/storage.js": "./browser-version/browser-specific/lib/storage.js"
   },
-  "licence": "MIT"
+  "license": "SEE LICENSE IN LICENSE"
 }
