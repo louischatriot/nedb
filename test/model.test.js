@@ -11,7 +11,7 @@ var model = require('../lib/model')
 
 describe('Model', function () {
 
-  describe('Serialization, deserialization', function () {
+  describe.only('Serialization, deserialization', function () {
 
     it('Can serialize and deserialize strings', function () {
       var a, b, c;
@@ -160,6 +160,12 @@ describe('Model', function () {
           });
         });
       });
+    });
+
+    it('Can accept objects whose keys are numbers', function () {
+      var o = { 42: true };
+
+      var s = model.serialize(o);
     });
 
   });   // ==== End of 'Serialization, deserialization' ==== //
