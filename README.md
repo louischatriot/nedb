@@ -2,6 +2,8 @@
 
 <img src="http://i.imgur.com/GdeQBmc.png" style="width: 25%; height: 25%; float: left;">
 
+**IMPORTANT NOTE: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment.**
+
 **Embedded persistent database for Node.js, written in Javascript, with no dependency** (except npm
 modules), which
 can be used with a simple `require` statement. The API is a subset of MongoDB's. You can use it as a persistent or an in-memory only datastore, and it can also be used in all recent browsers (Chrome, Firefox, Safari, IE9+).
