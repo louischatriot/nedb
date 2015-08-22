@@ -22,6 +22,7 @@
   "dependencies": {
     "async": "0.2.10",
     "underscore": "~1.4.4",
+    "underscore.deep": "~0.5.1",
     "binary-search-tree": "0.2.4",
     "mkdirp": "~0.3.5"
   },
