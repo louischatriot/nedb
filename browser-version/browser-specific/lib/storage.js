@@ -3,7 +3,7 @@
  * For a Node.js/Node Webkit database it's the file system
  * For a browser-side database it's localStorage when supported
  *
- * This version is the Node.js/Node Webkit version
+ * This version is the browser version
  */
 
 
