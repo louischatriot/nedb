@@ -1,6 +1,7 @@
 var model = require('../lib/model')
   , should = require('chai').should()
   , assert = require('chai').assert
+  , expect = require('chai').expect
   , _ = require('underscore')
   , async = require('async')
   , util = require('util')
@@ -309,9 +310,9 @@ describe('Model', function () {
         , updateQuery = { replace: 'done', bloup: [ 1, 8], _id: 'donttryit' }
         ;
 
-      (function () {
+      expect(function () {
         model.modify(obj, updateQuery);
-      }).should.throw();
+      }).to.throw("You cannot change a document's _id");
 
       updateQuery._id = 'keepit';
       model.modify(obj, updateQuery);   // No error thrown
@@ -321,27 +322,27 @@ describe('Model', function () {
       var obj = { some: 'thing' }
         , updateQuery = { replace: 'me', $modify: 'metoo' };
 
-      (function () {
+      expect(function () {
         model.modify(obj, updateQuery);
-      }).should.throw();
+      }).to.throw("You cannot mix modifiers and normal fields");
     });
 
     it('Throw an error if trying to use an inexistent modifier', function () {
       var obj = { some: 'thing' }
-        , updateQuery = { $set: 'this exists', $modify: 'not this one' };
+        , updateQuery = { $set: { it: 'exists' }, $modify: 'not this one' };
 
-      (function () {
+      expect(function () {
         model.modify(obj, updateQuery);
-      }).should.throw();
+      }).to.throw(/^Unknown modifier .modify/);
     });
 
     it('Throw an error if a modifier is used with a non-object argument', function () {
       var obj = { some: 'thing' }
         , updateQuery = { $set: 'this exists' };
 
-      (function () {
+      expect(function () {
         model.modify(obj, updateQuery);
-      }).should.throw();
+      }).to.throw(/Modifier .set's argument must be an object/);
     });
 
     describe('$set modifier', function () {
