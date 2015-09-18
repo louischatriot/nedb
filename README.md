@@ -2,7 +2,7 @@
 
 <img src="http://i.imgur.com/GdeQBmc.png" style="width: 25%; height: 25%; float: left;">
 
-**IMPORTANT NOTE: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment.**
+**IMPORTANT NOTE: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment. Also, please follow the <a href="#eee">bug reporting guidelines</a>.**
 
 **Embedded persistent database for Node.js, written in Javascript, with no dependency** (except npm
 modules), which
@@ -634,8 +634,11 @@ Connect and Express, backed by nedb
 * An ODM for NeDB: <a href="https://github.com/scottwrobinson/camo" target="_blank">Camo</a>
 
 
-## Help out
-Issues reporting and pull requests are always appreciated. For issues, make sure to always include a code snippet and describe the expected vs actual behavior. If you send a pull request, make sure to stick to NeDB's coding style and always test all the code you submit. You can look at the current tests to see how to do it
+## Bug reporting guidelines
+If you report a bug, thank you! That said for the process to be manageable please strictly adhere to the following guidelines. I'll not be able to handle bug reports that don't:
+* Your bug report should be a self-containing gist complete with a package.json for any dependencies you need. It should use assertions to showcase the expected vs actual behavior. See this example to see how to do it: https://gist.github.com/louischatriot/220cf6bd29c7de06a486
+* Simplify as much as you can. Strip all your application-specific code. Most of the time that will help you see that there is no bug but an error in your code :)
+* 50 lines max. If you need more, read the above point and rework your bug report. If you're convinced you need more, please explain precisely in the issue.
 
 ### Bitcoins
 You don't have time? You can support NeDB by sending bitcoins to this address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
