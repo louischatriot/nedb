@@ -2,7 +2,7 @@
 
 <img src="http://i.imgur.com/GdeQBmc.png" style="width: 25%; height: 25%; float: left;">
 
-**IMPORTANT NOTE: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment. Also, please follow the <a href="#eee">bug reporting guidelines</a>.**
+**IMPORTANT NOTE: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment. Also, please follow the <a href="#bug-reporting-guidelines">bug reporting guidelines</a>.**
 
 **Embedded persistent database for Node.js, written in Javascript, with no dependency** (except npm
 modules), which
