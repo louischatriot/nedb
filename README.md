@@ -1,11 +1,10 @@
-# NeDB (Node embedded database)
+# NeDB - The Javascript Database
 
 <img src="http://i.imgur.com/GdeQBmc.png" style="width: 25%; height: 25%; float: left;">
 
 **IMPORTANT NOTE: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment. Also, please follow the <a href="#bug-reporting-guidelines">bug reporting guidelines</a>.**
 
-**Embedded persistent database for Node.js, written in Javascript, with no dependency** (except npm
-modules), which
+**Embedded persistent database for Node.js, Node Webkit and browsers, written in Javascript, with no binary dependency**, which
 can be used with a simple `require` statement. The API is a subset of MongoDB's. You can use it as a persistent or an in-memory only datastore, and it can also be used in all recent browsers (Chrome, Firefox, Safari, IE9+).
 
 NeDB is not intended to be a replacement of large-scale databases such as MongoDB! Its goal is to provide you with a clean and easy way to query data and persist it to disk, for web applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a> and desktop applications built with <a href="https://github.com/rogerwang/node-webkit" target="_blank">Node Webkit</a>.
