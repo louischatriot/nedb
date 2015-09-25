@@ -2479,6 +2479,15 @@ describe('Database', function () {
       
     });   // ==== End of 'Persisting indexes' ====    
 
+    it('Results of getMatching should never contain duplicates', function (done) {
+      d.ensureIndex({ fieldName: 'bad' });
+      d.insert({ bad: ['a', 'b'] }, function () {
+        var res = d.getCandidates({ bad: { $in: ['a', 'b'] } });
+        res.length.should.equal(1);
+        done();
+      });
+    });
+
   });   // ==== End of 'Using indexes' ==== //
 
 

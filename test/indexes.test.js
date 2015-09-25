@@ -628,12 +628,16 @@ describe('Indexes', function () {
     });
 
     it('Can get all documents whose key is in an array of keys', function () {
+      // For this test only we have to use objects with _ids as the array version of getMatching
+      // relies on the _id property being set, otherwise we have to use a quadratic algorithm
+      // or a fingerprinting algorithm, both solutions too complicated and slow given that live nedb
+      // indexes documents with _id always set
       var idx = new Index({ fieldName: 'tf' })
-        , doc1 = { a: 5, tf: 'hello' }
-        , doc2 = { a: 2, tf: 'bloup' }
-        , doc3 = { a: 8, tf: 'world' }
-        , doc4 = { a: 7, tf: 'yes' }
-        , doc5 = { a: 7, tf: 'yes' }
+        , doc1 = { a: 5, tf: 'hello', _id: '1' }
+        , doc2 = { a: 2, tf: 'bloup', _id: '2' }
+        , doc3 = { a: 8, tf: 'world', _id: '3' }
+        , doc4 = { a: 7, tf: 'yes', _id: '4' }
+        , doc5 = { a: 7, tf: 'yes', _id: '5' }
         ;
 
       idx.insert(doc1);
