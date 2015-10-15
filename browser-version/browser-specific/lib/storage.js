@@ -6,91 +6,110 @@
  * This version is the browser version
  */
 
+var noopWarning = function() {
+  console.log("WARNING - This browser doesn't support any storage, no data will be saved in NeDB!");
+};
 
+var noopInterface = {
 
-function exists (filename, callback) {
-  // In this specific case this always answers that the file doesn't exist
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
+  exists: function(filename, callback) {
+    noopWarning();
+    return callback();
+  },
 
-  if (localStorage.getItem(filename) !== null) {
-    return callback(true);
-  } else {
-    return callback(false);
-  }
-}
+  rename: function(filename, newFilename, callback) {
+    noopWarning();
+    return callback();
+  },
 
+  writeFile: function(filename, contents, options, callback) {
+    noopWarning();
+    return callback();
+  },
 
-function rename (filename, newFilename, callback) {
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
+  appendFile: function(filename, toAppend, options, callback) {
+    noopWarning();
+    return callback();
+  },
 
-  if (localStorage.getItem(filename) === null) {
-    localStorage.removeItem(newFilename);
-  } else {
-    localStorage.setItem(newFilename, localStorage.getItem(filename));
+  readFile: function(filename, options, callback) {
+    noopWarning();
+    return callback();
+  },
+
+  unlink:  function(filename, callback) {
+    noopWarning();
+    return callback();
+  },
+
+  mkdirp: function(dir, callback) {
+    noopWarning();
+    return callback();
+  },
+};
+
+var localStorageInterface = {
+
+  exists: function(filename, callback) {
+    if (localStorage.getItem(filename) !== null) {
+      return callback(true);
+    } else {
+      return callback(false);
+    }
+  },
+
+  rename: function(filename, newFilename, callback) {
+    if (localStorage.getItem(filename) === null) {
+      localStorage.removeItem(newFilename);
+    } else {
+      localStorage.setItem(newFilename, localStorage.getItem(filename));
+      localStorage.removeItem(filename);
+    }
+
+    return callback();
+  },
+
+  writeFile: function(filename, contents, options, callback) {
+    // Options do not matter in browser setup
+    if (typeof options === 'function') { callback = options; }
+
+    localStorage.setItem(filename, contents);
+    return callback();
+  },
+
+  appendFile: function(filename, toAppend, options, callback) {
+    // Options do not matter in browser setup
+    if (typeof options === 'function') { callback = options; }
+
+    var contents = localStorage.getItem(filename) || '';
+    contents += toAppend;
+
+    localStorage.setItem(filename, contents);
+    return callback();
+  },
+
+  readFile: function(filename, options, callback) {
+    // Options do not matter in browser setup
+    if (typeof options === 'function') { callback = options; }
+
+    var contents = localStorage.getItem(filename) || '';
+    return callback(null, contents);
+  },
+
+  unlink:  function(filename, callback) {
     localStorage.removeItem(filename);
-  }
+    return callback();
+  },
 
-  return callback();
+  mkdirp: function(dir, callback) {
+    // Nothing done, no directories will be used on the browser
+    return callback();
+  },
+};
+
+if (typeof localStorage === 'undefined') {
+  noopWarning();
+  module.exports = noopInterface;
+} else {
+  module.exports = localStorageInterface;
 }
-
-
-function writeFile (filename, contents, options, callback) {
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
-  // Options do not matter in browser setup
-  if (typeof options === 'function') { callback = options; }
-
-  localStorage.setItem(filename, contents);
-  return callback();
-}
-
-
-function appendFile (filename, toAppend, options, callback) {
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
-  // Options do not matter in browser setup
-  if (typeof options === 'function') { callback = options; }
-
-  var contents = localStorage.getItem(filename) || '';
-  contents += toAppend;
-
-  localStorage.setItem(filename, contents);
-  return callback();
-}
-
-
-function readFile (filename, options, callback) {
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
-  // Options do not matter in browser setup
-  if (typeof options === 'function') { callback = options; }
-
-  var contents = localStorage.getItem(filename) || '';
-  return callback(null, contents);
-}
-
-
-function unlink (filename, callback) {
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-
-  localStorage.removeItem(filename);
-  return callback();
-}
-
-
-// Nothing done, no directories will be used on the browser
-function mkdirp (dir, callback) {
-  return callback();
-}
-
-
-
-// Interface
-module.exports.exists = exists;
-module.exports.rename = rename;
-module.exports.writeFile = writeFile;
-module.exports.appendFile = appendFile;
-module.exports.readFile = readFile;
-module.exports.unlink = unlink;
-module.exports.mkdirp = mkdirp;
-
