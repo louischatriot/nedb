@@ -296,20 +296,54 @@ describe('Indexing', function () {
 
 
 describe('Persistent in-browser database', function () {
-
-  it('Create a localStorage-enabled database and insert to it, results are recorded in localStorage', function (done) {
-    localStorage.removeItem('test');   // Clean start state
+  it('Create a database and insert to it, create a second database and read from it', function (done) {
     var d = new Nedb({ filename: 'test', autoload: true });
-
-    d.insert({ test: true }, function (err) {
+    // clean start
+    d.remove({}, { multi: true }, function (err, numRemoved) {
       assert.isNull(err);
-      var contents = localStorage.getItem('test');
-      contents = JSON.parse(contents);
-      assert.equal(contents.test, true);
-      done();
+      d.insert({ test: true }, function (err) {
+        assert.isNull(err);
+        var d2 = new Nedb({ filename: 'test', autoload: true });
+        d2.find({}, function (err, docs) {
+          assert.equal(docs.length, 1);
+          assert.equal(docs[0].test, true);
+          done();
+        });
+      });
+    });
+  });
+
+  // benchmark persistent in-browser database
+  it('Create a database and insert 100 documents, create a second database and read from it', function (done) {
+    var d = new Nedb({ filename: 'test', autoload: true });
+    // clean start
+    d.remove({}, { multi: true }, function (err, numRemoved) {
+      assert.isNull(err);
+      var count = 0;
+      var insert = function(callback) {
+        count++;
+        d.insert({ test: true, count:  count}, function (err) {
+          assert.isNull(err);
+          if (count >= 100) {
+            callback();
+          } else {
+            insert(callback);
+          }
+        });
+      };
+      insert(function() {
+        var d2 = new Nedb({ filename: 'test', autoload: true });
+        d2.find({}).sort({ count: 1 }).exec(function (err, docs) {
+          assert.equal(docs.length, 100);
+          var c = 0;
+          docs.forEach(function(doc) {
+            c++;
+            assert.equal(doc.count, c);
+          });
+          done();
+        });
+      });
     });
   });
 
 });   // ===== End of 'persistent in-browser database' =====
-
-
