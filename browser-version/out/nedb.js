@@ -1992,13 +1992,23 @@ function append (array, toAppend) {
  * @return {Array of documents}
  */
 Index.prototype.getMatching = function (value) {
-  var res, self = this;
+  var self = this;
 
   if (!util.isArray(value)) {
     return this.tree.search(value);
   } else {
-    res = [];
-    value.forEach(function (v) { append(res, self.getMatching(v)); });
+    var _res = {}, res = [];
+
+    value.forEach(function (v) {
+      self.getMatching(v).forEach(function (doc) {
+        _res[doc._id] = doc;
+      });
+    });
+
+    Object.keys(_res).forEach(function (_id) {
+      res.push(_res[_id]);
+    });
+
     return res;
   }
 };
@@ -2451,12 +2461,13 @@ function modify (obj, updateQuery) {
 
       if (!modifierFunctions[m]) { throw "Unknown modifier " + m; }
 
-      try {
-        keys = Object.keys(updateQuery[m]);
-      } catch (e) {
+      // Can't rely on Object.keys throwing on non objects since ES6{
+      // Not 100% satisfying as non objects can be interpreted as objects but no false negatives so we can live with it
+      if (typeof updateQuery[m] !== 'object') {
         throw "Modifier " + m + "'s argument must be an object";
       }
 
+      keys = Object.keys(updateQuery[m]);
       keys.forEach(function (k) {
         modifierFunctions[m](newDoc, k, updateQuery[m][k]);
       });
@@ -3179,99 +3190,289 @@ module.exports = Persistence;
 /**
  * Way data is stored for this database
  * For a Node.js/Node Webkit database it's the file system
- * For a browser-side database it's localStorage when supported
+ * For a browser-side database it's:
+ *  - IndexedDB when supported or
+ *  - localStorage when supported or
+ *  - noopStorage (do not save anything)
  *
- * This version is the Node.js/Node Webkit version
+ * This version is the browser version
  */
 
+ // # noop Interface
 
+var noopWarning = function() {
+  console.log("WARNING - This browser doesn't support any storage, no data will be saved in NeDB!");
+};
 
-function exists (filename, callback) {
-  // In this specific case this always answers that the file doesn't exist
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
+var noopInterface = {
 
-  if (localStorage.getItem(filename) !== null) {
-    return callback(true);
-  } else {
-    return callback(false);
-  }
-}
+  exists: function(filename, callback) {
+    noopWarning();
+    return callback();
+  },
 
+  rename: function(filename, newFilename, callback) {
+    noopWarning();
+    return callback();
+  },
 
-function rename (filename, newFilename, callback) {
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
+  writeFile: function(filename, contents, options, callback) {
+    noopWarning();
+    return callback();
+  },
 
-  if (localStorage.getItem(filename) === null) {
-    localStorage.removeItem(newFilename);
-  } else {
-    localStorage.setItem(newFilename, localStorage.getItem(filename));
+  appendFile: function(filename, toAppend, options, callback) {
+    noopWarning();
+    return callback();
+  },
+
+  readFile: function(filename, options, callback) {
+    noopWarning();
+    return callback();
+  },
+
+  unlink: function(filename, callback) {
+    noopWarning();
+    return callback();
+  },
+
+  mkdirp: function(dir, callback) {
+    noopWarning();
+    return callback();
+  },
+};
+
+// # local storage Interface
+
+var localStorageInterface = {
+
+  exists: function(filename, callback) {
+    if (localStorage.getItem(filename) !== null) {
+      return callback(true);
+    } else {
+      return callback(false);
+    }
+  },
+
+  rename: function(filename, newFilename, callback) {
+    if (localStorage.getItem(filename) === null) {
+      localStorage.removeItem(newFilename);
+    } else {
+      localStorage.setItem(newFilename, localStorage.getItem(filename));
+      localStorage.removeItem(filename);
+    }
+
+    return callback();
+  },
+
+  writeFile: function(filename, contents, options, callback) {
+    // Options do not matter in browser setup
+    if (typeof options === 'function') { callback = options; }
+
+    localStorage.setItem(filename, contents);
+    return callback();
+  },
+
+  appendFile: function(filename, toAppend, options, callback) {
+    // Options do not matter in browser setup
+    if (typeof options === 'function') { callback = options; }
+
+    var contents = localStorage.getItem(filename) || '';
+    contents += toAppend;
+
+    localStorage.setItem(filename, contents);
+    return callback();
+  },
+
+  readFile: function(filename, options, callback) {
+    // Options do not matter in browser setup
+    if (typeof options === 'function') { callback = options; }
+
+    var contents = localStorage.getItem(filename) || '';
+    return callback(null, contents);
+  },
+
+  unlink: function(filename, callback) {
     localStorage.removeItem(filename);
+    return callback();
+  },
+
+  mkdirp: function(dir, callback) {
+    // Nothing done, no directories will be used on the browser
+    return callback();
+  },
+};
+
+// # IndexedDB Interface
+
+var db;
+
+var getIndexedDB = function(callback) {
+  if (db) {
+    return callback(null, db);
   }
 
-  return callback();
+  var request = indexedDB.open('NeDB');
+  request.onerror = function(event) {
+    callback(new Error('IndexedDB open error: ' + event.target.errorCode));
+  };
+
+  request.onsuccess = function(event) {
+    db = event.target.result;
+    callback(null, db);
+  };
+
+  request.onupgradeneeded = function(event) {
+    var db = event.target.result;
+
+    var objectStore = db.createObjectStore('files');
+
+    objectStore.transaction.oncomplete = function(event) {
+      // console.log('database created');
+    };
+  };
+};
+
+var getIndexedDBFileStore = function(writable, callback) {
+  getIndexedDB(function(err, db) {
+    if (err) {
+      return callback(err);
+    }
+
+    var mode = 'readonly';
+    if (writable) {
+      mode = 'readwrite';
+    }
+
+    var transaction = db.transaction(['files'], mode);
+    var fileStore = transaction.objectStore('files');
+    callback(null, fileStore);
+  });
+};
+
+var indexedDBInterface = {
+
+  exists: function(filename, callback) {
+    this.readFile(filename, {}, function(err) {
+      if (err) {
+        callback(false);
+      } else {
+        callback(true);
+      }
+    });
+  },
+
+  rename: function(filename, newFilename, callback) {
+    var _this = this;
+    _this.readFile(filename, function(err, contents) {
+      if (err) {
+        return callback(err);
+      }
+
+      _this.writeFile(newFilename, contents, {}, function(err) {
+        if (err) {
+          return callback(err);
+        }
+
+        _this.unlink(filename, callback);
+      });
+    });
+  },
+
+  writeFile: function(filename, contents, options, callback) {
+    // Options do not matter in browser setup
+    if (typeof options === 'function') { callback = options; }
+
+    getIndexedDBFileStore(true, function(err, fileStore) {
+      if (err) {
+        return callback(err);
+      }
+
+      var request = fileStore.put(contents, filename);
+      request.onerror = function(event) {
+        callback(new Error('IndexedDB write error: ' + event.target.errorCode));
+      };
+
+      request.onsuccess = function(event) {
+        callback();
+      };
+    });
+  },
+
+  appendFile: function(filename, toAppend, options, callback) {
+    // Options do not matter in browser setup
+    if (typeof options === 'function') { callback = options; }
+
+    var _this = this;
+    _this.readFile(filename, {}, function(err, contents) {
+      if (err) {
+        return callback(err);
+      }
+
+      contents = contents || '';
+      contents += toAppend;
+
+      _this.writeFile(filename, contents, {}, callback);
+    });
+  },
+
+  readFile: function(filename, options, callback) {
+    // Options do not matter in browser setup
+    if (typeof options === 'function') { callback = options; }
+
+    getIndexedDBFileStore(false, function(err, fileStore) {
+      if (err) {
+        return callback(err);
+      }
+
+      var request = fileStore.get(filename);
+      request.onerror = function(event) {
+        callback(new Error('IndexedDB get error: ' + event.target.errorCode));
+      };
+
+      request.onsuccess = function(event) {
+        callback(null, event.target.result || '');
+      };
+    });
+  },
+
+  unlink: function(filename, callback) {
+    getIndexedDBFileStore(true, function(err, fileStore) {
+      if (err) {
+        return callback(err);
+      }
+
+      var request = fileStore.delete(filename);
+      request.onerror = function(event) {
+        callback(new Error('IndexedDB delete error: ' + event.target.errorCode));
+      };
+
+      request.onsuccess = function(event) {
+        callback();
+      };
+    });
+  },
+
+  mkdirp: function(dir, callback) {
+    return callback();
+  },
+};
+
+// TODO: change the storage module to export a factory and construct
+//       the specific storage based on the options passed to the factory.
+//       meanwhile you can set:
+//         window.nedbSkipIndexedDB = true;
+//         window.nedbSkipLocalStorage = true;
+//       to skip a specific storage. Note that this flags has to bee set before
+//       nedb is loaded.
+if (typeof indexedDB !== 'undefined' && !window.nedbSkipIndexedDB) {
+  module.exports = indexedDBInterface;
+} else if (typeof localStorage !== 'undefined' && !window.nedbSkipLocalStorage) {
+  module.exports = localStorageInterface;
+} else {
+  noopWarning();
+  module.exports = noopInterface;
 }
-
-
-function writeFile (filename, contents, options, callback) {
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
-  // Options do not matter in browser setup
-  if (typeof options === 'function') { callback = options; }
-
-  localStorage.setItem(filename, contents);
-  return callback();
-}
-
-
-function appendFile (filename, toAppend, options, callback) {
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
-  // Options do not matter in browser setup
-  if (typeof options === 'function') { callback = options; }
-
-  var contents = localStorage.getItem(filename) || '';
-  contents += toAppend;
-
-  localStorage.setItem(filename, contents);
-  return callback();
-}
-
-
-function readFile (filename, options, callback) {
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
-  // Options do not matter in browser setup
-  if (typeof options === 'function') { callback = options; }
-
-  var contents = localStorage.getItem(filename) || '';
-  return callback(null, contents);
-}
-
-
-function unlink (filename, callback) {
-  if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-
-  localStorage.removeItem(filename);
-  return callback();
-}
-
-
-// Nothing done, no directories will be used on the browser
-function mkdirp (dir, callback) {
-  return callback();
-}
-
-
-
-// Interface
-module.exports.exists = exists;
-module.exports.rename = rename;
-module.exports.writeFile = writeFile;
-module.exports.appendFile = appendFile;
-module.exports.readFile = readFile;
-module.exports.unlink = unlink;
-module.exports.mkdirp = mkdirp;
-
 
 },{}],13:[function(require,module,exports){
 var process=require("__browserify_process");/*global setImmediate: false, setTimeout: false, console: false */
