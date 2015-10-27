@@ -45,6 +45,7 @@ It's a subset of MongoDB's API (the most used operations). The current API will 
 * <a href="#updating-documents">Updating documents</a>
 * <a href="#removing-documents">Removing documents</a>
 * <a href="#indexing">Indexing</a>
+* <a href="#storing-database-metadata">Storing database metadata</a>
 * <a href="#browser-version">Browser version</a>
 
 ### Creating/loading a database
@@ -60,6 +61,7 @@ load is done.
 * `onload` (optional): if you use autoloading, this is the handler called after the `loadDatabase`. It takes one `error` argument. If you use autoloading without specifying this handler, and an error happens during load, an error will be thrown.
 * `afterSerialization` (optional): hook you can use to transform data after it was serialized and before it is written to disk. Can be used for example to encrypt data before writing database to disk. This function takes a string as parameter (one line of an NeDB data file) and outputs the transformed string, **which must absolutely not contain a `\n` character** (or data will be lost)
 * `beforeDeserialization` (optional): reverse of `afterSerialization`. Make sure to include both and not just one or you risk data loss. For the same reason, make sure both functions are inverses of one another. Some failsafe mechanisms are in place to prevent data loss if you misuse the serialization hooks: NeDB checks that never one is declared without the other, and checks that they are reverse of one another by testing on random strings of various lengths. In addition, if too much data is detected as corrupt, NeDB will refuse to start as it could mean you're not using the deserialization hook corresponding to the serialization hook used before (see below)
+* `firstLine` (optional): string or function. NeDB will use the string value or function return value to store it as the first line of the datastore. You can use this option to store metadata like the file type or database options that can be retrieved via `Datastore.getFirstLine()` again at any time. The (return) value **must absolutely not contain a `\n` character** (or data will be lost). Please see <a href="#storing-database-metadata">Storing database metadata</a> for more information
 * `corruptAlertThreshold` (optional): between 0 and 1, defaults to 10%. NeDB will refuse to start if more than this percentage of the datafile is corrupt. 0 means you don't tolerate any corruption, 1 means you don't care 
 * `nodeWebkitAppName` (optional, **DEPRECATED**): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows. Now that you can use `require('nw.gui').App.dataPath` in Node Webkit to get the path to the data directory for your application, you should not use this option anymore and it will be removed.
 
@@ -579,6 +581,74 @@ db.removeIndex('somefield', function (err) {
 ```
 
 **Note:** the `ensureIndex` function creates the index synchronously, so it's best to use it at application startup. It's quite fast so it doesn't increase startup time much (35 ms for a collection containing 10,000 documents).
+
+## Storing database metadata
+NeDB offers a feature to store information about a database separately from the data (for example the file type or database options) so that your application (or any other application that doesn't even use NeDB) can use this information before the database is loaded.
+This metadata can be an arbitrary string and will always be stored as the first line of the datastore file.
+
+For this to work, you need two components:
+
+### Setting metadata
+
+You can set the metadata by using the `firstLine` option of the Datastore object:
+
+```javascript
+var Datastore = require('nedb');
+var db = new Datastore({
+  filename: 'path/to/datafile',
+  firstLine: function () {
+    var currentDate = new Date();
+    return 'mydatabasetype,' + JSON.stringify({ lastPersisted: currentDate.toJSON() });
+  }
+});
+```
+
+If you don't need dynamic metadata, you can also simply use a string:
+
+```javascript
+var Datastore = require('nedb');
+var db = new Datastore({
+  filename: 'path/to/datafile',
+  firstLine: 'mydatabasetype'
+});
+```
+
+If you set this option, NeDB will call the function/use the string value every time the data is persisted (meaning each time after the database has been loaded and when manually compacting).
+
+**WARNING**: The value you return **must absolutely not contain a `\n` character** (or data will be lost). Also please note that **you need to set this option every time you open a database that is using this feature**, otherwise NeDB will treat the first line of the file as a normal NeDB document and discard it because it's most likely invalid.
+
+### Getting metadata
+
+You can get the currently stored metadata using the `getFirstLine()` method:
+
+```javascript
+var Datastore = require('nedb');
+var db = new Datastore({
+  filename: 'path/to/datafile',
+  firstLine: 'mydatabasetype'
+});
+
+db.getFirstLine(function (err, firstLine) {
+  if(err) throw err;
+  
+  console.log(firstLine); // 'mydatabasetype'
+  
+  // Using `autoload` *won't* work (otherwise the metadata would already be overwritten)
+  db.loadDatabase();
+});
+```
+
+If you need access to the metadata before creating an instance of `Datastore` (and only then), you can also use the method statically (but of course you need to pass the filename of the datastore file):
+
+```javascript
+var Datastore = require('nedb');
+
+Datastore.getFirstLine('path/to/datafile', function (err, firstLine) {
+  if(err) throw err;
+  
+  console.log(firstLine); // 'mydatabasetype'
+});
+```
 
 
 ## Browser version

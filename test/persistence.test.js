@@ -538,6 +538,189 @@ describe('Persistence', function () {
     });
     
   });   // ==== End of 'Serialization hooks' ==== //
+
+  describe('First line of datastore', function () {
+    var firstLineTestFilename = 'workspace/firstLineTest.db';
+    
+    it('firstLine option can take a string', function (done) {
+      Persistence.ensureFileDoesntExist(firstLineTestFilename, function () {
+        d = new Datastore({ filename: firstLineTestFilename
+                           , firstLine: 'Some content'
+                           });
+        
+        d.loadDatabase(function (err) {
+          assert.isNull(err);
+        
+          d.persistence.getFirstLine(function (err, firstLine) {
+            assert.isNull(err);
+            
+            firstLine.should.equal('Some content');
+            
+            done();
+          });
+        });
+      });
+    });
+    
+    it('firstLine option can take a function', function (done) {
+      Persistence.ensureFileDoesntExist(firstLineTestFilename, function () {
+        d = new Datastore({ filename: firstLineTestFilename
+                           , firstLine: function() {
+                               return 'Some dynamically generated content';
+                             }
+                           });
+        
+        d.loadDatabase(function (err) {
+          assert.isNull(err);
+        
+          d.persistence.getFirstLine(function (err, firstLine) {
+            assert.isNull(err);
+            
+            firstLine.should.equal('Some dynamically generated content');
+            
+            done();
+          });
+        });
+      });
+    });
+    
+    it("firstLine option can't take anything else", function (done) {
+      Persistence.ensureFileDoesntExist(firstLineTestFilename, function () {
+        (function () {
+          new Datastore({ filename: firstLineTestFilename
+                         , firstLine: 42
+                         });
+        }).should.throw();
+        
+        done();
+      });
+    });
+    
+    it('Metadata is stored as the first line of the file', function (done) {
+      Persistence.ensureFileDoesntExist(firstLineTestFilename, function () {
+        d = new Datastore({ filename: firstLineTestFilename
+                           , firstLine: 'Some content'
+                           });
+        
+        d.loadDatabase(function (err) {
+          assert.isNull(err);
+          
+          fs.readFileSync(firstLineTestFilename, 'utf8').split('\n')[0].should.equal('Some content');
+          
+          done();
+        });
+      });
+    });
+    
+    it('Metadata is not being parsed as document', function (done) {
+      Persistence.ensureFileDoesntExist(firstLineTestFilename, function () {
+        var rawData = model.serialize({ _id: "1", lorem: 'ipsum' }) + '\n' + 
+                      model.serialize({ _id: "2", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      model.serialize({ _id: "3", hello: 'world' }) + '\n' +
+                      model.serialize({ _id: "4", nested: { hello: 'world' } });
+        
+        fs.writeFileSync(firstLineTestFilename, rawData, "utf8");
+        
+        d = new Datastore({ filename: firstLineTestFilename
+                           , firstLine: 'Some new content'
+                           });
+        
+        d.loadDatabase(function (err) {
+          assert.isNull(err);
+          
+          d.count({}, function (err, count) {
+            assert.isNull(err);
+            
+            count.should.equal(3);
+            
+            d.persistence.getFirstLine(function (err, firstLine) {
+              assert.isNull(err);
+              
+              // Should have overwritten the line
+              firstLine.should.equal('Some new content');
+              fs.readFileSync(firstLineTestFilename, 'utf8').split('\n').shift().should.equal('Some new content');
+          
+              done();
+            });
+          });
+        });
+      });
+    });
+
+    it('getFirstLine() can be called statically', function (done) {
+      Persistence.ensureFileDoesntExist(firstLineTestFilename, function () {
+        var rawData = 'Some content' + '\n' + 
+                      model.serialize({ _id: "2", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      model.serialize({ _id: "3", hello: 'world' }) + '\n' +
+                      model.serialize({ _id: "4", nested: { hello: 'world' } });
+        
+        fs.writeFileSync(firstLineTestFilename, rawData, "utf8");
+        
+        Persistence.getFirstLine(firstLineTestFilename, function (err, firstLine) {
+          assert.isNull(err);
+        
+          firstLine.should.equal('Some content');
+      
+          done();
+        });
+      });
+    });
+    
+    it('Does not throw on in-memory datastores', function (done) {
+      d = new Datastore({ firstLine: 'Some content' });
+      
+      d.getFirstLine(function (err, firstLine) {
+        assert.isNull(err);
+      
+        firstLine.should.equal('');
+    
+        done();
+      });
+    });
+    
+    it('Persistence.getFirstLine() is aliased to Datastore.getFirstLine()', function (done) {
+      Persistence.ensureFileDoesntExist(firstLineTestFilename, function () {
+        var rawData = 'Some content' + '\n' + 
+                      model.serialize({ _id: "2", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      model.serialize({ _id: "3", hello: 'world' }) + '\n' +
+                      model.serialize({ _id: "4", nested: { hello: 'world' } });
+        
+        fs.writeFileSync(firstLineTestFilename, rawData, "utf8");
+        
+        Datastore.getFirstLine(firstLineTestFilename, function (err, firstLine) {
+          assert.isNull(err);
+        
+          firstLine.should.equal('Some content');
+      
+          done();
+        });
+      });
+    });
+    
+    it('Persistence.prototype.getFirstLine() is aliased to Datastore.prototype.getFirstLine()', function (done) {
+      Persistence.ensureFileDoesntExist(firstLineTestFilename, function () {
+        var rawData = 'Some content' + '\n' + 
+                      model.serialize({ _id: "2", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      model.serialize({ _id: "3", hello: 'world' }) + '\n' +
+                      model.serialize({ _id: "4", nested: { hello: 'world' } });
+        
+        fs.writeFileSync(firstLineTestFilename, rawData, "utf8");
+        
+        d = new Datastore({ filename: firstLineTestFilename
+                           , firstLine: 'Some content'
+                           });
+        
+        d.getFirstLine(function (err, firstLine) {
+          assert.isNull(err);
+        
+          firstLine.should.equal('Some content');
+      
+          done();
+        });
+      });
+    });
+    
+  });   // ==== End of 'First line of datastore' ==== //
   
   describe('Prevent dataloss when persisting data', function () {
 
