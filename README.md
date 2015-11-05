@@ -602,7 +602,7 @@ As of v0.11, NeDB is also persistent on the browser. To use this, simply create 
 
 ## Performance
 ### Speed
-NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On my machine (3 years old, no SSD), with a collection containing 10,000 documents, with indexing:  
+NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On a typical, not-so-fast dev machine, for a collection containing 10,000 documents, with indexing:  
 * Insert: **10,680 ops/s**
 * Find: **43,290 ops/s**
 * Update: **8,000 ops/s**
