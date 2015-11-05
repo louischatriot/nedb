@@ -14,6 +14,12 @@ var should = require('chai').should()
 describe('Database', function () {
   var d;
 
+  function remove_ids(docs){
+    docs.forEach(function(d){
+      delete d._id;
+    });
+  }
+
   beforeEach(function (done) {
     d = new Datastore({ filename: testDb });
     d.filename.should.equal(testDb);
@@ -278,7 +284,7 @@ describe('Database', function () {
         done();
       });
     });
-    
+      
     /**
      * Complicated behavior here. Basically we need to test that when a user function throws an exception, it is not caught
      * in NeDB and the callback called again, transforming a user error into a NeDB error.
@@ -317,6 +323,53 @@ describe('Database', function () {
           }
         });
       });      
+    });
+    
+    describe('Events', function () {
+
+      describe('when a document is inserted', function () {
+        it('Emits the inserted event with the inserted doc', function (done) {
+          d.on('inserted', function (docs) {
+            remove_ids(docs);
+            docs.should.eql([{ a: 1 }]);            
+            done();
+          });
+          d.insert({ a: 1 }, function (err, doc) {
+            if (err) throw err;
+          });
+        });
+      });
+
+      describe('when multiple documents are inserted', function () {
+        it('Emits the inserted event with the inserted docs', function (done) {
+          d.on('inserted', function (docs) {
+            remove_ids(docs);
+            _.sortBy(docs, 'a').should.eql([{ a: 1 }, { a: 2 }]);
+            done();
+          });
+          d.insert([{ a: 1 }, { a: 2}], function (err, doc) {
+            if (err) throw err;
+          });
+        });
+      });
+
+      describe('when the insert fails', function () {
+        it('The inserted event is not emitted', function (done) {          
+          d.ensureIndex({ fieldName: 'a', unique: true }, function (err) {
+            if (err) throw err;
+          });
+          d.insert({ a: 1 }, function (err, doc) {
+            if (err) throw err;
+            d.on('inserted', function (docs) {
+              throw new Error('Inserted emitted');
+            });
+            d.insert({ a: 1 }, function (err, doc) {
+              setTimeout(done, 100);
+            });
+          });
+        });
+      });
+
     });
 
   });   // ==== End of 'Insert' ==== //
@@ -1349,6 +1402,103 @@ describe('Database', function () {
       });
     });
 
+    describe('Events', function () {
+
+      describe('when a document is updated', function () {
+        it('Emits the updated event with the updated doc', function (done) {
+          d.on('updated', function (docs) {
+            remove_ids(docs);
+            docs.should.eql([{ a: 1, b: 'bar' }]);
+            done();
+          });
+          d.insert({ a: 1, b: 'foo' }, function (err) {
+            if (err) throw err;
+            d.update({ a: 1 }, { $set: { b: 'bar' } }, {}, function (err) {
+              if (err) throw err;
+            });
+          });
+        });
+      });
+
+      describe('when multiple documents are updated', function () {
+        it('Emits the updated event with the updated docs', function (done) {          
+          d.insert([{ a: 1, b: 'foo' }, { a: 2, b: 'foo' }], function (err) {
+            if (err) throw err;
+            d.on('updated', function (docs) {
+              remove_ids(docs);
+              _.sortBy(docs, 'a').should.eql([{ a: 1, b: 'bar' }, { a: 2, b: 'bar' }]);
+              done();
+            });
+            d.update({ b: 'foo' }, { $set: { b: 'bar' } }, { multi: true }, function (err) {
+              if (err) throw err;
+            });
+          });
+        });
+      });
+
+      describe('when a document is inserted via an upsert', function () {
+        it('Emits the inserted event with the doc', function (done) {
+          d.on('inserted', function (docs) {
+            remove_ids(docs);
+            docs.should.eql([{ a: 1, b: 'bar' }])
+            done();
+          });
+          d.update({ a: 1 }, { $set: { b: 'bar' } }, { upsert: true }, function (err) {
+            if (err) throw err;
+          });
+        });
+        it('Does not emit the updated event', function (done) {
+          d.on('updated', function () {
+            throw new Error('Updated emitted');
+          });
+          d.update({ a: 1 }, { $set: { b: 'bar' } }, { upsert: true }, function (err) {
+            if (err) throw err;
+            setTimeout(done, 100);
+          });
+        });
+      });
+
+      describe('when no documents are affected', function () {
+        it('Emits no events', function (done) {          
+          d.insert([{ a: 1, b: 'foo' }, { a: 1, b: 'baz' }], function (err) {
+            d.on('updated', function () {
+              throw new Error('Updated emitted');
+            });
+            d.on('inserted', function () {
+              throw new Error('Insert emitted');
+            });
+            if (err) throw err;
+            d.update({ a: 2 }, { $set: { b: 'bar' } }, { multi: true }, function (err) {
+              if (err) throw err;
+              setTimeout(done, 100);
+            });
+          });
+        });
+      });
+
+      describe('when the update fails', function () {
+        it('Emits no events', function (done) {
+          d.ensureIndex({ fieldName: 'b', unique: true }, function (err) {
+            if (err) throw err;
+          });
+          d.insert([{ a: 1, b: 'foo' }, { a: 2, b: 'bar' }], function (err, doc) {
+            if (err) throw err;
+            d.on('inserted', function (docs) {
+              throw new Error('Inserted emitted');
+            });
+            d.on('updated', function (docs) {
+              throw new Error('Updated emitted');
+            });
+            d.update({}, { $set: { b: 'foo' }}, { multi: true }, function (err, doc) {
+              setTimeout(done, 100);
+            });
+          });
+        });
+      });
+    });
+
+    
+
   });   // ==== End of 'Update' ==== //
 
 
@@ -1521,6 +1671,57 @@ describe('Database', function () {
           });
         });
       });
+    });
+
+    describe('Events', function () {
+
+      describe('when a document is removed', function () {
+        it('emits the removed event with the doc', function (done) {
+          d.on('removed', function (docs) {
+            remove_ids(docs);
+            docs.should.eql([{ a: 1, b: 'foo' }]);
+            done();
+          });
+          d.insert({ a: 1, b: 'foo' }, function (err) {
+            if (err) throw err;
+            d.remove({ a: 1 }, {}, function (err) {
+              if (err) throw err;
+            });
+          });
+        });
+      });
+
+      describe('when multiple documents are removed', function () {
+        it('emits the removed event with the docs', function (done) {
+          d.on('removed', function (docs) {
+            remove_ids(docs);                      
+            _.sortBy(docs, 'a').should.eql([{ a: 1, b: 'foo' }, { a: 2, b: 'foo' }]);
+            done();
+          });
+          d.insert([{ a: 1, b: 'foo' }, { a: 2, b: 'foo' }], function (err) {
+            if (err) throw err;            
+            d.remove({ b: 'foo' }, { multi:true }, function (err) {
+              if (err) throw err;              
+            });
+          });
+        });
+      });
+
+      describe('when no documents are removed', function () {
+        it('does not emit the removed event', function (done) {
+          d.on('removed', function (docs) {
+            throw new Error('Removed emitted');
+          });
+          d.insert({ a: 1, b: 'foo' }, function (err) {
+            if (err) throw err;            
+            d.remove({ a: 2 }, {}, function (err) {
+              if (err) throw err;
+              setTimeout(done, 100);
+            });
+          });
+        });
+      });
+
     });
 
   });   // ==== End of 'Remove' ==== //
