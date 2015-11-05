@@ -26,7 +26,6 @@ async.waterfall([
 // Test with remove only one document
 , function (cb) { profiler.step('MULTI: FALSE'); return cb(); }
 , async.apply(commonUtilities.removeDocs, { multi: false }, d, n, profiler)
-
 // Test with multiple documents
 , function (cb) { d.remove({}, { multi: true }, function () { return cb(); }); }
 , async.apply(commonUtilities.insertDocs, d, n, profiler)

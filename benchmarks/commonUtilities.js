@@ -97,8 +97,10 @@ module.exports.insertDocs = function (d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("===== RESULT (insert) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
+      var opsPerSecond = Math.floor(1000* n / profiler.elapsedSinceLastStep());
+      console.log("===== RESULT (insert) ===== " + opsPerSecond + " ops/s");
       profiler.step('Finished inserting ' + n + ' docs');
+      profiler.insertOpsPerSecond = opsPerSecond;
       return cb();
     }
 
@@ -153,12 +155,12 @@ module.exports.findDocsWithIn = function (d, n, profiler, cb) {
   // Preparing all the $in arrays, will take some time
   for (i = 0; i < n; i += 1) {
     ins[i] = [];
-    
+
     for (j = 0; j < arraySize; j += 1) {
       ins[i].push((i + j) % n);
     }
   }
-      
+
   profiler.step("Finding " + n + " documents WITH $IN OPERATOR");
 
   function runFrom(i) {
@@ -251,10 +253,11 @@ module.exports.removeDocs = function (options, d, n, profiler, cb) {
 
   function runFrom(i) {
     if (i === n) {   // Finished
-      console.log("===== RESULT (1 remove + 1 insert) ===== " + Math.floor(1000* n / profiler.elapsedSinceLastStep()) + " ops/s");
-      console.log("====== IMPORTANT: Please note that this is the time that was needed to perform " + n + " removes and " + n + " inserts");
-      console.log("====== The extra inserts are needed to keep collection size at " + n + " items for the benchmark to make sense");
-      console.log("====== Use the insert speed logged above to calculate the actual remove speed, which is higher (should be significantly so if you use indexing)");
+      // opsPerSecond corresponds to 1 insert + 1 remove, needed to keep collection size at 10,000
+      // We need to subtract the time taken by one insert to get the time actually taken by one remove
+      var opsPerSecond = Math.floor(1000 * n / profiler.elapsedSinceLastStep());
+      var removeOpsPerSecond = Math.floor(1 / ((1 / opsPerSecond) - (1 / profiler.insertOpsPerSecond)))
+      console.log("===== RESULT (remove) ===== " + removeOpsPerSecond + " ops/s");
       profiler.step('Finished removing ' + n + ' docs');
       return cb();
     }
