@@ -2,16 +2,10 @@
 
 ## The Javascript Database
 
-**IMPORTANT NOTE: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment. Also, please follow the <a href="#bug-reporting-guidelines">bug reporting guidelines</a>.**
+**IMPORTANT NOTE: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment. Also, please follow the <a href="#bug-reporting-guidelines">bug reporting guidelines</a>.** Please also check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log</a> before submitting an already fixed bug :)
 
-**Embedded persistent database for Node.js, Node Webkit and browsers, written in Javascript, with no binary dependency**, which
-can be used with a simple `require` statement. The API is a subset of MongoDB's. You can use it as a persistent or an in-memory only datastore, and it can also be used in all recent browsers (Chrome, Firefox, Safari, IE9+).
+**Embedded persistent or in memory database for Node.js, nw.js, Electron and browsers, 100% Javascript, no binary dependency**. API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
 
-NeDB is not intended to be a replacement of large-scale databases such as MongoDB! Its goal is to provide you with a clean and easy way to query data and persist it to disk, for web applications that do not need lots of concurrent connections, for example a <a href="https://github.com/louischatriot/braindead-ci" target="_blank">continuous integration and deployment server</a> and desktop applications built with <a href="https://github.com/rogerwang/node-webkit" target="_blank">Node Webkit</a>.
-
-NeDB was benchmarked against the popular client-side database <a href="http://www.taffydb.com/" target="_blank">TaffyDB</a> and <a href="https://github.com/louischatriot/taffydb-benchmark" target="_blank">NeDB is much, much faster</a>. That's why there is now <a href="#browser-version">a browser version</a>, which can also provide persistence.
-
-Check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log in the wiki</a> if you think nedb doesn't behave as the documentation describes! Most of the issues I get are due to non-latest version NeDBs.
 
 ## Support NeDB development
 No time to <a href="#help-out">help out</a>? You can support NeDB development by sending money or bitcoins!
@@ -20,16 +14,16 @@ Money: [![Donate to author](https://www.paypalobjects.com/en_US/i/btn/btn_donate
 
 Bitcoin address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
+
 ## Installation, tests
 Module name on npm is `nedb`.
 ```javascript
 npm install nedb --save   // Put latest version in your package.json
-
-npm test   // You'll need the dev dependencies to test it
+npm test   // You'll need the dev dependencies to launch tests
 ```
 
 ## API
-It's a subset of MongoDB's API (the most used operations). The current API will not change, but I will add operations as they are needed. Summary of the API:  
+It's a subset of MongoDB's API (the most used operations).  
 
 * <a href="#creatingloading-a-database">Creating/loading a database</a>
 * <a href="#compacting-the-database">Compacting the database</a>
@@ -615,14 +609,11 @@ NeDB is not intended to be a replacement of large-scale databases such as MongoD
 * Update: **4,490 ops/s**
 * Remove: **6,620 ops/s**  
 
-You can run the simple benchmarks I use by executing the scripts in the `benchmarks` folder. Run them with the `--help` flag to see how they work.
+You can run these simple benchmarks by executing the scripts in the `benchmarks` folder. Run them with the `--help` flag to see how they work.
 
 ### Memory footprint
 A copy of the whole database is kept in memory. This is not much on the
-expected kind of datasets (20MB for 10,000 2KB documents). If requested, I'll introduce an
-option to not use this cache to decrease memory footprint (at the cost
-of a lower speed).
-
+expected kind of datasets (20MB for 10,000 2KB documents).
 
 ## Use in other services
 * <a href="https://github.com/louischatriot/connect-nedb-session"
