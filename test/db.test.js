@@ -281,28 +281,89 @@ describe('Database', function () {
           // Insert doc has two new fields, _id and createdAt
           insertedDoc.hello.should.equal('world');
           assert.isDefined(insertedDoc.createdAt);
+          assert.isDefined(insertedDoc.updatedAt);
+          insertedDoc.createdAt.should.equal(insertedDoc.updatedAt);
           assert.isDefined(insertedDoc._id);
-          Object.keys(insertedDoc).length.should.equal(3);
+          Object.keys(insertedDoc).length.should.equal(4);
           assert.isBelow(Math.abs(insertedDoc.createdAt.getTime() - beginning), 15);   // No more than 15ms should have elapsed
 
           // Modifying results of insert doesn't change the cache
           insertedDoc.bloup = "another";
-          Object.keys(insertedDoc).length.should.equal(4);
+          Object.keys(insertedDoc).length.should.equal(5);
 
           d.find({}, function (err, docs) {
             docs.length.should.equal(1);
             assert.deepEqual(newDoc, { hello: 'world' });
-            assert.deepEqual({ hello: 'world', _id: insertedDoc._id, createdAt: insertedDoc.createdAt }, docs[0]);
+            assert.deepEqual({ hello: 'world', _id: insertedDoc._id, createdAt: insertedDoc.createdAt, updatedAt: insertedDoc.updatedAt }, docs[0]);
 
             // All data correctly persisted on disk
             d.loadDatabase(function () {
               d.find({}, function (err, docs) {
                 docs.length.should.equal(1);
                 assert.deepEqual(newDoc, { hello: 'world' });
-                assert.deepEqual({ hello: 'world', _id: insertedDoc._id, createdAt: insertedDoc.createdAt }, docs[0]);
+                assert.deepEqual({ hello: 'world', _id: insertedDoc._id, createdAt: insertedDoc.createdAt, updatedAt: insertedDoc.updatedAt }, docs[0]);
 
                 done();
               });
+            });
+          });
+        });
+      });
+    });
+
+    it("If timestampData option not set, don't create a createdAt and a updatedAt field", function (done) {
+      d.insert({ hello: 'world' }, function (err, insertedDoc) {
+        Object.keys(insertedDoc).length.should.equal(2);
+        assert.isUndefined(insertedDoc.createdAt);
+        assert.isUndefined(insertedDoc.updatedAt);
+
+        d.find({}, function (err, docs) {
+          docs.length.should.equal(1);
+          assert.deepEqual(docs[0], insertedDoc);
+
+          done();
+        });
+      });
+    });
+
+    it("If timestampData is set but createdAt is specified by user, don't change it", function (done) {
+      var newDoc = { hello: 'world', createdAt: new Date(234) }, beginning = Date.now();
+      d = new Datastore({ filename: testDb, timestampData: true, autoload: true });
+      d.insert(newDoc, function (err, insertedDoc) {
+        Object.keys(insertedDoc).length.should.equal(4);
+        insertedDoc.createdAt.getTime().should.equal(234);   // Not modified
+        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, 15);   // Created
+
+        d.find({}, function (err, docs) {
+          assert.deepEqual(insertedDoc, docs[0]);
+
+          d.loadDatabase(function () {
+            d.find({}, function (err, docs) {
+              assert.deepEqual(insertedDoc, docs[0]);
+
+              done();
+            });
+          });
+        });
+      });
+    });
+
+    it("If timestampData is set but updatedAt is specified by user, don't change it", function (done) {
+      var newDoc = { hello: 'world', updatedAt: new Date(234) }, beginning = Date.now();
+      d = new Datastore({ filename: testDb, timestampData: true, autoload: true });
+      d.insert(newDoc, function (err, insertedDoc) {
+        Object.keys(insertedDoc).length.should.equal(4);
+        insertedDoc.updatedAt.getTime().should.equal(234);   // Not modified
+        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, 15);   // Created
+
+        d.find({}, function (err, docs) {
+          assert.deepEqual(insertedDoc, docs[0]);
+
+          d.loadDatabase(function () {
+            d.find({}, function (err, docs) {
+              assert.deepEqual(insertedDoc, docs[0]);
+
+              done();
             });
           });
         });
