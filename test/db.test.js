@@ -919,7 +919,7 @@ describe('Database', function () {
       });
     });
 
-  }); 
+  });
 
   describe('Update', function () {
 
@@ -955,6 +955,34 @@ describe('Database', function () {
         });
       }
       ], done);
+    });
+
+    it("If timestampData option is set, update the updatedAt field", function (done) {
+      var beginning = Date.now();
+      d = new Datastore({ filename: testDb, autoload: true, timestampData: true });
+      d.insert({ hello: 'world' }, function (err, insertedDoc) {
+        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, 15);
+        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, 15);
+        Object.keys(insertedDoc).length.should.equal(4);
+
+        // Wait 100ms before performing the update
+        setTimeout(function () {
+          var step1 = Date.now();
+          d.update({ _id: insertedDoc._id }, { $set: { hello: 'mars' } }, {}, function () {
+            d.find({ _id: insertedDoc._id }, function (err, docs) {
+              docs.length.should.equal(1);
+              Object.keys(docs[0]).length.should.equal(4);
+              docs[0]._id.should.equal(insertedDoc._id);
+              docs[0].createdAt.should.equal(insertedDoc.createdAt);
+              docs[0].hello.should.equal('mars');
+              assert.isAbove(docs[0].updatedAt.getTime() - beginning, 99);   // updatedAt modified
+              assert.isBelow(docs[0].updatedAt.getTime() - step1, 15);   // updatedAt modified
+
+              done();
+            });
+          })
+        }, 100);
+      });
     });
 
     it("Can update multiple documents matching the query", function (done) {
@@ -1074,7 +1102,7 @@ describe('Database', function () {
     });
 
     describe('Upserts', function () {
-    
+
       it('Can perform upserts if needed', function (done) {
         d.update({ impossible: 'db is empty anyway' }, { newDoc: true }, {}, function (err, nr, upsert) {
           assert.isNull(err);
@@ -2534,11 +2562,11 @@ describe('Database', function () {
                   Object.keys(db.indexes).length.should.equal(3);
                   Object.keys(db.indexes)[0].should.equal("_id");
                   Object.keys(db.indexes)[1].should.equal("planet");  
-                  Object.keys(db.indexes)[2].should.equal("another");                 
+                  Object.keys(db.indexes)[2].should.equal("another");
                   db.indexes._id.getAll().length.should.equal(2);
                   db.indexes.planet.getAll().length.should.equal(2);
                   db.indexes.planet.fieldName.should.equal("planet");
-                  
+
                   // Index is removed
                   db.removeIndex("planet", function (err) {
                     assert.isNull(err);
@@ -2555,7 +2583,7 @@ describe('Database', function () {
                       Object.keys(db.indexes)[0].should.equal("_id");
                       Object.keys(db.indexes)[1].should.equal("another");
                       db.indexes._id.getAll().length.should.equal(2);
-                  
+
                       // After another reload the indexes are still there (i.e. they are preserved during autocompaction)
                       db = new Datastore({ filename: persDb });
                       db.loadDatabase(function (err) {
@@ -2564,8 +2592,8 @@ describe('Database', function () {
                         Object.keys(db.indexes)[0].should.equal("_id");
                         Object.keys(db.indexes)[1].should.equal("another");
                         db.indexes._id.getAll().length.should.equal(2);
-                    
-                        done();                
+
+                        done();
                       });
                     });
                   });
@@ -2575,8 +2603,8 @@ describe('Database', function () {
           });
         });
       });
-      
-    });   // ==== End of 'Persisting indexes' ====    
+
+    });   // ==== End of 'Persisting indexes' ====
 
     it('Results of getMatching should never contain duplicates', function (done) {
       d.ensureIndex({ fieldName: 'bad' });
