@@ -54,44 +54,44 @@ describe('Database', function () {
   });
 
   describe('Autoloading', function () {
-  
+
     it('Can autoload a database and query it right away', function (done) {
       var fileStr = model.serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + model.serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n'
         , autoDb = 'workspace/auto.db'
         , db
         ;
-      
+
       fs.writeFileSync(autoDb, fileStr, 'utf8');
       db = new Datastore({ filename: autoDb, autoload: true })
-      
+
       db.find({}, function (err, docs) {
         assert.isNull(err);
         docs.length.should.equal(2);
         done();
       });
     });
-    
+
     it('Throws if autoload fails', function (done) {
       var fileStr = model.serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + model.serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n' + '{"$$indexCreated":{"fieldName":"a","unique":true}}'
         , autoDb = 'workspace/auto.db'
         , db
         ;
-      
+
       fs.writeFileSync(autoDb, fileStr, 'utf8');
-      
+
       // Check the loadDatabase generated an error
       function onload (err) {
         err.errorType.should.equal('uniqueViolated');
         done();
       }
-      
+
       db = new Datastore({ filename: autoDb, autoload: true, onload: onload })
-      
+
       db.find({}, function (err, docs) {
         done("Find should not be executed since autoload failed");
-      });    
+      });
     });
- 
+
   });
 
   describe('Insert', function () {
@@ -207,7 +207,7 @@ describe('Database', function () {
 
         d.insert({ _id: 'test', otherstuff: 42 }, function (err) {
           err.errorType.should.equal('uniqueViolated');
-        
+
           done();
         });
       });
@@ -223,18 +223,18 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can insert an array of documents at once', function (done) {
       var docs = [{ a: 5, b: 'hello' }, { a: 42, b: 'world' }];
-    
+
       d.insert(docs, function (err) {
         d.find({}, function (err, docs) {
           var data;
-        
+
           docs.length.should.equal(2);
           _.find(docs, function (doc) { return doc.a === 5; }).b.should.equal('hello');
           _.find(docs, function (doc) { return doc.a === 42; }).b.should.equal('world');
-          
+
           // The data has been persisted correctly
           data = _.filter(fs.readFileSync(testDb, 'utf8').split('\n'), function (line) { return line.length > 0; });
           data.length.should.equal(2);
@@ -242,19 +242,19 @@ describe('Database', function () {
           model.deserialize(data[0]).b.should.equal('hello');
           model.deserialize(data[1]).a.should.equal(42);
           model.deserialize(data[1]).b.should.equal('world');
-                    
+
           done();
         });
       });
     });
-    
+
     it('If a bulk insert violates a constraint, all changes are rolled back', function (done) {
       var docs = [{ a: 5, b: 'hello' }, { a: 42, b: 'world' }, { a: 5, b: 'bloup' }, { a: 7 }];
-    
+
       d.ensureIndex({ fieldName: 'a', unique: true }, function () {   // Important to specify callback here to make sure filesystem synced
         d.insert(docs, function (err) {
           err.errorType.should.equal('uniqueViolated');
-        
+
           d.find({}, function (err, docs) {
             // Datafile only contains index definition
             var datafileContents = model.deserialize(fs.readFileSync(testDb, 'utf8'));
@@ -265,10 +265,48 @@ describe('Database', function () {
             done();
           });
         });
-
-
       });
-      
+    });
+
+    it("If timestampData option is set, a createdAt field is added and persisted", function (done) {
+      var newDoc = { hello: 'world' }, beginning = Date.now();
+      d = new Datastore({ filename: testDb, timestampData: true, autoload: true });
+      d.find({}, function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(0);
+
+        d.insert(newDoc, function (err, insertedDoc) {
+          // No side effect on given input
+          assert.deepEqual(newDoc, { hello: 'world' });
+          // Insert doc has two new fields, _id and createdAt
+          insertedDoc.hello.should.equal('world');
+          assert.isDefined(insertedDoc.createdAt);
+          assert.isDefined(insertedDoc._id);
+          Object.keys(insertedDoc).length.should.equal(3);
+          assert.isBelow(Math.abs(insertedDoc.createdAt.getTime() - beginning), 15);   // No more than 15ms should have elapsed
+
+          // Modifying results of insert doesn't change the cache
+          insertedDoc.bloup = "another";
+          Object.keys(insertedDoc).length.should.equal(4);
+
+          d.find({}, function (err, docs) {
+            docs.length.should.equal(1);
+            assert.deepEqual(newDoc, { hello: 'world' });
+            assert.deepEqual({ hello: 'world', _id: insertedDoc._id, createdAt: insertedDoc.createdAt }, docs[0]);
+
+            // All data correctly persisted on disk
+            d.loadDatabase(function () {
+              d.find({}, function (err, docs) {
+                docs.length.should.equal(1);
+                assert.deepEqual(newDoc, { hello: 'world' });
+                assert.deepEqual({ hello: 'world', _id: insertedDoc._id, createdAt: insertedDoc.createdAt }, docs[0]);
+
+                done();
+              });
+            });
+          });
+        });
+      });
     });
 
     it('Can insert a doc with id 0', function (done) {
