@@ -278,7 +278,7 @@ describe('Database', function () {
         done();
       });
     });
-    
+
     /**
      * Complicated behavior here. Basically we need to test that when a user function throws an exception, it is not caught
      * in NeDB and the callback called again, transforming a user error into a NeDB error.
@@ -297,18 +297,18 @@ describe('Database', function () {
         ;
 
       process.removeAllListeners('uncaughtException');
-      
+
       process.on('uncaughtException', function MINE (ex) {
         for (i = 0; i < currentUncaughtExceptionHandlers.length; i += 1) {
           process.on('uncaughtException', currentUncaughtExceptionHandlers[i]);
         }
-      
+
         ex.should.equal('SOME EXCEPTION');
         done();
       });
 
       d.insert({ a: 5 }, function () {
-        d.findOne({ a : 5}, function (err, doc) {            
+        d.findOne({ a : 5}, function (err, doc) {
           if (tryCount === 0) {
             tryCount += 1;
             throw 'SOME EXCEPTION';
@@ -316,7 +316,7 @@ describe('Database', function () {
             done('Callback was called twice');
           }
         });
-      });      
+      });
     });
 
   });   // ==== End of 'Insert' ==== //
