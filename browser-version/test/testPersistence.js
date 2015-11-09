@@ -5,14 +5,16 @@ function testsFailed () {
   document.getElementById("results").innerHTML = "TESTS FAILED";
 }
 
-localStorage.removeItem('test');
-var db = new Nedb({ filename: 'test', autoload: true });
-db.insert({ hello: 'world' }, function (err) {
-  if (err) {
-    testsFailed();
-    return;
-  } 
+var filename = 'test';
 
-  window.location = './testPersistence2.html';
+var db = new Nedb({ filename: filename, autoload: true });
+db.remove({}, { multi: true }, function () {
+  db.insert({ hello: 'world' }, function (err) {
+    if (err) {
+      testsFailed();
+      return;
+    }
+
+    window.location = './testPersistence2.html';
+  });
 });
-

@@ -7,12 +7,13 @@
 </head>
 <body>
   <div id="mocha"></div>
-  <script src="http://code.jquery.com/jquery-latest.min.js"></script>
-  <script src="http://chaijs.com/chai.js"></script>
-  <script src="http://underscorejs.org/underscore-min.js"></script>
+  <script src="jquery.min.js"></script>
+  <script src="chai.js"></script>
+  <script src="underscore.min.js"></script>
   <script src="mocha.js"></script>
   <script>mocha.setup('bdd')</script>
   <script src="../out/nedb.min.js"></script>
+  <script src="localforage.js"></script>
   <script src="nedb-browser.js"></script>
   <script>
     mocha.checkLeaks();
