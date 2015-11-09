@@ -78,19 +78,26 @@ function unlink (filename, callback) {
 }
 
 
-// Nothing done, no directories will be used on the browser
+// Nothing to do, no directories will be used on the browser
 function mkdirp (dir, callback) {
   return callback();
 }
 
+
+// Nothing to do, no data corruption possible in the brower
+function ensureDatafileIntegrity (filename, callback) {
+  return callback(null);
+}
 
 
 // Interface
 module.exports.exists = exists;
 module.exports.rename = rename;
 module.exports.writeFile = writeFile;
+module.exports.crashSafeWriteFile = writeFile;   // No need for a crash safe function in the browser
 module.exports.appendFile = appendFile;
 module.exports.readFile = readFile;
 module.exports.unlink = unlink;
 module.exports.mkdirp = mkdirp;
+module.exports.ensureDatafileIntegrity = ensureDatafileIntegrity;
 

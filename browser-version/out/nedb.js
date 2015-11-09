@@ -1059,8 +1059,9 @@ var customUtils = require('./customUtils')
 /**
  * Create a new collection
  * @param {String} options.filename Optional, datastore will be in-memory only if not provided
- * @param {Boolean} options.inMemoryOnly Optional, default to false
- * @param {Boolean} options.nodeWebkitAppName Optional, specify the name of your NW app if you want options.filename to be relative to the directory where
+ * @param {Boolean} options.timestampData Optional, defaults to false. If set to true, createdAt and updatedAt will be created and populated automatically (if not specified by user)
+ * @param {Boolean} options.inMemoryOnly Optional, defaults to false
+ * @param {String} options.nodeWebkitAppName Optional, specify the name of your NW app if you want options.filename to be relative to the directory where
  *                                            Node Webkit stores application data such as cookies and local storage (the best place to store data in my opinion)
  * @param {Boolean} options.autoload Optional, defaults to false
  * @param {Function} options.onload Optional, if autoload is used this will be called after the load database with the error object as parameter. If you don't pass it the error will be thrown
@@ -1079,6 +1080,7 @@ function Datastore (options) {
     filename = options.filename;
     this.inMemoryOnly = options.inMemoryOnly || false;
     this.autoload = options.autoload || false;
+    this.timestampData = options.timestampData || false;
   }
 
   // Determine whether in memory or persistent
@@ -1106,7 +1108,7 @@ function Datastore (options) {
   // binary is always well-balanced
   this.indexes = {};
   this.indexes._id = new Index({ fieldName: '_id', unique: true });
-  
+
   // Queue a load of the database right away and call the onload handler
   // By default (no onload handler), if there is an error there, no operation will be possible so warn the user by throwing an exception
   if (this.autoload) { this.loadDatabase(options.onload || function (err) {
@@ -1180,17 +1182,17 @@ Datastore.prototype.ensureIndex = function (options, cb) {
 /**
  * Remove an index
  * @param {String} fieldName
- * @param {Function} cb Optional callback, signature: err 
+ * @param {Function} cb Optional callback, signature: err
  */
 Datastore.prototype.removeIndex = function (fieldName, cb) {
   var callback = cb || function () {};
-  
+
   delete this.indexes[fieldName];
-  
+
   this.persistence.persistNewState([{ $$indexRemoved: fieldName }], function (err) {
     if (err) { return callback(err); }
     return callback(null);
-  });  
+  });
 };
 
 
@@ -1328,17 +1330,19 @@ Datastore.prototype.getCandidates = function (query) {
  */
 Datastore.prototype._insert = function (newDoc, cb) {
   var callback = cb || function () {}
+    , preparedDoc
     ;
 
   try {
-    this._insertInCache(newDoc);
+    preparedDoc = this.prepareDocumentForInsertion(newDoc)
+    this._insertInCache(preparedDoc);
   } catch (e) {
     return callback(e);
   }
 
-  this.persistence.persistNewState(util.isArray(newDoc) ? newDoc : [newDoc], function (err) {
+  this.persistence.persistNewState(util.isArray(preparedDoc) ? preparedDoc : [preparedDoc], function (err) {
     if (err) { return callback(err); }
-    return callback(null, newDoc);
+    return callback(null, model.deepCopy(preparedDoc));
   });
 };
 
@@ -1356,6 +1360,7 @@ Datastore.prototype.createNewId = function () {
 
 /**
  * Prepare a document (or array of documents) to be inserted in a database
+ * Meaning adds _id and timestamps if necessary on a copy of newDoc to avoid any side effect on user input
  * @api private
  */
 Datastore.prototype.prepareDocumentForInsertion = function (newDoc) {
@@ -1365,13 +1370,14 @@ Datastore.prototype.prepareDocumentForInsertion = function (newDoc) {
     preparedDoc = [];
     newDoc.forEach(function (doc) { preparedDoc.push(self.prepareDocumentForInsertion(doc)); });
   } else {
-    if (newDoc._id === undefined) {
-      newDoc._id = this.createNewId();
-    }
     preparedDoc = model.deepCopy(newDoc);
+    if (preparedDoc._id === undefined) { preparedDoc._id = this.createNewId(); }
+    var now = new Date();
+    if (this.timestampData && preparedDoc.createdAt === undefined) { preparedDoc.createdAt = now; }
+    if (this.timestampData && preparedDoc.updatedAt === undefined) { preparedDoc.updatedAt = now; }
     model.checkObject(preparedDoc);
   }
-  
+
   return preparedDoc;
 };
 
@@ -1379,11 +1385,11 @@ Datastore.prototype.prepareDocumentForInsertion = function (newDoc) {
  * If newDoc is an array of documents, this will insert all documents in the cache
  * @api private
  */
-Datastore.prototype._insertInCache = function (newDoc) {
-  if (util.isArray(newDoc)) {
-    this._insertMultipleDocsInCache(newDoc);
+Datastore.prototype._insertInCache = function (preparedDoc) {
+  if (util.isArray(preparedDoc)) {
+    this._insertMultipleDocsInCache(preparedDoc);
   } else {
-    this.addToIndexes(this.prepareDocumentForInsertion(newDoc));  
+    this.addToIndexes(preparedDoc);
   }
 };
 
@@ -1392,10 +1398,8 @@ Datastore.prototype._insertInCache = function (newDoc) {
  * inserts and throws the error
  * @api private
  */
-Datastore.prototype._insertMultipleDocsInCache = function (newDocs) {
-  var i, failingI, error
-    , preparedDocs = this.prepareDocumentForInsertion(newDocs)
-    ;
+Datastore.prototype._insertMultipleDocsInCache = function (preparedDocs) {
+  var i, failingI, error;
 
   for (i = 0; i < preparedDocs.length; i += 1) {
     try {
@@ -1406,12 +1410,12 @@ Datastore.prototype._insertMultipleDocsInCache = function (newDocs) {
       break;
     }
   }
-  
+
   if (error) {
     for (i = 0; i < failingI; i += 1) {
       this.removeFromIndexes(preparedDocs[i]);
     }
-    
+
     throw error;
   }
 };
@@ -1553,7 +1557,7 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
         return cb();
       } else {
         var toBeInserted;
-        
+
         try {
           model.checkObject(updateQuery);
           // updateQuery is a simple object with no modifier, use it as the document to insert
@@ -1581,28 +1585,29 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
 	  , modifications = []
 	  ;
 
-	// Preparing update (if an error is thrown here neither the datafile nor
-	// the in-memory indexes are affected)
+    // Preparing update (if an error is thrown here neither the datafile nor
+    // the in-memory indexes are affected)
     try {
       for (i = 0; i < candidates.length; i += 1) {
         if (model.match(candidates[i], query) && (multi || numReplaced === 0)) {
           numReplaced += 1;
           modifiedDoc = model.modify(candidates[i], updateQuery);
+          if (self.timestampData) { modifiedDoc.updatedAt = new Date(); }
           modifications.push({ oldDoc: candidates[i], newDoc: modifiedDoc });
         }
       }
     } catch (err) {
       return callback(err);
     }
-	
-	// Change the docs in memory
-	try {
-      self.updateIndexes(modifications);
-	} catch (err) {
-	  return callback(err);
-	}
 
-	// Update the datafile
+    // Change the docs in memory
+    try {
+        self.updateIndexes(modifications);
+    } catch (err) {
+      return callback(err);
+    }
+
+    // Update the datafile
     self.persistence.persistNewState(_.pluck(modifications, 'newDoc'), function (err) {
       if (err) { return callback(err); }
       return callback(null, numReplaced);
@@ -1992,13 +1997,23 @@ function append (array, toAppend) {
  * @return {Array of documents}
  */
 Index.prototype.getMatching = function (value) {
-  var res, self = this;
+  var self = this;
 
   if (!util.isArray(value)) {
     return this.tree.search(value);
   } else {
-    res = [];
-    value.forEach(function (v) { append(res, self.getMatching(v)); });
+    var _res = {}, res = [];
+
+    value.forEach(function (v) {
+      self.getMatching(v).forEach(function (doc) {
+        _res[doc._id] = doc;
+      });
+    });
+
+    Object.keys(_res).forEach(function (_id) {
+      res.push(_res[_id]);
+    });
+
     return res;
   }
 };
@@ -2451,12 +2466,13 @@ function modify (obj, updateQuery) {
 
       if (!modifierFunctions[m]) { throw "Unknown modifier " + m; }
 
-      try {
-        keys = Object.keys(updateQuery[m]);
-      } catch (e) {
+      // Can't rely on Object.keys throwing on non objects since ES6{
+      // Not 100% satisfying as non objects can be interpreted as objects but no false negatives so we can live with it
+      if (typeof updateQuery[m] !== 'object') {
         throw "Modifier " + m + "'s argument must be an object";
       }
 
+      keys = Object.keys(updateQuery[m]);
       keys.forEach(function (k) {
         modifierFunctions[m](newDoc, k, updateQuery[m][k]);
       });
@@ -2831,19 +2847,14 @@ var storage = require('./storage')
  */
 function Persistence (options) {
   var i, j, randomString;
-  
+
   this.db = options.db;
   this.inMemoryOnly = this.db.inMemoryOnly;
   this.filename = this.db.filename;
   this.corruptAlertThreshold = options.corruptAlertThreshold !== undefined ? options.corruptAlertThreshold : 0.1;
-  
-  if (!this.inMemoryOnly && this.filename) {
-    if (this.filename.charAt(this.filename.length - 1) === '~') {
-      throw "The datafile name can't end with a ~, which is reserved for automatic backup files";
-    } else {
-      this.tempFilename = this.filename + '~';
-      this.oldFilename = this.filename + '~~';
-    }
+
+  if (!this.inMemoryOnly && this.filename && this.filename.charAt(this.filename.length - 1) === '~') {
+    throw "The datafile name can't end with a ~, which is reserved for crash safe backup files";
   }
 
   // After serialization and before deserialization hooks with some basic sanity checks
@@ -2863,7 +2874,7 @@ function Persistence (options) {
       }
     }
   }
-  
+
   // For NW apps, store data in the same directory where NW stores application data
   if (this.filename && options.nodeWebkitAppName) {
     console.log("==================================================================");
@@ -2874,8 +2885,6 @@ function Persistence (options) {
     console.log("See https://github.com/rogerwang/node-webkit/issues/500");
     console.log("==================================================================");
     this.filename = Persistence.getNWAppFilename(options.nodeWebkitAppName, this.filename);
-    this.tempFilename = Persistence.getNWAppFilename(options.nodeWebkitAppName, this.tempFilename);
-    this.oldFilename = Persistence.getNWAppFilename(options.nodeWebkitAppName, this.oldFilename);
   }
 };
 
@@ -2892,13 +2901,6 @@ Persistence.ensureDirectoryExists = function (dir, cb) {
 };
 
 
-Persistence.ensureFileDoesntExist = function (file, callback) {
-  storage.exists(file, function (exists) {
-    if (!exists) { return callback(null); }
-    
-    storage.unlink(file, function (err) { return callback(err); });
-  });
-};
 
 
 /**
@@ -2946,7 +2948,7 @@ Persistence.prototype.persistCachedDatabase = function (cb) {
     , self = this
     ;
 
-  if (this.inMemoryOnly) { return callback(null); } 
+  if (this.inMemoryOnly) { return callback(null); }
 
   this.db.getAllData().forEach(function (doc) {
     toPersist += self.afterSerialization(model.serialize(doc)) + '\n';
@@ -2957,26 +2959,7 @@ Persistence.prototype.persistCachedDatabase = function (cb) {
     }
   });
 
-  async.waterfall([
-    async.apply(Persistence.ensureFileDoesntExist, self.tempFilename)
-  , async.apply(Persistence.ensureFileDoesntExist, self.oldFilename)
-  , function (cb) {
-      storage.exists(self.filename, function (exists) {
-        if (exists) {
-          storage.rename(self.filename, self.oldFilename, function (err) { return cb(err); });
-        } else {
-          return cb();
-        }
-      });  
-  }
-  , function (cb) {
-      storage.writeFile(self.tempFilename, toPersist, function (err) { return cb(err); });
-    }
-  , function (cb) {
-      storage.rename(self.tempFilename, self.filename, function (err) { return cb(err); });
-    }
-  , async.apply(Persistence.ensureFileDoesntExist, self.oldFilename)
-  ], function (err) { if (err) { return callback(err); } else { return callback(null); } })
+  storage.crashSafeWriteFile(this.filename, toPersist, callback);
 };
 
 
@@ -3029,6 +3012,8 @@ Persistence.prototype.persistNewState = function (newDocs, cb) {
   // In-memory only datastore
   if (self.inMemoryOnly) { return callback(null); }
 
+  console.log('-------------------');
+
   newDocs.forEach(function (doc) {
     toPersist += self.afterSerialization(model.serialize(doc)) + '\n';
   });
@@ -3053,10 +3038,10 @@ Persistence.prototype.treatRawData = function (rawData) {
     , indexes = {}
     , corruptItems = -1   // Last line of every data file is usually blank so not really corrupt
     ;
-    
+
   for (i = 0; i < data.length; i += 1) {
     var doc;
-    
+
     try {
       doc = model.deserialize(this.beforeDeserialization(data[i]));
       if (doc._id) {
@@ -3074,7 +3059,7 @@ Persistence.prototype.treatRawData = function (rawData) {
       corruptItems += 1;
     }
   }
-    
+
   // A bit lenient on corruption
   if (data.length > 0 && corruptItems / data.length > this.corruptAlertThreshold) {
     throw "More than 10% of the data file is corrupt, the wrong beforeDeserialization hook may be used. Cautiously refusing to start NeDB to prevent dataloss"
@@ -3085,30 +3070,6 @@ Persistence.prototype.treatRawData = function (rawData) {
   });
 
   return { data: tdata, indexes: indexes };
-};
-
-
-/**
- * Ensure that this.filename contains the most up-to-date version of the data
- * Even if a loadDatabase crashed before
- */
-Persistence.prototype.ensureDatafileIntegrity = function (callback) {
-  var self = this  ;
-
-  storage.exists(self.filename, function (filenameExists) {
-    // Write was successful
-    if (filenameExists) { return callback(null); }
-  
-    storage.exists(self.oldFilename, function (oldFilenameExists) {
-      // New database
-      if (!oldFilenameExists) {
-        return storage.writeFile(self.filename, '', 'utf8', function (err) { callback(err); });            
-      }
-    
-      // Write failed, use old version
-      storage.rename(self.oldFilename, self.filename, function (err) { return callback(err); });
-    });
-  });
 };
 
 
@@ -3135,16 +3096,16 @@ Persistence.prototype.loadDatabase = function (cb) {
   async.waterfall([
     function (cb) {
       Persistence.ensureDirectoryExists(path.dirname(self.filename), function (err) {
-        self.ensureDatafileIntegrity(function (exists) {
+        storage.ensureDatafileIntegrity(self.filename, function (err) {
           storage.readFile(self.filename, 'utf8', function (err, rawData) {
             if (err) { return cb(err); }
-            
+
             try {
               var treatedData = self.treatRawData(rawData);
             } catch (e) {
               return cb(e);
             }
-            
+
             // Recreate all indexes in the datafile
             Object.keys(treatedData.indexes).forEach(function (key) {
               self.db.indexes[key] = new Index(treatedData.indexes[key]);
@@ -3181,7 +3142,7 @@ module.exports = Persistence;
  * For a Node.js/Node Webkit database it's the file system
  * For a browser-side database it's localStorage when supported
  *
- * This version is the Node.js/Node Webkit version
+ * This version is the browser version
  */
 
 
@@ -3214,7 +3175,7 @@ function rename (filename, newFilename, callback) {
 
 function writeFile (filename, contents, options, callback) {
   if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
+
   // Options do not matter in browser setup
   if (typeof options === 'function') { callback = options; }
 
@@ -3225,7 +3186,7 @@ function writeFile (filename, contents, options, callback) {
 
 function appendFile (filename, toAppend, options, callback) {
   if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
+
   // Options do not matter in browser setup
   if (typeof options === 'function') { callback = options; }
 
@@ -3239,7 +3200,7 @@ function appendFile (filename, toAppend, options, callback) {
 
 function readFile (filename, options, callback) {
   if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
+
   // Options do not matter in browser setup
   if (typeof options === 'function') { callback = options; }
 
@@ -3256,21 +3217,28 @@ function unlink (filename, callback) {
 }
 
 
-// Nothing done, no directories will be used on the browser
+// Nothing to do, no directories will be used on the browser
 function mkdirp (dir, callback) {
   return callback();
 }
 
+
+// Nothing to do, no data corruption possible in the brower
+function ensureDatafileIntegrity (filename, callback) {
+  return callback(null);
+}
 
 
 // Interface
 module.exports.exists = exists;
 module.exports.rename = rename;
 module.exports.writeFile = writeFile;
+module.exports.crashSafeWriteFile = writeFile;   // No need for a crash safe function in the browser
 module.exports.appendFile = appendFile;
 module.exports.readFile = readFile;
 module.exports.unlink = unlink;
 module.exports.mkdirp = mkdirp;
+module.exports.ensureDatafileIntegrity = ensureDatafileIntegrity;
 
 
 },{}],13:[function(require,module,exports){
