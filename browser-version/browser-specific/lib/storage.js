@@ -36,7 +36,7 @@ function rename (filename, newFilename, callback) {
 
 function writeFile (filename, contents, options, callback) {
   if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
+
   // Options do not matter in browser setup
   if (typeof options === 'function') { callback = options; }
 
@@ -47,7 +47,7 @@ function writeFile (filename, contents, options, callback) {
 
 function appendFile (filename, toAppend, options, callback) {
   if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
+
   // Options do not matter in browser setup
   if (typeof options === 'function') { callback = options; }
 
@@ -61,7 +61,7 @@ function appendFile (filename, toAppend, options, callback) {
 
 function readFile (filename, options, callback) {
   if (typeof localStorage === 'undefined') { console.log("WARNING - This browser doesn't support localStorage, no data will be saved in NeDB!"); return callback(); }
-  
+
   // Options do not matter in browser setup
   if (typeof options === 'function') { callback = options; }
 
