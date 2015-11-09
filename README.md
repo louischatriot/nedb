@@ -591,7 +591,7 @@ The browser version and its minified counterpart are in the `browser-version/out
 </script>
 ```
 
-If you specify a `filename`, the database will be persistent, and automatically select the best storage media available (IndexedDB, WebSQL or localStorage) depending on the browser.
+If you specify a `filename`, the database will be persistent, and automatically select the best storage method available (IndexedDB, WebSQL or localStorage) depending on the browser.
 
 NeDB is compatible with all major browsers: Chrome, Safari, Firefox, IE9+. Tests are in the `browser-version/test` directory (files `index.html` and `testPersistence.html`).
 
