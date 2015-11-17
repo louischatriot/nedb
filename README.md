@@ -15,10 +15,11 @@ Bitcoin address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
 
 ## Installation, tests
-Module name on npm is `nedb`.
+Module name on npm and bower is `nedb`.
 ```javascript
 npm install nedb --save   // Put latest version in your package.json
 npm test   // You'll need the dev dependencies to launch tests
+bower install nedb   // For the browser versions, which will be in browser-version/out
 ```
 
 ## API
