@@ -591,7 +591,7 @@ The browser version and its minified counterpart are in the `browser-version/out
 </script>
 ```
 
-If you specify a `filename`, the database will be persistent, and automatically select the best storage method available (IndexedDB, WebSQL or localStorage) depending on the browser. **WARNING**: the storage system changed between v1.3 and v1.4 and is NOT back-compatible! Do not upgrade before a back-compatible version is out.
+If you specify a `filename`, the database will be persistent, and automatically select the best storage method available (IndexedDB, WebSQL or localStorage) depending on the browser. In most cases that means a lot of data can be stored, typically in hundreds of MB. **WARNING**: the storage system changed between v1.3 and v1.4 and is NOT back-compatible! Your application needs to resync client-side when you upgrade NeDB.
 
 NeDB is compatible with all major browsers: Chrome, Safari, Firefox, IE9+. Tests are in the `browser-version/test` directory (files `index.html` and `testPersistence.html`).
 
