@@ -285,7 +285,7 @@ describe('Database', function () {
           insertedDoc.createdAt.should.equal(insertedDoc.updatedAt);
           assert.isDefined(insertedDoc._id);
           Object.keys(insertedDoc).length.should.equal(4);
-          assert.isBelow(Math.abs(insertedDoc.createdAt.getTime() - beginning), 15);   // No more than 15ms should have elapsed
+          assert.isBelow(Math.abs(insertedDoc.createdAt.getTime() - beginning), 30);   // No more than 30ms should have elapsed (worst case, if there is a flush)
 
           // Modifying results of insert doesn't change the cache
           insertedDoc.bloup = "another";
@@ -332,7 +332,7 @@ describe('Database', function () {
       d.insert(newDoc, function (err, insertedDoc) {
         Object.keys(insertedDoc).length.should.equal(4);
         insertedDoc.createdAt.getTime().should.equal(234);   // Not modified
-        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, 15);   // Created
+        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, 30);   // Created
 
         d.find({}, function (err, docs) {
           assert.deepEqual(insertedDoc, docs[0]);
@@ -354,7 +354,7 @@ describe('Database', function () {
       d.insert(newDoc, function (err, insertedDoc) {
         Object.keys(insertedDoc).length.should.equal(4);
         insertedDoc.updatedAt.getTime().should.equal(234);   // Not modified
-        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, 15);   // Created
+        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, 30);   // Created
 
         d.find({}, function (err, docs) {
           assert.deepEqual(insertedDoc, docs[0]);
@@ -961,8 +961,8 @@ describe('Database', function () {
       var beginning = Date.now();
       d = new Datastore({ filename: testDb, autoload: true, timestampData: true });
       d.insert({ hello: 'world' }, function (err, insertedDoc) {
-        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, 15);
-        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, 15);
+        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, 30);
+        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, 30);
         Object.keys(insertedDoc).length.should.equal(4);
 
         // Wait 100ms before performing the update
@@ -976,7 +976,7 @@ describe('Database', function () {
               docs[0].createdAt.should.equal(insertedDoc.createdAt);
               docs[0].hello.should.equal('mars');
               assert.isAbove(docs[0].updatedAt.getTime() - beginning, 99);   // updatedAt modified
-              assert.isBelow(docs[0].updatedAt.getTime() - step1, 15);   // updatedAt modified
+              assert.isBelow(docs[0].updatedAt.getTime() - step1, 30);   // updatedAt modified
 
               done();
             });
@@ -1815,33 +1815,36 @@ describe('Database', function () {
           ;
 
         d.getAllData().length.should.equal(0);
+        d.ensureIndex({ fieldName: 'z' }, function () {
+          d.ensureIndex({ fieldName: 'a' }, function () {
+            d.indexes.a.tree.getNumberOfKeys().should.equal(0);
+            d.indexes.z.tree.getNumberOfKeys().should.equal(0);
 
-        d.ensureIndex({ fieldName: 'z' });
-        d.ensureIndex({ fieldName: 'a' });
-        d.indexes.a.tree.getNumberOfKeys().should.equal(0);
-        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+            fs.writeFile(testDb, rawData, 'utf8', function () {
+              d.loadDatabase(function (err) {
+                var doc1 = _.find(d.getAllData(), function (doc) { return doc.z === "1"; })
+                  , doc2 = _.find(d.getAllData(), function (doc) { return doc.z === "2"; })
+                  , doc3 = _.find(d.getAllData(), function (doc) { return doc.z === "3"; })
+                  ;
 
-        fs.writeFile(testDb, rawData, 'utf8', function () {
-          d.loadDatabase(function () {
-            var doc1 = _.find(d.getAllData(), function (doc) { return doc.z === "1"; })
-              , doc2 = _.find(d.getAllData(), function (doc) { return doc.z === "2"; })
-              , doc3 = _.find(d.getAllData(), function (doc) { return doc.z === "3"; })
-              ;
+                assert.isNull(err);
+                d.getAllData().length.should.equal(3);
 
-            d.getAllData().length.should.equal(3);
+                d.indexes.z.tree.getNumberOfKeys().should.equal(3);
+                d.indexes.z.tree.search('1')[0].should.equal(doc1);
+                d.indexes.z.tree.search('2')[0].should.equal(doc2);
+                d.indexes.z.tree.search('3')[0].should.equal(doc3);
 
-            d.indexes.z.tree.getNumberOfKeys().should.equal(3);
-            d.indexes.z.tree.search('1')[0].should.equal(doc1);
-            d.indexes.z.tree.search('2')[0].should.equal(doc2);
-            d.indexes.z.tree.search('3')[0].should.equal(doc3);
+                d.indexes.a.tree.getNumberOfKeys().should.equal(3);
+                d.indexes.a.tree.search(2)[0].should.equal(doc1);
+                d.indexes.a.tree.search('world')[0].should.equal(doc2);
+                d.indexes.a.tree.search({ today: now })[0].should.equal(doc3);
 
-            d.indexes.a.tree.getNumberOfKeys().should.equal(3);
-            d.indexes.a.tree.search(2)[0].should.equal(doc1);
-            d.indexes.a.tree.search('world')[0].should.equal(doc2);
-            d.indexes.a.tree.search({ today: now })[0].should.equal(doc3);
-
-            done();
+                done();
+              });
+            });
           });
+
         });
       });
 
