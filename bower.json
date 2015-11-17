@@ -1,0 +1,5 @@
+{
+"name": "nedb",
+"description": "The Javascript Database for Node, nwjs, Electron and the browser",
+"ignore": ["benchmarks", "lib", "test", "test_lac"]
+}
