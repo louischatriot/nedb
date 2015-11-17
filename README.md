@@ -25,7 +25,7 @@ npm test   // You'll need the dev dependencies to launch tests
 It's a subset of MongoDB's API (the most used operations).  
 
 * <a href="#creatingloading-a-database">Creating/loading a database</a>
-* <a href="#compacting-the-database">Compacting the database</a>
+* <a href="#persistence">Persistence</a>
 * <a href="#inserting-documents">Inserting documents</a>
 * <a href="#finding-documents">Finding documents</a>
   * <a href="#basic-querying">Basic Querying</a>
@@ -60,8 +60,7 @@ load is done.
 If you use a persistent datastore without the `autoload` option, you need to call `loadDatabase` manually.
 This function fetches the data from datafile and prepares the database. **Don't forget it!** If you use a
 persistent datastore, no command (insert, find, update, remove) will be executed before `loadDatabase`
-is called, so make sure to call it yourself or use the `autoload`
-option.
+is called, so make sure to call it yourself or use the `autoload` option.
 
 ```javascript
 // Type 1: In-memory only datastore (no need to load the database)
@@ -101,14 +100,16 @@ db.users.loadDatabase();
 db.robots.loadDatabase();
 ```
 
-### Compacting the database
-Under the hood, NeDB's persistence uses an append-only format, meaning that all updates and deletes actually result in lines added at the end of the datafile. The reason for this is that disk space is very cheap and appends are much faster than rewrites since they don't do a seek. The database is automatically compacted (i.e. put back in the one-line-per-document format) everytime your application restarts.
+### Persistence
+Under the hood, NeDB's persistence uses an append-only format, meaning that all updates and deletes actually result in lines added at the end of the datafile, for performance reasons. The database is automatically compacted (i.e. put back in the one-line-per-document format) everytime your application restarts.
 
 You can manually call the compaction function with `yourDatabase.persistence.compactDatafile` which takes no argument. It queues a compaction of the datafile in the executor, to be executed sequentially after all pending operations.
 
 You can also set automatic compaction at regular intervals with `yourDatabase.persistence.setAutocompactionInterval(interval)`, `interval` in milliseconds (a minimum of 5s is enforced), and stop automatic compaction with `yourDatabase.persistence.stopAutocompaction()`.
 
-Keep in mind that compaction takes a bit of time (not too much: 130ms for 50k records on my slow machine) and no other operation can happen when it does, so most projects actually don't need to use it.
+Keep in mind that compaction takes a bit of time (not too much: 130ms for 50k records on a typical development machine) and no other operation can happen when it does, so most projects actually don't need to use it.
+
+Phyiscal persistence works similarly to major databases: compaction forces the OS to physically flush data to disk, while appends to the data file let the OS handle this. That guarantees that a server crash can never cause complete data loss, at most one or two documents, while preserving performance.
 
 
 ### Inserting documents
