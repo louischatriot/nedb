@@ -2392,41 +2392,41 @@ describe('Database', function () {
       });
 
     });   // ==== End of 'Updating indexes upon document remove' ==== //
-    
-    
+
+
     describe('Persisting indexes', function () {
-    
-      it('Indexes are persisted to a separate file and recreated upon reload', function (done) {
+
+      it.only('Indexes are persisted to a separate file and recreated upon reload', function (done) {
         var persDb = "workspace/persistIndexes.db"
           , db
           ;
-        
+
         if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
         db = new Datastore({ filename: persDb, autoload: true });
-        
+
         Object.keys(db.indexes).length.should.equal(1);
         Object.keys(db.indexes)[0].should.equal("_id");
-        
+
         db.insert({ planet: "Earth" }, function (err) {
           assert.isNull(err);
           db.insert({ planet: "Mars" }, function (err) {
             assert.isNull(err);
-            
+
             db.ensureIndex({ fieldName: "planet" }, function (err) {
               Object.keys(db.indexes).length.should.equal(2);
               Object.keys(db.indexes)[0].should.equal("_id");
-              Object.keys(db.indexes)[1].should.equal("planet");              
+              Object.keys(db.indexes)[1].should.equal("planet");
               db.indexes._id.getAll().length.should.equal(2);
               db.indexes.planet.getAll().length.should.equal(2);
               db.indexes.planet.fieldName.should.equal("planet");
-              
+
               // After a reload the indexes are recreated
               db = new Datastore({ filename: persDb });
               db.loadDatabase(function (err) {
                 assert.isNull(err);
                 Object.keys(db.indexes).length.should.equal(2);
                 Object.keys(db.indexes)[0].should.equal("_id");
-                Object.keys(db.indexes)[1].should.equal("planet");                
+                Object.keys(db.indexes)[1].should.equal("planet");
                 db.indexes._id.getAll().length.should.equal(2);
                 db.indexes.planet.getAll().length.should.equal(2);
                 db.indexes.planet.fieldName.should.equal("planet");
@@ -2437,44 +2437,44 @@ describe('Database', function () {
                   assert.isNull(err);
                   Object.keys(db.indexes).length.should.equal(2);
                   Object.keys(db.indexes)[0].should.equal("_id");
-                  Object.keys(db.indexes)[1].should.equal("planet");                
+                  Object.keys(db.indexes)[1].should.equal("planet");
                   db.indexes._id.getAll().length.should.equal(2);
                   db.indexes.planet.getAll().length.should.equal(2);
                   db.indexes.planet.fieldName.should.equal("planet");
-              
-                  done();                
+
+                  done();
                 });
               });
             });
           });
         });
       });
-    
+
       it('Indexes are persisted with their options and recreated even if some db operation happen between loads', function (done) {
         var persDb = "workspace/persistIndexes.db"
           , db
-          ;
-        
+        ;
+
         if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
         db = new Datastore({ filename: persDb, autoload: true });
-        
+
         Object.keys(db.indexes).length.should.equal(1);
         Object.keys(db.indexes)[0].should.equal("_id");
-        
+
         db.insert({ planet: "Earth" }, function (err) {
           assert.isNull(err);
           db.insert({ planet: "Mars" }, function (err) {
             assert.isNull(err);
-            
+
             db.ensureIndex({ fieldName: "planet", unique: true, sparse: false }, function (err) {
               Object.keys(db.indexes).length.should.equal(2);
               Object.keys(db.indexes)[0].should.equal("_id");
-              Object.keys(db.indexes)[1].should.equal("planet");              
+              Object.keys(db.indexes)[1].should.equal("planet");
               db.indexes._id.getAll().length.should.equal(2);
               db.indexes.planet.getAll().length.should.equal(2);
               db.indexes.planet.unique.should.equal(true);
               db.indexes.planet.sparse.should.equal(false);
-              
+
               db.insert({ planet: "Jupiter" }, function (err) {
                 assert.isNull(err);
 
@@ -2484,12 +2484,12 @@ describe('Database', function () {
                   assert.isNull(err);
                   Object.keys(db.indexes).length.should.equal(2);
                   Object.keys(db.indexes)[0].should.equal("_id");
-                  Object.keys(db.indexes)[1].should.equal("planet");                
+                  Object.keys(db.indexes)[1].should.equal("planet");
                   db.indexes._id.getAll().length.should.equal(3);
                   db.indexes.planet.getAll().length.should.equal(3);
                   db.indexes.planet.unique.should.equal(true);
                   db.indexes.planet.sparse.should.equal(false);
-                  
+
                   db.ensureIndex({ fieldName: 'bloup', unique: false, sparse: true }, function (err) {
                     assert.isNull(err);
                     Object.keys(db.indexes).length.should.equal(3);
@@ -2500,9 +2500,9 @@ describe('Database', function () {
                     db.indexes.planet.getAll().length.should.equal(3);
                     db.indexes.bloup.getAll().length.should.equal(0);
                     db.indexes.planet.unique.should.equal(true);
-                    db.indexes.planet.sparse.should.equal(false);                  
+                    db.indexes.planet.sparse.should.equal(false);
                     db.indexes.bloup.unique.should.equal(false);
-                    db.indexes.bloup.sparse.should.equal(true);                  
+                    db.indexes.bloup.sparse.should.equal(true);
 
                     // After another reload the indexes are still there (i.e. they are preserved during autocompaction)
                     db = new Datastore({ filename: persDb });
@@ -2519,8 +2519,8 @@ describe('Database', function () {
                       db.indexes.planet.sparse.should.equal(false);
                       db.indexes.bloup.unique.should.equal(false);
                       db.indexes.bloup.sparse.should.equal(true);
-                  
-                      done();                
+
+                      done();
                     });
                   });
                 });
@@ -2529,23 +2529,23 @@ describe('Database', function () {
           });
         });
       });
-    
+
       it('Indexes can also be removed and the remove persisted', function (done) {
         var persDb = "workspace/persistIndexes.db"
           , db
-          ;
-        
+        ;
+
         if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
         db = new Datastore({ filename: persDb, autoload: true });
-        
+
         Object.keys(db.indexes).length.should.equal(1);
         Object.keys(db.indexes)[0].should.equal("_id");
-        
+
         db.insert({ planet: "Earth" }, function (err) {
           assert.isNull(err);
           db.insert({ planet: "Mars" }, function (err) {
             assert.isNull(err);
-            
+
             db.ensureIndex({ fieldName: "planet" }, function (err) {
               assert.isNull(err);
               db.ensureIndex({ fieldName: "another" }, function (err) {
@@ -2557,7 +2557,7 @@ describe('Database', function () {
                 db.indexes._id.getAll().length.should.equal(2);
                 db.indexes.planet.getAll().length.should.equal(2);
                 db.indexes.planet.fieldName.should.equal("planet");
-                
+
                 // After a reload the indexes are recreated
                 db = new Datastore({ filename: persDb });
                 db.loadDatabase(function (err) {
