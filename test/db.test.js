@@ -8,6 +8,7 @@ var should = require('chai').should()
   , model = require('../lib/model')
   , Datastore = require('../lib/datastore')
   , Persistence = require('../lib/persistence')
+  , reloadTimeUpperBound = 60;   // In ms, an upper bound for the reload time used to check createdAt and updatedAt
   ;
 
 
@@ -285,7 +286,7 @@ describe('Database', function () {
           insertedDoc.createdAt.should.equal(insertedDoc.updatedAt);
           assert.isDefined(insertedDoc._id);
           Object.keys(insertedDoc).length.should.equal(4);
-          assert.isBelow(Math.abs(insertedDoc.createdAt.getTime() - beginning), 30);   // No more than 30ms should have elapsed (worst case, if there is a flush)
+          assert.isBelow(Math.abs(insertedDoc.createdAt.getTime() - beginning), reloadTimeUpperBound);   // No more than 30ms should have elapsed (worst case, if there is a flush)
 
           // Modifying results of insert doesn't change the cache
           insertedDoc.bloup = "another";
@@ -332,7 +333,7 @@ describe('Database', function () {
       d.insert(newDoc, function (err, insertedDoc) {
         Object.keys(insertedDoc).length.should.equal(4);
         insertedDoc.createdAt.getTime().should.equal(234);   // Not modified
-        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, 30);   // Created
+        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, reloadTimeUpperBound);   // Created
 
         d.find({}, function (err, docs) {
           assert.deepEqual(insertedDoc, docs[0]);
@@ -354,7 +355,7 @@ describe('Database', function () {
       d.insert(newDoc, function (err, insertedDoc) {
         Object.keys(insertedDoc).length.should.equal(4);
         insertedDoc.updatedAt.getTime().should.equal(234);   // Not modified
-        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, 30);   // Created
+        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, reloadTimeUpperBound);   // Created
 
         d.find({}, function (err, docs) {
           assert.deepEqual(insertedDoc, docs[0]);
@@ -961,8 +962,8 @@ describe('Database', function () {
       var beginning = Date.now();
       d = new Datastore({ filename: testDb, autoload: true, timestampData: true });
       d.insert({ hello: 'world' }, function (err, insertedDoc) {
-        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, 30);
-        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, 30);
+        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, reloadTimeUpperBound);
+        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, reloadTimeUpperBound);
         Object.keys(insertedDoc).length.should.equal(4);
 
         // Wait 100ms before performing the update
@@ -976,7 +977,7 @@ describe('Database', function () {
               docs[0].createdAt.should.equal(insertedDoc.createdAt);
               docs[0].hello.should.equal('mars');
               assert.isAbove(docs[0].updatedAt.getTime() - beginning, 99);   // updatedAt modified
-              assert.isBelow(docs[0].updatedAt.getTime() - step1, 30);   // updatedAt modified
+              assert.isBelow(docs[0].updatedAt.getTime() - step1, reloadTimeUpperBound);   // updatedAt modified
 
               done();
             });
@@ -2396,7 +2397,7 @@ describe('Database', function () {
 
     describe('Persisting indexes', function () {
 
-      it.only('Indexes are persisted to a separate file and recreated upon reload', function (done) {
+      it('Indexes are persisted to a separate file and recreated upon reload', function (done) {
         var persDb = "workspace/persistIndexes.db"
           , db
           ;
