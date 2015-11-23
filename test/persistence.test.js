@@ -390,7 +390,7 @@ describe('Persistence', function () {
 
             doc0 = model.deserialize(doc0);
             Object.keys(doc0).length.should.equal(2);
-            doc0.hello.should.equal('world');        
+            doc0.hello.should.equal('world');
 
             doc1 = model.deserialize(doc1);
             Object.keys(doc1).length.should.equal(2);
@@ -824,10 +824,10 @@ describe('Persistence', function () {
       ], done);
     });
 
-    // This test needs to be rewritten. The goal is to check what happens when the system crashes during a writeFile, so this test
-    // must rewrite a custom and buggy writeFile that will be used by the child process and crash in the midst of writing the file
+    // The child process will load the database with the given datafile, but the fs.writeFile function
+    // is rewritten to crash the process before it finished (after 5000 bytes), to ensure data was not lost
     it('If system crashes during a loadDatabase, the former version is not lost', function (done) {
-      var cp, N = 150000, toWrite = "", i;
+      var N = 500, toWrite = "", i, doc_i;
 
       // Ensuring the state is clean
       if (fs.existsSync('workspace/lac.db')) { fs.unlinkSync('workspace/lac.db'); }
@@ -835,40 +835,41 @@ describe('Persistence', function () {
 
       // Creating a db file with 150k records (a bit long to load)
       for (i = 0; i < N; i += 1) {
-        toWrite += model.serialize({ _id: customUtils.uid(16), hello: 'world' }) + '\n';
+        toWrite += model.serialize({ _id: 'anid_' + i, hello: 'world' }) + '\n';
       }
       fs.writeFileSync('workspace/lac.db', toWrite, 'utf8');
 
+      var datafileLength = fs.readFileSync('workspace/lac.db', 'utf8').length;
+
       // Loading it in a separate process that we will crash before finishing the loadDatabase
-      cp = child_process.fork('test_lac/loadAndCrash.test')
+      child_process.fork('test_lac/loadAndCrash.test').on('exit', function (code) {
+        code.should.equal(1);   // See test_lac/loadAndCrash.test.js
 
-      // Kill the child process when we're at step 3 of persistCachedDatabase (during write to datafile)
-      setTimeout(function() {
-        cp.kill('SIGINT');
+        fs.existsSync('workspace/lac.db').should.equal(true);
+        fs.existsSync('workspace/lac.db~').should.equal(true);
+        fs.readFileSync('workspace/lac.db', 'utf8').length.should.equal(datafileLength);
+        fs.readFileSync('workspace/lac.db~', 'utf8').length.should.equal(5000);
 
-        // If the timing is correct, only the temp datafile contains data
-        // The datafile was in the middle of being written and is empty
+        // Reload database without a crash, check that no data was lost and fs state is clean (no temp file)
+        var db = new Datastore({ filename: 'workspace/lac.db' });
+        db.loadDatabase(function (err) {
+          assert.isNull(err);
 
-        // Let the process crash be finished then load database without a crash, and test we didn't lose data
-        setTimeout(function () {
-          var db = new Datastore({ filename: 'workspace/lac.db' });
-          db.loadDatabase(function (err) {
-            assert.isNull(err);
+          fs.existsSync('workspace/lac.db').should.equal(true);
+          fs.existsSync('workspace/lac.db~').should.equal(false);
+          fs.readFileSync('workspace/lac.db', 'utf8').length.should.equal(datafileLength);
 
-            db.count({}, function (err, n) {
-              // Data has not been lost
-              assert.isNull(err);
-              n.should.equal(150000);
-
-              // State is clean, the temp datafile has been erased and the datafile contains all the data
-              fs.existsSync('workspace/lac.db').should.equal(true);
-              fs.existsSync('workspace/lac.db~').should.equal(false);
-
-              done();
-            });
+          db.find({}, function (err, docs) {
+            docs.length.should.equal(N);
+            for (i = 0; i < N; i += 1) {
+              doc_i = _.find(docs, function (d) { return d._id === 'anid_' + i; });
+              assert.isDefined(doc_i);
+              assert.deepEqual({ hello: 'world', _id: 'anid_' + i }, doc_i);
+            }
+            return done();
           });
-        }, 100);
-      }, 2000);
+        });
+      });
     });
 
   });   // ==== End of 'Prevent dataloss when persisting data' ====
