@@ -110,7 +110,7 @@ You can also set automatic compaction at regular intervals with `yourDatabase.pe
 
 Keep in mind that compaction takes a bit of time (not too much: 130ms for 50k records on a typical development machine) and no other operation can happen when it does, so most projects actually don't need to use it.
 
-Phyiscal persistence works similarly to major databases: compaction forces the OS to physically flush data to disk, while appends to the data file let the OS handle this. That guarantees that a server crash can never cause complete data loss, at most one or two documents, while preserving performance.
+<!--Phyisical persistence works similarly to major databases: compaction forces the OS to physically flush data to disk, while appends to the data file let the OS handle this. That guarantees that a server crash can never cause complete data loss, at most one or two documents, while preserving performance.-->
 
 
 ### Inserting documents
