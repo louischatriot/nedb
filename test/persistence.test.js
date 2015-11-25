@@ -826,7 +826,7 @@ describe('Persistence', function () {
 
     // The child process will load the database with the given datafile, but the fs.writeFile function
     // is rewritten to crash the process before it finished (after 5000 bytes), to ensure data was not lost
-    it('If system crashes during a loadDatabase, the former version is not lost', function (done) {
+    it.only('If system crashes during a loadDatabase, the former version is not lost', function (done) {
       var N = 500, toWrite = "", i, doc_i;
 
       // Ensuring the state is clean
