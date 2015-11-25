@@ -872,7 +872,7 @@ describe('Persistence', function () {
       });
     });
 
-    it.only("Cannot cause EMFILE errors by opening too many file descriptors", function (done) {
+    it("Cannot cause EMFILE errors by opening too many file descriptors", function (done) {
       child_process.execFile('test_lac/openFdsLaunch.sh', function (err, stdout, stderr) {
         if (err) { return done(err); }
 
