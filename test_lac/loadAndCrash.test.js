@@ -79,9 +79,9 @@ fs.writeFile = function(path, data, options, callback_) {
   var callback = maybeCallback(arguments[arguments.length - 1]);
 
   if (!options || typeof options === 'function') {
-    options = { encoding: 'utf8', mode: 0o666, flag: 'w' };
+    options = { encoding: 'utf8', mode: 438, flag: 'w' }; // Mode 438 == 0o666 (compatibility with older Node releases)
   } else if (typeof options === 'string') {
-    options = { encoding: options, mode: 0o666, flag: 'w' };
+    options = { encoding: options, mode: 438, flag: 'w' }; // Mode 438 == 0o666 (compatibility with older Node releases)
   } else if (typeof options !== 'object') {
     throwOptionsError(options);
   }
