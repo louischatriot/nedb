@@ -872,6 +872,19 @@ describe('Persistence', function () {
       });
     });
 
+    it.only("Cannot cause EMFILE errors by opening too many file descriptors", function (done) {
+      child_process.execFile('test_lac/openFdsLaunch.sh', function (err, stdout, stderr) {
+        if (err) { return done(err); }
+
+        // The subprocess will not output anything to stdout unless part of the test fails
+        if (stdout.length !== 0) {
+          return done(stdout);
+        } else {
+          return done();
+        }
+      });
+    });
+
   });   // ==== End of 'Prevent dataloss when persisting data' ====
 
 
