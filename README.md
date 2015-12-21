@@ -60,6 +60,8 @@ This function fetches the data from datafile and prepares the database. **Don't 
 persistent datastore, no command (insert, find, update, remove) will be executed before `loadDatabase`
 is called, so make sure to call it yourself or use the `autoload` option.
 
+Also, if `loadDatabase` fails, all commands registered to the executor afterwards will not be executed. They will be registered and executed, in sequence, only after a successful `loadDatabase`.
+
 ```javascript
 // Type 1: In-memory only datastore (no need to load the database)
 var Datastore = require('nedb')
