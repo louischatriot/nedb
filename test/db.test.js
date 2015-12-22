@@ -8,7 +8,7 @@ var should = require('chai').should()
   , model = require('../lib/model')
   , Datastore = require('../lib/datastore')
   , Persistence = require('../lib/persistence')
-  , reloadTimeUpperBound = 60;   // In ms, an upper bound for the reload time used to check createdAt and updatedAt
+  , reloadTimeUpperBound = 60;   // In ms, an upper bound for the reload time used to check created and modified
   ;
 
 
@@ -269,7 +269,7 @@ describe('Database', function () {
       });
     });
 
-    it("If timestampData option is set, a createdAt field is added and persisted", function (done) {
+    it("If timestampData option is set, a created field is added and persisted", function (done) {
       var newDoc = { hello: 'world' }, beginning = Date.now();
       d = new Datastore({ filename: testDb, timestampData: true, autoload: true });
       d.find({}, function (err, docs) {
@@ -279,14 +279,14 @@ describe('Database', function () {
         d.insert(newDoc, function (err, insertedDoc) {
           // No side effect on given input
           assert.deepEqual(newDoc, { hello: 'world' });
-          // Insert doc has two new fields, _id and createdAt
+          // Insert doc has two new fields, _id and created
           insertedDoc.hello.should.equal('world');
-          assert.isDefined(insertedDoc.createdAt);
-          assert.isDefined(insertedDoc.updatedAt);
-          insertedDoc.createdAt.should.equal(insertedDoc.updatedAt);
+          assert.isDefined(insertedDoc.created);
+          assert.isDefined(insertedDoc.modified);
+          insertedDoc.created.should.equal(insertedDoc.modified);
           assert.isDefined(insertedDoc._id);
           Object.keys(insertedDoc).length.should.equal(4);
-          assert.isBelow(Math.abs(insertedDoc.createdAt.getTime() - beginning), reloadTimeUpperBound);   // No more than 30ms should have elapsed (worst case, if there is a flush)
+          assert.isBelow(Math.abs(new Date(insertedDoc.created).getTime() - beginning), reloadTimeUpperBound);   // No more than 30ms should have elapsed (worst case, if there is a flush)
 
           // Modifying results of insert doesn't change the cache
           insertedDoc.bloup = "another";
@@ -295,14 +295,14 @@ describe('Database', function () {
           d.find({}, function (err, docs) {
             docs.length.should.equal(1);
             assert.deepEqual(newDoc, { hello: 'world' });
-            assert.deepEqual({ hello: 'world', _id: insertedDoc._id, createdAt: insertedDoc.createdAt, updatedAt: insertedDoc.updatedAt }, docs[0]);
+            assert.deepEqual({ hello: 'world', _id: insertedDoc._id, created: insertedDoc.created, modified: insertedDoc.modified }, docs[0]);
 
             // All data correctly persisted on disk
             d.loadDatabase(function () {
               d.find({}, function (err, docs) {
                 docs.length.should.equal(1);
                 assert.deepEqual(newDoc, { hello: 'world' });
-                assert.deepEqual({ hello: 'world', _id: insertedDoc._id, createdAt: insertedDoc.createdAt, updatedAt: insertedDoc.updatedAt }, docs[0]);
+                assert.deepEqual({ hello: 'world', _id: insertedDoc._id, created: insertedDoc.created, modified: insertedDoc.modified }, docs[0]);
 
                 done();
               });
@@ -312,11 +312,11 @@ describe('Database', function () {
       });
     });
 
-    it("If timestampData option not set, don't create a createdAt and a updatedAt field", function (done) {
+    it("If timestampData option not set, don't create a created and a modified field", function (done) {
       d.insert({ hello: 'world' }, function (err, insertedDoc) {
         Object.keys(insertedDoc).length.should.equal(2);
-        assert.isUndefined(insertedDoc.createdAt);
-        assert.isUndefined(insertedDoc.updatedAt);
+        assert.isUndefined(insertedDoc.created);
+        assert.isUndefined(insertedDoc.modified);
 
         d.find({}, function (err, docs) {
           docs.length.should.equal(1);
@@ -327,13 +327,13 @@ describe('Database', function () {
       });
     });
 
-    it("If timestampData is set but createdAt is specified by user, don't change it", function (done) {
-      var newDoc = { hello: 'world', createdAt: new Date(234) }, beginning = Date.now();
+    it("If timestampData is set but created is specified by user, don't change it", function (done) {
+      var newDoc = { hello: 'world', created: new Date(234) }, beginning = Date.now();
       d = new Datastore({ filename: testDb, timestampData: true, autoload: true });
       d.insert(newDoc, function (err, insertedDoc) {
         Object.keys(insertedDoc).length.should.equal(4);
-        insertedDoc.createdAt.getTime().should.equal(234);   // Not modified
-        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, reloadTimeUpperBound);   // Created
+        new Date(insertedDoc.created).getTime().should.equal(234);   // Not modified
+        assert.isBelow(new Date(insertedDoc.modified).getTime() - beginning, reloadTimeUpperBound);   // Created
 
         d.find({}, function (err, docs) {
           assert.deepEqual(insertedDoc, docs[0]);
@@ -349,13 +349,13 @@ describe('Database', function () {
       });
     });
 
-    it("If timestampData is set but updatedAt is specified by user, don't change it", function (done) {
-      var newDoc = { hello: 'world', updatedAt: new Date(234) }, beginning = Date.now();
+    it("If timestampData is set but modified is specified by user, don't change it", function (done) {
+      var newDoc = { hello: 'world', modified: new Date(234) }, beginning = Date.now();
       d = new Datastore({ filename: testDb, timestampData: true, autoload: true });
       d.insert(newDoc, function (err, insertedDoc) {
         Object.keys(insertedDoc).length.should.equal(4);
-        insertedDoc.updatedAt.getTime().should.equal(234);   // Not modified
-        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, reloadTimeUpperBound);   // Created
+        new Date(insertedDoc.modified).getTime().should.equal(234);   // Not modified
+        assert.isBelow(new Date(insertedDoc.created).getTime() - beginning, reloadTimeUpperBound);   // Created
 
         d.find({}, function (err, docs) {
           assert.deepEqual(insertedDoc, docs[0]);
@@ -958,12 +958,12 @@ describe('Database', function () {
       ], done);
     });
 
-    it("If timestampData option is set, update the updatedAt field", function (done) {
+    it("If timestampData option is set, update the modified field", function (done) {
       var beginning = Date.now();
       d = new Datastore({ filename: testDb, autoload: true, timestampData: true });
       d.insert({ hello: 'world' }, function (err, insertedDoc) {
-        assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, reloadTimeUpperBound);
-        assert.isBelow(insertedDoc.createdAt.getTime() - beginning, reloadTimeUpperBound);
+        assert.isBelow(new Date(insertedDoc.modified).getTime() - beginning, reloadTimeUpperBound);
+        assert.isBelow(new Date(insertedDoc.created).getTime() - beginning, reloadTimeUpperBound);
         Object.keys(insertedDoc).length.should.equal(4);
 
         // Wait 100ms before performing the update
@@ -974,10 +974,10 @@ describe('Database', function () {
               docs.length.should.equal(1);
               Object.keys(docs[0]).length.should.equal(4);
               docs[0]._id.should.equal(insertedDoc._id);
-              docs[0].createdAt.should.equal(insertedDoc.createdAt);
+              docs[0].created.should.equal(insertedDoc.created);
               docs[0].hello.should.equal('mars');
-              assert.isAbove(docs[0].updatedAt.getTime() - beginning, 99);   // updatedAt modified
-              assert.isBelow(docs[0].updatedAt.getTime() - step1, reloadTimeUpperBound);   // updatedAt modified
+              assert.isAbove(new Date(docs[0].modified).getTime() - beginning, 99);   // modified modified
+              assert.isBelow(new Date(docs[0].modified).getTime() - step1, reloadTimeUpperBound);   // modified modified
 
               done();
             });
