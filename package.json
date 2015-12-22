@@ -1,12 +1,13 @@
 {
-  "name": "nedb",
+  "name": "happn-nedb",
   "version": "1.5.0",
   "author": {
-    "name": "Louis Chatriot",
-    "email": "louis.chatriot@gmail.com"
+    "name": "Simon Bishop",
+    "email": "simon@tenacious.digital"
   },
   "contributors": [
-    "Louis Chatriot"
+    "Simon Bishop",
+    "Richard Emslie"
   ],
   "description": "File-based embedded data store for node.js",
   "keywords": [
@@ -14,10 +15,10 @@
     "datastore",
     "embedded"
   ],
-  "homepage": "https://github.com/louischatriot/nedb",
+  "homepage": "https://github.com/happner/nedb",
   "repository": {
     "type": "git",
-    "url": "git@github.com:louischatriot/nedb.git"
+    "url": "git@github.com:happner/nedb.git"
   },
   "dependencies": {
     "async": "0.2.10",
