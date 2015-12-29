@@ -1477,6 +1477,42 @@ describe('Database', function () {
       });
     });
 
+    it('Should return modified document with upsert set to false', function (done) {
+      d.insert({ a: 1 }, function (err, doc1) {
+        d.update({ a: 1 }, { $inc: { a: 1 } }, { upsert: false }, function (err, nr, newDoc) {
+          assert.isNull(err);
+          nr.should.equal(1);
+          d.find({}, function (err, docs) {
+            var d1 = _.find(docs, function (doc) { return doc._id === doc1._id });
+              
+            d1.a.should.equal(2);
+            newDoc.a.should.equal(2);
+            assert.isNotNull(newDoc);
+
+            done();
+          });
+        });
+      });
+    });
+
+    it('Should return modified document when upsert is undefined', function (done) {
+      d.insert({ a: 1 }, function (err, doc1) {
+        d.update({ a: 1 }, { $inc: { a: 1 } }, function (err, nr, newDoc) {
+          assert.isNull(err);
+          nr.should.equal(1);
+          d.find({}, function (err, docs) {
+            var d1 = _.find(docs, function (doc) { return doc._id === doc1._id });
+              
+            d1.a.should.equal(2);
+            newDoc.a.should.equal(2);
+            assert.isNotNull(newDoc);
+
+            done();
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Update' ==== //
 
 
