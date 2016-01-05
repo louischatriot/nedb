@@ -769,4 +769,205 @@ describe('Indexes', function () {
   });
 
 
+  describe('Honor expireAfterSeconds', function () {
+
+    it('Can retrieve documents that do not have a Date value for the indexed field', function (done) {
+      var idx = new Index({ fieldName: 'ex', expireAfterSeconds: 1 })
+        , doc1 = { a: 5, ex: 'hello' }
+        , doc2 = { a: 8, ex: 'world' }
+        , doc3 = { a: 2, ex: 'bloup' }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      assert.deepEqual(idx.getAll(), [{ a: 2, ex: 'bloup' }, { a: 5, ex: 'hello' }, { a: 8, ex: 'world' }]);
+
+      // All of the documents should still be there after the expiry since their
+      // values do not contain comparable Date values
+      setTimeout(function() {
+        assert.deepEqual(idx.getAll(), [{ a: 2, ex: 'bloup' }, { a: 5, ex: 'hello' }, { a: 8, ex: 'world' }]);
+        done();
+      }, 1001);
+    });
+
+    it('Cannot retrieve documents that expire immediately', function () {
+      var now = new Date()
+        , idx = new Index({ fieldName: 'ex', expireAfterSeconds: 0 })
+        , doc1 = { a: 5, ex: now }
+        , doc2 = { a: 8, ex: now }
+        , doc3 = { a: 2, ex: now }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      assert.deepEqual(idx.getAll(), []);
+    });
+
+    it('Cannot retrieve documents that expired before they were inserted', function () {
+      var now = new Date()
+        , idx = new Index({ fieldName: 'ex', expireAfterSeconds: 1 })
+        , doc1 = { a: 5, ex: new Date(now.getTime() - 2000) }
+        , doc2 = { a: 8, ex: new Date(now.getTime() - 1000) }
+        , doc3 = { a: 2, ex: now }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      assert.deepEqual(idx.getAll(), [{ a: 2, ex: now }]);
+    });
+
+    it('Can retrieve documents that have not yet expired', function (done) {
+      var now = new Date()
+        , idx = new Index({ fieldName: 'ex', expireAfterSeconds: 2 })
+        , doc1 = { a: 5, ex: now }
+        , doc2 = { a: 8, ex: new Date(now.getTime() + 2) }
+        , doc3 = { a: 2, ex: new Date(now.getTime() + 1) }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      assert.deepEqual(idx.getAll(), [{ a: 5, ex: now }, { a: 2, ex: new Date(now.getTime() + 1) }, { a: 8, ex: new Date(now.getTime() + 2) }]);
+
+      // All of the documents should still be there since their values contain
+      // comparable Date values that have not yet expired
+      setTimeout(function() {
+        assert.deepEqual(idx.getAll(), [{ a: 5, ex: now }, { a: 2, ex: new Date(now.getTime() + 1) }, { a: 8, ex: new Date(now.getTime() + 2) }]);
+        done();
+      }, 1000);
+    });
+
+    it('Cannot retrieve documents that have expired', function (done) {
+      var now = new Date()
+        , idx = new Index({ fieldName: 'ex', expireAfterSeconds: 1 })
+        , doc1 = { a: 5, ex: now }
+        , doc2 = { a: 8, ex: new Date(now.getTime() + 1000) }
+        , doc3 = { a: 2, ex: new Date(now.getTime() + 500) }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      assert.deepEqual(idx.getAll(), [{ a: 5, ex: now }, { a: 2, ex: new Date(now.getTime() + 500) }, { a: 8, ex: new Date(now.getTime() + 1000) }]);
+
+      // All of the documents should still be there since their values contain
+      // comparable Date values that have not yet expired
+      setTimeout(function() {
+        assert.deepEqual(idx.getAll(), [{ a: 5, ex: now }, { a: 2, ex: new Date(now.getTime() + 500) }, { a: 8, ex: new Date(now.getTime() + 1000) }]);
+
+        // Minus one expired document...
+        setTimeout(function() {
+          assert.deepEqual(idx.getAll(), [{ a: 2, ex: new Date(now.getTime() + 500) }, { a: 8, ex: new Date(now.getTime() + 1000) }]);
+
+          // Minus two expired documents...
+          setTimeout(function() {
+            assert.deepEqual(idx.getAll(), [{ a: 8, ex: new Date(now.getTime() + 1000) }]);
+
+            // Minus all expired documents...
+            setTimeout(function() {
+              assert.deepEqual(idx.getAll(), []);
+              done();
+            }, 500);
+
+          }, 500);
+
+        }, 500);
+
+      }, 500);
+    });
+
+    it('Cannot retrieve documents between bounds that have expired', function () {
+      var now = new Date()
+        , idx = new Index({ fieldName: 'ex', expireAfterSeconds: 1 })
+        , doc1 = { a: 5, ex: now }
+        , doc2 = { a: 8, ex: new Date(now.getTime() + 1000) }
+        , doc3 = { a: 2, ex: new Date(now.getTime() + 500) }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      assert.deepEqual(idx.getBetweenBounds({ $lt: new Date(now.getTime() + 500), $gte: now }), [ doc1 ]);
+      assert.deepEqual(idx.getBetweenBounds({ $lte: new Date(now.getTime() + 500) }), [ doc1, doc3 ]);
+      assert.deepEqual(idx.getBetweenBounds({ $gt: new Date(now.getTime() + 500) }), [ doc2 ]);
+
+      // Minus one expired document...
+      setTimeout(function() {
+        assert.deepEqual(idx.getBetweenBounds({ $lt: new Date(now.getTime() + 500), $gte: now }), []);
+        assert.deepEqual(idx.getBetweenBounds({ $lte: new Date(now.getTime() + 500) }), [ doc3 ]);
+        assert.deepEqual(idx.getBetweenBounds({ $gt: new Date(now.getTime() + 500) }), [ doc2 ]);
+
+        // Minus two expired documents...
+        setTimeout(function() {
+          assert.deepEqual(idx.getBetweenBounds({ $lt: new Date(now.getTime() + 500), $gte: now }), []);
+          assert.deepEqual(idx.getBetweenBounds({ $lte: new Date(now.getTime() + 500) }), []);
+          assert.deepEqual(idx.getBetweenBounds({ $gt: new Date(now.getTime() + 500) }), [ doc2 ]);
+
+          // Minus all expired documents...
+          setTimeout(function() {
+            assert.deepEqual(idx.getBetweenBounds({ $lt: new Date(now.getTime() + 500), $gte: now }), []);
+            assert.deepEqual(idx.getBetweenBounds({ $lte: new Date(now.getTime() + 500) }), []);
+            assert.deepEqual(idx.getBetweenBounds({ $gt: new Date(now.getTime() + 500) }), []);
+
+            done();
+          }, 500);
+
+        }, 500);
+
+      }, 1000);
+    });
+
+    it('Cannot retrieve matching documents that have expired', function () {
+      var now = new Date()
+        , idx = new Index({ fieldName: 'ex', expireAfterSeconds: 1 })
+        , doc1 = { a: 5, ex: now }
+        , doc2 = { a: 8, ex: new Date(now.getTime() + 1000) }
+        , doc3 = { a: 2, ex: new Date(now.getTime() + 500) }
+        ;
+
+      idx.insert(doc1);
+      idx.insert(doc2);
+      idx.insert(doc3);
+
+      assert.deepEqual(idx.getMatching(now), [ doc1 ]);
+      assert.deepEqual(idx.getMatching(new Date(now.getTime() + 500)), [ doc3 ]);
+      assert.deepEqual(idx.getMatching(new Date(now.getTime() + 1000)), [ doc2 ]);
+
+      // Minus one expired document...
+      setTimeout(function() {
+        assert.deepEqual(idx.getMatching(now), []);
+        assert.deepEqual(idx.getMatching(new Date(now.getTime() + 500)), [ doc3 ]);
+        assert.deepEqual(idx.getMatching(new Date(now.getTime() + 1000)), [ doc2 ]);
+
+        // Minus two expired documents...
+        setTimeout(function() {
+          assert.deepEqual(idx.getMatching(now), []);
+          assert.deepEqual(idx.getMatching(new Date(now.getTime() + 500)), []);
+          assert.deepEqual(idx.getMatching(new Date(now.getTime() + 1000)), [ doc2 ]);
+
+          // Minus all expired documents...
+          setTimeout(function() {
+            assert.deepEqual(idx.getMatching(now), []);
+            assert.deepEqual(idx.getMatching(new Date(now.getTime() + 500)), []);
+            assert.deepEqual(idx.getMatching(new Date(now.getTime() + 1000)), []);
+
+            done();
+          }, 500);
+
+        }, 500);
+
+      }, 1000);
+    });
+
+  });
+
 });
