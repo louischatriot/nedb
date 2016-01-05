@@ -1677,6 +1677,7 @@ describe('Database', function () {
             d.indexes.z.fieldName.should.equal('z');
             d.indexes.z.unique.should.equal(false);
             d.indexes.z.sparse.should.equal(false);
+            assert.isNull(d.indexes.z.expireAfterSeconds);
             d.indexes.z.tree.getNumberOfKeys().should.equal(3);
             d.indexes.z.tree.search('1')[0].should.equal(d.getAllData()[0]);
             d.indexes.z.tree.search('2')[0].should.equal(d.getAllData()[1]);
