@@ -541,6 +541,7 @@ To create an index, use `datastore.ensureIndex(options, cb)`, where callback is 
 * **fieldName** (required): name of the field to index. Use the dot notation to index a field in a nested document.
 * **unique** (optional, defaults to `false`): enforce field uniqueness. Note that a unique index will raise an error if you try to index two documents for which the field is not defined.
 * **sparse** (optional, defaults to `false`): don't index documents for which the field is not defined. Use this option along with "unique" if you want to accept multiple documents for which it is not defined.
+* **expireAfterSeconds** (optional, defaults to `null`): Time-To-Live (TTL) indexes expire documents after the specified number of seconds has passed since the indexed field value; i.e. the expiration threshold is the indexed field's `Date` value plus the specified number of seconds. Accepted values must be positive numbers between `0` (inclusive) and `Infinity` (exclusive). Based on [MongoDB's Time-To-Live (TTL) indexing concept](https://docs.mongodb.org/manual/core/index-ttl/).
 
 Note: the `_id` is automatically indexed with a unique constraint, no need to call `ensureIndex` on it.
 
@@ -561,6 +562,17 @@ db.ensureIndex({ fieldName: 'somefield', unique: true }, function (err) {
 db.ensureIndex({ fieldName: 'somefield', unique: true, sparse: true }, function (err) {
 });
 
+// Using an expiring index with a built-in Time-To-Live (TTL) based on creation
+db.ensureIndex({ fieldName: 'createdAt', expireAfterSeconds: 90 }, function(err) {
+  // Documents that include a Date value in the `createdAt` field will
+  // automatically expire 90 seconds after they were created
+})
+
+// Using an expiring index with a built-in Time-To-Live (TTL) based on modification
+db.ensureIndex({ fieldName: 'updatedAt', expireAfterSeconds: 600 }, function(err) {
+  // Documents that include a Date value in the `updatedAt` field will
+  // automatically expire 10 minutes (600 seconds) after they were last modified
+})
 
 // Format of the error message when the unique constraint is not met
 db.insert({ somefield: 'nedb' }, function (err) {

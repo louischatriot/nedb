@@ -224,6 +224,18 @@ describe('Model', function () {
       model.isPrimitiveType({ a: 42 }).should.equal(false);
     });
 
+    it('Can check if an object is expired or not', function () {
+      var expiredDate = new Date(Date.now() - 1000);
+      var nonExpiredDate = new Date(Date.now() + 1000);
+
+      model.isExpired({ somefield: 'blah' }).should.equal(false);
+      model.isExpired({ somefield: nonExpiredDate }).should.equal(false);
+      model.isExpired({ somefield: expiredDate }).should.equal(false);
+      model.isExpired({ $$expiry: { somefield: 1 }, somefield: 'blah' }).should.equal(false);
+      model.isExpired({ $$expiry: { somefield: 1 }, somefield: nonExpiredDate }).should.equal(false);
+      model.isExpired({ $$expiry: { somefield: 1 }, somefield: expiredDate }).should.equal(true);
+    });
+
   });   // ==== End of 'Object checking' ==== //
 
 

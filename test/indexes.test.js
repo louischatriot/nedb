@@ -121,6 +121,25 @@ describe('Indexes', function () {
       assert.deepEqual(idx.tree.search('bloup'), []);
     });
 
+    it('When inserting a document into an expiring index, $$expiry is added', function () {
+      var now = new Date()
+        , idx = new Index({ fieldName: 'ex', expireAfterSeconds: 1 })
+        , doc1 = { a: 5, ex: now }
+        , doc2 = { a: 8, ex: new Date(now.getTime() + 1000) }
+        , doc3 = { a: 2, ex: new Date(now.getTime() + 500) }
+        ;
+
+      idx.insert(doc1);
+      idx.insert([doc2, doc3]);
+
+      assert.deepEqual(doc1, { $$expiry: { ex: 1 }, a: 5, ex: now });
+      assert.deepEqual(doc2, { $$expiry: { ex: 1 }, a: 8, ex: new Date(now.getTime() + 1000) });
+      assert.deepEqual(doc3, { $$expiry: { ex: 1 }, a: 2, ex: new Date(now.getTime() + 500) });
+
+      idx.getAll().length.should.equal(3);
+      assert.deepEqual(idx.getAll(), [{ $$expiry: { ex: 1 }, a: 5, ex: now }, { $$expiry: { ex: 1 }, a: 2, ex: new Date(now.getTime() + 500) }, { $$expiry: { ex: 1 }, a: 8, ex: new Date(now.getTime() + 1000) }]);
+    });
+
 
     describe('Array fields', function () {
 
