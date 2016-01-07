@@ -120,107 +120,108 @@ describe('Indexes', function () {
       assert.deepEqual(idx.tree.search('world'), []);
       assert.deepEqual(idx.tree.search('bloup'), []);
     });
-	
-	describe('Array fields', function () {
-	
-	  it('Inserts one entry per array element in the index', function () {
-      var obj = { tf: ['aa', 'bb'], really: 'yeah' }
-        , obj2 = { tf: 'normal', yes: 'indeed' }
-        , idx = new Index({ fieldName: 'tf' })
-        ;
-      
-      idx.insert(obj);
-      idx.getAll().length.should.equal(2);
-      idx.getAll()[0].should.equal(obj);
-      idx.getAll()[1].should.equal(obj);
 
-      idx.insert(obj2);
-      idx.getAll().length.should.equal(3);
-	  });
 
-	  it('Inserts one entry per array element in the index, type-checked', function () {
-      var obj = { tf: ['42', 42, new Date(42), 42], really: 'yeah' }
-        , idx = new Index({ fieldName: 'tf' })
-        ;
-      
-      idx.insert(obj);
-      idx.getAll().length.should.equal(3);
-      idx.getAll()[0].should.equal(obj);
-      idx.getAll()[1].should.equal(obj);
-      idx.getAll()[2].should.equal(obj);
-	  });
-    
-	  it('Inserts one entry per unique array element in the index, the unique constraint only holds across documents', function () {
-      var obj = { tf: ['aa', 'aa'], really: 'yeah' }
-        , obj2 = { tf: ['cc', 'yy', 'cc'], yes: 'indeed' }
-        , idx = new Index({ fieldName: 'tf', unique: true })
-        ;
-      
-      idx.insert(obj);
-      idx.getAll().length.should.equal(1);
-      idx.getAll()[0].should.equal(obj);
+    describe('Array fields', function () {
 
-      idx.insert(obj2);
-      idx.getAll().length.should.equal(3);
-	  });
+      it('Inserts one entry per array element in the index', function () {
+        var obj = { tf: ['aa', 'bb'], really: 'yeah' }
+          , obj2 = { tf: 'normal', yes: 'indeed' }
+          , idx = new Index({ fieldName: 'tf' })
+          ;
 
-	  it('The unique constraint holds across documents', function () {
-      var obj = { tf: ['aa', 'aa'], really: 'yeah' }
-        , obj2 = { tf: ['cc', 'aa', 'cc'], yes: 'indeed' }
-        , idx = new Index({ fieldName: 'tf', unique: true })
-        ;
-      
-      idx.insert(obj);
-      idx.getAll().length.should.equal(1);
-      idx.getAll()[0].should.equal(obj);
+        idx.insert(obj);
+        idx.getAll().length.should.equal(2);
+        idx.getAll()[0].should.equal(obj);
+        idx.getAll()[1].should.equal(obj);
 
-      (function () { idx.insert(obj2); }).should.throw();
-	  });
-    
-    it('When removing a document, remove it from the index at all unique array elements', function () {
-      var obj = { tf: ['aa', 'aa'], really: 'yeah' }
-        , obj2 = { tf: ['cc', 'aa', 'cc'], yes: 'indeed' }
-        , idx = new Index({ fieldName: 'tf' })
-        ;
-      
-      idx.insert(obj);
-      idx.insert(obj2);
-      idx.getMatching('aa').length.should.equal(2);
-      idx.getMatching('aa').indexOf(obj).should.not.equal(-1);
-      idx.getMatching('aa').indexOf(obj2).should.not.equal(-1);
-      idx.getMatching('cc').length.should.equal(1);
+        idx.insert(obj2);
+        idx.getAll().length.should.equal(3);
+      });
 
-      idx.remove(obj2);
-      idx.getMatching('aa').length.should.equal(1);
-      idx.getMatching('aa').indexOf(obj).should.not.equal(-1);
-      idx.getMatching('aa').indexOf(obj2).should.equal(-1);
-      idx.getMatching('cc').length.should.equal(0);      
-    });
-    
-    it('If a unique constraint is violated when inserting an array key, roll back all inserts before the key', function () {
-      var obj = { tf: ['aa', 'bb'], really: 'yeah' }
-        , obj2 = { tf: ['cc', 'dd', 'aa', 'ee'], yes: 'indeed' }
-        , idx = new Index({ fieldName: 'tf', unique: true })
-        ;
+      it('Inserts one entry per array element in the index, type-checked', function () {
+        var obj = { tf: ['42', 42, new Date(42), 42], really: 'yeah' }
+          , idx = new Index({ fieldName: 'tf' })
+          ;
 
-      idx.insert(obj);
-      idx.getAll().length.should.equal(2);
-      idx.getMatching('aa').length.should.equal(1);
-      idx.getMatching('bb').length.should.equal(1);
-      idx.getMatching('cc').length.should.equal(0);
-      idx.getMatching('dd').length.should.equal(0);
-      idx.getMatching('ee').length.should.equal(0);
-      
-      (function () { idx.insert(obj2); }).should.throw();
-      idx.getAll().length.should.equal(2);
-      idx.getMatching('aa').length.should.equal(1);
-      idx.getMatching('bb').length.should.equal(1);
-      idx.getMatching('cc').length.should.equal(0);
-      idx.getMatching('dd').length.should.equal(0);      
-      idx.getMatching('ee').length.should.equal(0);
-    });
-	
-	});   // ==== End of 'Array fields' ==== //
+        idx.insert(obj);
+        idx.getAll().length.should.equal(3);
+        idx.getAll()[0].should.equal(obj);
+        idx.getAll()[1].should.equal(obj);
+        idx.getAll()[2].should.equal(obj);
+      });
+
+      it('Inserts one entry per unique array element in the index, the unique constraint only holds across documents', function () {
+        var obj = { tf: ['aa', 'aa'], really: 'yeah' }
+          , obj2 = { tf: ['cc', 'yy', 'cc'], yes: 'indeed' }
+          , idx = new Index({ fieldName: 'tf', unique: true })
+          ;
+
+        idx.insert(obj);
+        idx.getAll().length.should.equal(1);
+        idx.getAll()[0].should.equal(obj);
+
+        idx.insert(obj2);
+        idx.getAll().length.should.equal(3);
+      });
+
+      it('The unique constraint holds across documents', function () {
+        var obj = { tf: ['aa', 'aa'], really: 'yeah' }
+          , obj2 = { tf: ['cc', 'aa', 'cc'], yes: 'indeed' }
+          , idx = new Index({ fieldName: 'tf', unique: true })
+          ;
+
+        idx.insert(obj);
+        idx.getAll().length.should.equal(1);
+        idx.getAll()[0].should.equal(obj);
+
+        (function () { idx.insert(obj2); }).should.throw();
+      });
+
+      it('When removing a document, remove it from the index at all unique array elements', function () {
+        var obj = { tf: ['aa', 'aa'], really: 'yeah' }
+          , obj2 = { tf: ['cc', 'aa', 'cc'], yes: 'indeed' }
+          , idx = new Index({ fieldName: 'tf' })
+          ;
+
+        idx.insert(obj);
+        idx.insert(obj2);
+        idx.getMatching('aa').length.should.equal(2);
+        idx.getMatching('aa').indexOf(obj).should.not.equal(-1);
+        idx.getMatching('aa').indexOf(obj2).should.not.equal(-1);
+        idx.getMatching('cc').length.should.equal(1);
+
+        idx.remove(obj2);
+        idx.getMatching('aa').length.should.equal(1);
+        idx.getMatching('aa').indexOf(obj).should.not.equal(-1);
+        idx.getMatching('aa').indexOf(obj2).should.equal(-1);
+        idx.getMatching('cc').length.should.equal(0);
+      });
+
+      it('If a unique constraint is violated when inserting an array key, roll back all inserts before the key', function () {
+        var obj = { tf: ['aa', 'bb'], really: 'yeah' }
+          , obj2 = { tf: ['cc', 'dd', 'aa', 'ee'], yes: 'indeed' }
+          , idx = new Index({ fieldName: 'tf', unique: true })
+          ;
+
+        idx.insert(obj);
+        idx.getAll().length.should.equal(2);
+        idx.getMatching('aa').length.should.equal(1);
+        idx.getMatching('bb').length.should.equal(1);
+        idx.getMatching('cc').length.should.equal(0);
+        idx.getMatching('dd').length.should.equal(0);
+        idx.getMatching('ee').length.should.equal(0);
+
+        (function () { idx.insert(obj2); }).should.throw();
+        idx.getAll().length.should.equal(2);
+        idx.getMatching('aa').length.should.equal(1);
+        idx.getMatching('bb').length.should.equal(1);
+        idx.getMatching('cc').length.should.equal(0);
+        idx.getMatching('dd').length.should.equal(0);
+        idx.getMatching('ee').length.should.equal(0);
+      });
+
+    });   // ==== End of 'Array fields' ==== //
 
   });   // ==== End of 'Insertion' ==== //
 

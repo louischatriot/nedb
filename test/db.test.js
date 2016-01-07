@@ -89,7 +89,7 @@ describe('Database', function () {
       db = new Datastore({ filename: autoDb, autoload: true, onload: onload })
 
       db.find({}, function (err, docs) {
-        done("Find should not be executed since autoload failed");
+        done(new Error("Find should not be executed since autoload failed"));
       });
     });
 
@@ -390,7 +390,7 @@ describe('Database', function () {
      *
      * Note: maybe using an in-memory only NeDB would give us an easier solution
      */
-    it('If the callback throws an uncaught execption, dont catch it inside findOne, this is userspace concern', function (done) {
+    it('If the callback throws an uncaught exception, do not catch it inside findOne, this is userspace concern', function (done) {
       var tryCount = 0
         , currentUncaughtExceptionHandlers = process.listeners('uncaughtException')
         , i
@@ -399,11 +399,13 @@ describe('Database', function () {
       process.removeAllListeners('uncaughtException');
 
       process.on('uncaughtException', function MINE (ex) {
+        process.removeAllListeners('uncaughtException');
+
         for (i = 0; i < currentUncaughtExceptionHandlers.length; i += 1) {
           process.on('uncaughtException', currentUncaughtExceptionHandlers[i]);
         }
 
-        ex.should.equal('SOME EXCEPTION');
+        ex.message.should.equal('SOME EXCEPTION');
         done();
       });
 
@@ -411,9 +413,9 @@ describe('Database', function () {
         d.findOne({ a : 5}, function (err, doc) {
           if (tryCount === 0) {
             tryCount += 1;
-            throw 'SOME EXCEPTION';
+            throw new Error('SOME EXCEPTION');
           } else {
-            done('Callback was called twice');
+            done(new Error('Callback was called twice'));
           }
         });
       });
