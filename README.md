@@ -267,7 +267,7 @@ db.find({ planet: { $regex: /ar/, $nin: ['Jupiter', 'Earth'] } }, function (err,
 
 #### Array fields
 When a field in a document is an array, NeDB first tries to see if there is an array-specific comparison function (for now there is only `$size`) being used
-and tries it first. If there isn't, the query is treated as a query on every element and there is a match if at least one element matches.
+and tries it first. If there isn't, and the query value is an array, then an exact match is performed (note this is order-sensitive). Otherwise the query is treated as a query on every element and there is a match if at least one element matches.
 
 ```javascript
 // Using an array-specific comparison function
@@ -293,6 +293,11 @@ db.find({ satellites: { $lt: 'Amos' } }, function (err, docs) {
 // This also works with the $in and $nin operator
 db.find({ satellites: { $in: ['Moon', 'Deimos'] } }, function (err, docs) {
   // docs contains Mars (the Earth document is not complete!)
+});
+
+// If the query is an array, matching it means exactly matching the array
+db.find({ satellites: ['Phobos', 'Deimos'] }, function (err, docs) {
+  // docs contains Mars. Docs would have been empty if query had been { satellites: ['Deimos', 'Phobos'] }
 });
 ```
 
