@@ -683,6 +683,32 @@ describe('Database', function () {
       });
     });
 
+    it('Array fields match if the queried array matches exactly', function (done) {
+      d.insert({ fruits: ['apple', 'banana'] }, function (err, doc1) {
+        d.insert({ fruits: [] }, function (err, doc2) {
+          d.insert({ fruits: ['banana', 'apple'] }, function (err, doc3) {
+            d.find({ fruits: ['apple', 'banana'] }, function (err, docs) {
+              assert.isNull(err);
+              docs.length.should.equal(1);
+              assert.equal(docs[0]._id, doc1._id);
+
+              d.find({ fruits: [] }, function (err, docs) {
+                assert.isNull(err);
+                docs.length.should.equal(1);
+                assert.equal(docs[0]._id, doc2._id);
+
+                d.find({ fruits: [''] }, function (err, docs) {
+                  assert.isNull(err);
+                  docs.length.should.equal(0);
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
     it('Returns an error if the query is not well formed', function (done) {
       d.insert({ hello: 'world' }, function () {
         d.find({ $or: { hello: 'world' } }, function (err, docs) {
