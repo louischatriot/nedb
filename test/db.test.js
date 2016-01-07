@@ -687,20 +687,22 @@ describe('Database', function () {
       d.insert({ fruits: ['apple', 'banana'] }, function (err, doc1) {
         d.insert({ fruits: [] }, function (err, doc2) {
           d.insert({ fruits: ['banana', 'apple'] }, function (err, doc3) {
-            d.find({ fruits: ['apple', 'banana'] }, function (err, docs) {
-              assert.isNull(err);
-              docs.length.should.equal(1);
-              assert.equal(docs[0]._id, doc1._id);
-
-              d.find({ fruits: [] }, function (err, docs) {
+            d.insert({ fruits: ['apple', 'banana', 'coconut'] }, function (err, doc4) {
+              d.find({ fruits: ['apple', 'banana'] }, function (err, docs) {
                 assert.isNull(err);
                 docs.length.should.equal(1);
-                assert.equal(docs[0]._id, doc2._id);
+                assert.equal(docs[0]._id, doc1._id);
 
-                d.find({ fruits: [''] }, function (err, docs) {
+                d.find({ fruits: [] }, function (err, docs) {
                   assert.isNull(err);
-                  docs.length.should.equal(0);
-                  done();
+                  docs.length.should.equal(1);
+                  assert.equal(docs[0]._id, doc2._id);
+
+                  d.find({ fruits: [''] }, function (err, docs) {
+                    assert.isNull(err);
+                    docs.length.should.equal(0);
+                    done();
+                  });
                 });
               });
             });
