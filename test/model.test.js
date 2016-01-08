@@ -345,8 +345,82 @@ describe('Model', function () {
       }).to.throw(/Modifier .set's argument must be an object/);
     });
 
+    it('Throw an error if using positional operator without including array field in query', function () {
+      var obj = {
+        some: 'thing',
+        anArray:[
+          {
+            prop1:'value1',
+            prop2:'value2'
+          },
+          {
+            prop1:'value3',
+            prop2:'value4'
+          }
+        ]
+      };
+      var query = {some:'thing'};
+      var updateQuery = { $set: {'anArray.$.prop1':'newValue'}};
+
+      expect(function () {
+        model.modify(obj, updateQuery, query);
+      }).to.throw('Positional operator used ($) but array field not mentioned in query');
+    });
+
+    it('Throw an error if using positional operator on a non array field', function () {
+      var obj = {
+        some: 'thing',
+        anArray:[
+          {
+            prop1:'value1',
+            prop2:'value2'
+          },
+          {
+            prop1:'value3',
+            prop2:'value4'
+          }
+        ]
+      };
+      var query = {some:'thing'};
+      var updateQuery = { $set: {'some.$':'newValue'}};
+
+      expect(function () {
+        model.modify(obj, updateQuery, query);
+      }).to.throw('Positional update operator applied on non array element');
+    });
+
+    it('Should apply the available update operator with changing the underlying object', function () {
+      var obj = {
+        some: 'thing',
+        anArray:[
+          {
+            prop1:'value1',
+            prop2:'value2'
+          },
+          {
+            prop1:'value3',
+            prop2:'value4'
+          }
+        ]
+      };
+      var query = {'anArray.prop1':'value3'};
+      var updateQuery = { $set: {'anArray.$.prop2':'newValue'}};
+
+      var modified = model.modify(obj, updateQuery, query);
+
+      Object.keys(modified).length.should.equal(2);
+      modified.some.should.equal('thing');
+      modified.anArray.should.have.length(2);
+      modified.anArray[0].should.deep.equal({prop1:'value1',prop2:'value2'});
+      modified.anArray[1].should.deep.equal({prop1:'value3',prop2:'newValue'});
+
+      Object.keys(obj).length.should.equal(2);
+      obj.some.should.equal('thing');
+      obj.anArray.should.deep.have.members([{prop1:'value1', prop2:'value2'},{prop1:'value3', prop2:'value4'}]);
+    });
+
     describe('$set modifier', function () {
-      it('Can change already set fields without modfifying the underlying object', function () {
+      it('Can change already set fields without modifying the underlying object', function () {
         var obj = { some: 'thing', yup: 'yes', nay: 'noes' }
           , updateQuery = { $set: { some: 'changed', nay: 'yes indeed' } }
           , modified = model.modify(obj, updateQuery);
