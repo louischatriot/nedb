@@ -407,6 +407,7 @@ db.count({}, function (err, count) {
 * `options` is an object with two possible parameters
   * `multi` (defaults to `false`) which allows the modification of several documents if set to true
   * `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything. If your `update` is a simple object with no modifiers, it is the inserted document. In the other case, the `query` is stripped from all operator recursively, and the `update` is applied to it.
+  * `returnUpdatedDocs` (defaults to `false`, not MongoDB-compatible) if set to true and update is not an upsert, will return the array of documents matched bu the find query and updated. Updated documents will be returned even if the update did not actually modify them
 * `callback` (optional) signature: `err`, `numReplaced`, `newDoc`
   * `numReplaced` is the number of documents replaced
   * `newDoc` is the created document if the upsert mode was chosen and a document was inserted
