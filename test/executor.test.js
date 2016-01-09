@@ -15,25 +15,26 @@ var should = require('chai').should()
 // We prevent Mocha from catching the exception we throw on purpose by remembering all current handlers, remove them and register them back after test ends
 function testThrowInCallback (d, done) {
   var currentUncaughtExceptionHandlers = process.listeners('uncaughtException');
-  
+
   process.removeAllListeners('uncaughtException');
 
   process.on('uncaughtException', function (err) {
     // Do nothing with the error which is only there to test we stay on track
   });
 
-  d.find({}, function (err) {    
+  d.find({}, function (err) {
     process.nextTick(function () {
       d.insert({ bar: 1 }, function (err) {
+        process.removeAllListeners('uncaughtException');
         for (var i = 0; i < currentUncaughtExceptionHandlers.length; i += 1) {
           process.on('uncaughtException', currentUncaughtExceptionHandlers[i]);
         }
-        
+
         done();
       });
     });
-    
-    throw 'Some error';
+
+    throw new Error('Some error');
   });
 }
 
@@ -51,29 +52,34 @@ function testRightOrder (d, done) {
 
   d.find({}, function (err, docs) {
     docs.length.should.equal(0);
-  
+
     d.insert({ a: 1 }, function () {
       d.update({ a: 1 }, { a: 2 }, {}, function () {
         d.find({}, function (err, docs) {
           docs[0].a.should.equal(2);
-          
+
           process.nextTick(function () {
             d.update({ a: 2 }, { a: 3 }, {}, function () {
               d.find({}, function (err, docs) {
                 docs[0].a.should.equal(3);
-                done();
 
+                process.removeAllListeners('uncaughtException');
+                for (var i = 0; i < currentUncaughtExceptionHandlers.length; i += 1) {
+                  process.on('uncaughtException', currentUncaughtExceptionHandlers[i]);
+                }
+
+                done();
               });
             });
           });
-          
-          throw 'Some error';
+
+          throw new Error('Some error');
         });
       });
     });
   });
-}  
-  
+}
+
 
 
 // Note:  The following test does not have any assertion because it
