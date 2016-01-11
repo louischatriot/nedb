@@ -856,7 +856,7 @@ Cursor.prototype.project = function (candidates) {
   // Check for consistency
   keys = Object.keys(this._projection);
   keys.forEach(function (k) {
-    if (action !== undefined && self._projection[k] !== action) { throw "Can't both keep and omit fields except for _id"; }
+    if (action !== undefined && self._projection[k] !== action) { throw new Error("Can't both keep and omit fields except for _id"); }
     action = self._projection[k];
   });
 
@@ -1065,7 +1065,7 @@ var customUtils = require('./customUtils')
  *                                            Node Webkit stores application data such as cookies and local storage (the best place to store data in my opinion)
  * @param {Boolean} options.autoload Optional, defaults to false
  * @param {Function} options.onload Optional, if autoload is used this will be called after the load database with the error object as parameter. If you don't pass it the error will be thrown
- * @param {Function} options.afterSerialization and options.beforeDeserialization Optional, serialization hooks
+ * @param {Function} options.afterSerialization/options.beforeDeserialization Optional, serialization hooks
  * @param {Number} options.corruptAlertThreshold Optional, threshold after which an alert is thrown if too much data is corrupt
  */
 function Datastore (options) {
@@ -1155,11 +1155,16 @@ Datastore.prototype.resetIndexes = function (newData) {
  * @param {Function} cb Optional callback, signature: err
  */
 Datastore.prototype.ensureIndex = function (options, cb) {
-  var callback = cb || function () {};
+  var err
+    , callback = cb || function () {};
 
   options = options || {};
 
-  if (!options.fieldName) { return callback({ missingFieldName: true }); }
+  if (!options.fieldName) {
+    err = new Error("Cannot create an index without a fieldName");
+    err.missingFieldName = true;
+    return callback(err);
+  }
   if (this.indexes[options.fieldName]) { return callback(null); }
 
   this.indexes[options.fieldName] = new Index(options);
@@ -1522,12 +1527,12 @@ Datastore.prototype.findOne = function (query, projection, callback) {
 
 /**
  * Update all docs matching query
- * For now, very naive implementation (recalculating the whole database)
  * @param {Object} query
  * @param {Object} updateQuery
  * @param {Object} options Optional options
  *                 options.multi If true, can update multiple documents (defaults to false)
  *                 options.upsert If true, document is inserted if the query doesn't match anything
+ *                 options.returnUpdatedDocs Defaults to false, if true return as third argument the array of updated matched documents (even if no change actually took place)
  * @param {Function} cb Optional callback, signature: err, numReplaced, upsert (set to true if the update was in fact an upsert)
  *
  * @api private Use Datastore.update which has the same signature
@@ -1581,9 +1586,9 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
   }
   , function () {   // Perform the update
     var modifiedDoc
-	  , candidates = self.getCandidates(query)
-	  , modifications = []
-	  ;
+      , candidates = self.getCandidates(query)
+      , modifications = []
+      ;
 
     // Preparing update (if an error is thrown here neither the datafile nor
     // the in-memory indexes are affected)
@@ -1608,9 +1613,16 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
     }
 
     // Update the datafile
-    self.persistence.persistNewState(_.pluck(modifications, 'newDoc'), function (err) {
+    var updatedDocs = _.pluck(modifications, 'newDoc');
+    self.persistence.persistNewState(updatedDocs, function (err) {
       if (err) { return callback(err); }
-      return callback(null, numReplaced);
+      if (!options.returnUpdatedDocs) {
+        return callback(null, numReplaced);
+      } else {
+        var updatedDocsDC = [];
+        updatedDocs.forEach(function (doc) { updatedDocsDC.push(model.deepCopy(doc)); });
+        return callback(null, numReplaced, updatedDocsDC);
+      }
     });
   }
   ]);
@@ -1771,7 +1783,7 @@ function projectForUnique (elt) {
   if (typeof elt === 'boolean') { return '$boolean' + elt; }
   if (typeof elt === 'number') { return '$number' + elt; }
   if (util.isArray(elt)) { return '$date' + elt.getTime(); }
-  
+
   return elt;   // Arrays and objects, will check for pointer equality
 }
 
@@ -1981,16 +1993,6 @@ Index.prototype.revertUpdate = function (oldDoc, newDoc) {
 };
 
 
-// Append all elements in toAppend to array
-function append (array, toAppend) {
-  var i;
-
-  for (i = 0; i < toAppend.length; i += 1) {
-    array.push(toAppend[i]);
-  }
-}
-
-
 /**
  * Get all documents in index whose key match value (if it is a Thing) or one of the elements of value (if it is an array of Things)
  * @param {Thing} value Value to match the key against
@@ -2000,7 +2002,7 @@ Index.prototype.getMatching = function (value) {
   var self = this;
 
   if (!util.isArray(value)) {
-    return this.tree.search(value);
+    return self.tree.search(value);
   } else {
     var _res = {}, res = [];
 
@@ -2086,11 +2088,11 @@ function checkKey (k, v) {
   }
 
   if (k[0] === '$' && !(k === '$$date' && typeof v === 'number') && !(k === '$$deleted' && v === true) && !(k === '$$indexCreated') && !(k === '$$indexRemoved')) {
-    throw 'Field names cannot begin with the $ character';
+    throw new Error('Field names cannot begin with the $ character');
   }
 
   if (k.indexOf('.') !== -1) {
-    throw 'Field names cannot contain a .';
+    throw new Error('Field names cannot contain a .');
   }
 }
 
@@ -2323,11 +2325,11 @@ lastStepModifierFunctions.$push = function (obj, field, value) {
   // Create the array if it doesn't exist
   if (!obj.hasOwnProperty(field)) { obj[field] = []; }
 
-  if (!util.isArray(obj[field])) { throw "Can't $push an element on non-array values"; }
+  if (!util.isArray(obj[field])) { throw new Error("Can't $push an element on non-array values"); }
 
   if (value !== null && typeof value === 'object' && value.$each) {
-    if (Object.keys(value).length > 1) { throw "Can't use another field in conjunction with $each"; }
-    if (!util.isArray(value.$each)) { throw "$each requires an array value"; }
+    if (Object.keys(value).length > 1) { throw new Error("Can't use another field in conjunction with $each"); }
+    if (!util.isArray(value.$each)) { throw new Error("$each requires an array value"); }
 
     value.$each.forEach(function (v) {
       obj[field].push(v);
@@ -2349,11 +2351,11 @@ lastStepModifierFunctions.$addToSet = function (obj, field, value) {
   // Create the array if it doesn't exist
   if (!obj.hasOwnProperty(field)) { obj[field] = []; }
 
-  if (!util.isArray(obj[field])) { throw "Can't $addToSet an element on non-array values"; }
+  if (!util.isArray(obj[field])) { throw new Error("Can't $addToSet an element on non-array values"); }
 
   if (value !== null && typeof value === 'object' && value.$each) {
-    if (Object.keys(value).length > 1) { throw "Can't use another field in conjunction with $each"; }
-    if (!util.isArray(value.$each)) { throw "$each requires an array value"; }
+    if (Object.keys(value).length > 1) { throw new Error("Can't use another field in conjunction with $each"); }
+    if (!util.isArray(value.$each)) { throw new Error("$each requires an array value"); }
 
     value.$each.forEach(function (v) {
       lastStepModifierFunctions.$addToSet(obj, field, v);
@@ -2371,8 +2373,8 @@ lastStepModifierFunctions.$addToSet = function (obj, field, value) {
  * Remove the first or last element of an array
  */
 lastStepModifierFunctions.$pop = function (obj, field, value) {
-  if (!util.isArray(obj[field])) { throw "Can't $pop an element from non-array values"; }
-  if (typeof value !== 'number') { throw value + " isn't an integer, can't use it with $pop"; }
+  if (!util.isArray(obj[field])) { throw new Error("Can't $pop an element from non-array values"); }
+  if (typeof value !== 'number') { throw new Error(value + " isn't an integer, can't use it with $pop"); }
   if (value === 0) { return; }
 
   if (value > 0) {
@@ -2389,7 +2391,7 @@ lastStepModifierFunctions.$pop = function (obj, field, value) {
 lastStepModifierFunctions.$pull = function (obj, field, value) {
   var arr, i;
 
-  if (!util.isArray(obj[field])) { throw "Can't $pull an element from non-array values"; }
+  if (!util.isArray(obj[field])) { throw new Error("Can't $pull an element from non-array values"); }
 
   arr = obj[field];
   for (i = arr.length - 1; i >= 0; i -= 1) {
@@ -2404,13 +2406,13 @@ lastStepModifierFunctions.$pull = function (obj, field, value) {
  * Increment a numeric field's value
  */
 lastStepModifierFunctions.$inc = function (obj, field, value) {
-  if (typeof value !== 'number') { throw value + " must be a number"; }
+  if (typeof value !== 'number') { throw new Error(value + " must be a number"); }
 
   if (typeof obj[field] !== 'number') {
     if (!_.has(obj, field)) {
       obj[field] = value;
     } else {
-      throw "Don't use the $inc modifier on non-number fields";
+      throw new Error("Don't use the $inc modifier on non-number fields");
     }
   } else {
     obj[field] += value;
@@ -2447,10 +2449,10 @@ function modify (obj, updateQuery) {
     , newDoc, modifiers
     ;
 
-  if (keys.indexOf('_id') !== -1 && updateQuery._id !== obj._id) { throw "You cannot change a document's _id"; }
+  if (keys.indexOf('_id') !== -1 && updateQuery._id !== obj._id) { throw new Error("You cannot change a document's _id"); }
 
   if (dollarFirstChars.length !== 0 && dollarFirstChars.length !== firstChars.length) {
-    throw "You cannot mix modifiers and normal fields";
+    throw new Error("You cannot mix modifiers and normal fields");
   }
 
   if (dollarFirstChars.length === 0) {
@@ -2464,12 +2466,12 @@ function modify (obj, updateQuery) {
     modifiers.forEach(function (m) {
       var keys;
 
-      if (!modifierFunctions[m]) { throw "Unknown modifier " + m; }
+      if (!modifierFunctions[m]) { throw new Error("Unknown modifier " + m); }
 
       // Can't rely on Object.keys throwing on non objects since ES6{
       // Not 100% satisfying as non objects can be interpreted as objects but no false negatives so we can live with it
       if (typeof updateQuery[m] !== 'object') {
-        throw "Modifier " + m + "'s argument must be an object";
+        throw new Error("Modifier " + m + "'s argument must be an object");
       }
 
       keys = Object.keys(updateQuery[m]);
@@ -2482,7 +2484,7 @@ function modify (obj, updateQuery) {
   // Check result is valid and return it
   checkObject(newDoc);
 
-  if (obj._id !== newDoc._id) { throw "You can't change a document's _id"; }
+  if (obj._id !== newDoc._id) { throw new Error("You can't change a document's _id"); }
   return newDoc;
 };
 
@@ -2607,7 +2609,7 @@ comparisonFunctions.$ne = function (a, b) {
 comparisonFunctions.$in = function (a, b) {
   var i;
 
-  if (!util.isArray(b)) { throw "$in operator called with a non-array"; }
+  if (!util.isArray(b)) { throw new Error("$in operator called with a non-array"); }
 
   for (i = 0; i < b.length; i += 1) {
     if (areThingsEqual(a, b[i])) { return true; }
@@ -2617,13 +2619,13 @@ comparisonFunctions.$in = function (a, b) {
 };
 
 comparisonFunctions.$nin = function (a, b) {
-  if (!util.isArray(b)) { throw "$nin operator called with a non-array"; }
+  if (!util.isArray(b)) { throw new Error("$nin operator called with a non-array"); }
 
   return !comparisonFunctions.$in(a, b);
 };
 
 comparisonFunctions.$regex = function (a, b) {
-  if (!util.isRegExp(b)) { throw "$regex operator called with non regular expression"; }
+  if (!util.isRegExp(b)) { throw new Error("$regex operator called with non regular expression"); }
 
   if (typeof a !== 'string') {
     return false
@@ -2649,7 +2651,7 @@ comparisonFunctions.$exists = function (value, exists) {
 // Specific to arrays
 comparisonFunctions.$size = function (obj, value) {
     if (!util.isArray(obj)) { return false; }
-    if (value % 1 !== 0) { throw "$size operator called without an integer"; }
+    if (value % 1 !== 0) { throw new Error("$size operator called without an integer"); }
 
     return (obj.length == value);
 };
@@ -2664,7 +2666,7 @@ arrayComparisonFunctions.$size = true;
 logicalOperators.$or = function (obj, query) {
   var i;
 
-  if (!util.isArray(query)) { throw "$or operator used without an array"; }
+  if (!util.isArray(query)) { throw new Error("$or operator used without an array"); }
 
   for (i = 0; i < query.length; i += 1) {
     if (match(obj, query[i])) { return true; }
@@ -2682,7 +2684,7 @@ logicalOperators.$or = function (obj, query) {
 logicalOperators.$and = function (obj, query) {
   var i;
 
-  if (!util.isArray(query)) { throw "$and operator used without an array"; }
+  if (!util.isArray(query)) { throw new Error("$and operator used without an array"); }
 
   for (i = 0; i < query.length; i += 1) {
     if (!match(obj, query[i])) { return false; }
@@ -2710,10 +2712,10 @@ logicalOperators.$not = function (obj, query) {
 logicalOperators.$where = function (obj, fn) {
   var result;
 
-  if (!_.isFunction(fn)) { throw "$where operator used without a function"; }
+  if (!_.isFunction(fn)) { throw new Error("$where operator used without a function"); }
 
   result = fn.call(obj);
-  if (!_.isBoolean(result)) { throw "$where function must return boolean"; }
+  if (!_.isBoolean(result)) { throw new Error("$where function must return boolean"); }
 
   return result;
 };
@@ -2741,7 +2743,7 @@ function match (obj, query) {
     queryValue = query[queryKey];
 
     if (queryKey[0] === '$') {
-      if (!logicalOperators[queryKey]) { throw "Unknown logical operator " + queryKey; }
+      if (!logicalOperators[queryKey]) { throw new Error("Unknown logical operator " + queryKey); }
       if (!logicalOperators[queryKey](obj, queryValue)) { return false; }
     } else {
       if (!matchQueryPart(obj, queryKey, queryValue)) { return false; }
@@ -2785,13 +2787,13 @@ function matchQueryPart (obj, queryKey, queryValue, treatObjAsValue) {
     dollarFirstChars = _.filter(firstChars, function (c) { return c === '$'; });
 
     if (dollarFirstChars.length !== 0 && dollarFirstChars.length !== firstChars.length) {
-      throw "You cannot mix operators and normal fields";
+      throw new Error("You cannot mix operators and normal fields");
     }
 
     // queryValue is an object of this form: { $comparisonOperator1: value1, ... }
     if (dollarFirstChars.length > 0) {
       for (i = 0; i < keys.length; i += 1) {
-        if (!comparisonFunctions[keys[i]]) { throw "Unknown comparison function " + keys[i]; }
+        if (!comparisonFunctions[keys[i]]) { throw new Error("Unknown comparison function " + keys[i]); }
 
         if (!comparisonFunctions[keys[i]](objValue, queryValue[keys[i]])) { return false; }
       }
@@ -2854,15 +2856,15 @@ function Persistence (options) {
   this.corruptAlertThreshold = options.corruptAlertThreshold !== undefined ? options.corruptAlertThreshold : 0.1;
 
   if (!this.inMemoryOnly && this.filename && this.filename.charAt(this.filename.length - 1) === '~') {
-    throw "The datafile name can't end with a ~, which is reserved for crash safe backup files";
+    throw new Error("The datafile name can't end with a ~, which is reserved for crash safe backup files");
   }
 
   // After serialization and before deserialization hooks with some basic sanity checks
   if (options.afterSerialization && !options.beforeDeserialization) {
-    throw "Serialization hook defined but deserialization hook undefined, cautiously refusing to start NeDB to prevent dataloss";
+    throw new Error("Serialization hook defined but deserialization hook undefined, cautiously refusing to start NeDB to prevent dataloss");
   }
   if (!options.afterSerialization && options.beforeDeserialization) {
-    throw "Serialization hook undefined but deserialization hook defined, cautiously refusing to start NeDB to prevent dataloss";
+    throw new Error("Serialization hook undefined but deserialization hook defined, cautiously refusing to start NeDB to prevent dataloss");
   }
   this.afterSerialization = options.afterSerialization || function (s) { return s; };
   this.beforeDeserialization = options.beforeDeserialization || function (s) { return s; };
@@ -2870,7 +2872,7 @@ function Persistence (options) {
     for (j = 0; j < 10; j += 1) {
       randomString = customUtils.uid(i);
       if (this.beforeDeserialization(this.afterSerialization(randomString)) !== randomString) {
-        throw "beforeDeserialization is not the reverse of afterSerialization, cautiously refusing to start NeDB to prevent dataloss";
+        throw new Error("beforeDeserialization is not the reverse of afterSerialization, cautiously refusing to start NeDB to prevent dataloss");
       }
     }
   }
@@ -2914,21 +2916,21 @@ Persistence.getNWAppFilename = function (appName, relativeFilename) {
     case 'win32':
     case 'win64':
       home = process.env.LOCALAPPDATA || process.env.APPDATA;
-      if (!home) { throw "Couldn't find the base application data folder"; }
+      if (!home) { throw new Error("Couldn't find the base application data folder"); }
       home = path.join(home, appName);
       break;
     case 'darwin':
       home = process.env.HOME;
-      if (!home) { throw "Couldn't find the base application data directory"; }
+      if (!home) { throw new Error("Couldn't find the base application data directory"); }
       home = path.join(home, 'Library', 'Application Support', appName);
       break;
     case 'linux':
       home = process.env.HOME;
-      if (!home) { throw "Couldn't find the base application data directory"; }
+      if (!home) { throw new Error("Couldn't find the base application data directory"); }
       home = path.join(home, '.config', appName);
       break;
     default:
-      throw "Can't use the Node Webkit relative path for platform " + process.platform;
+      throw new Error("Can't use the Node Webkit relative path for platform " + process.platform);
       break;
   }
 
@@ -3060,7 +3062,7 @@ Persistence.prototype.treatRawData = function (rawData) {
 
   // A bit lenient on corruption
   if (data.length > 0 && corruptItems / data.length > this.corruptAlertThreshold) {
-    throw "More than 10% of the data file is corrupt, the wrong beforeDeserialization hook may be used. Cautiously refusing to start NeDB to prevent dataloss"
+    throw new Error("More than " + Math.floor(100 * this.corruptAlertThreshold) + "% of the data file is corrupt, the wrong beforeDeserialization hook may be used. Cautiously refusing to start NeDB to prevent dataloss");
   }
 
   Object.keys(dataById).forEach(function (k) {
@@ -4261,14 +4263,14 @@ _AVLTree.prototype.checkHeightCorrect = function () {
 
   if (!this.hasOwnProperty('key')) { return; }   // Empty tree
 
-  if (this.left && this.left.height === undefined) { throw "Undefined height for node " + this.left.key; }
-  if (this.right && this.right.height === undefined) { throw "Undefined height for node " + this.right.key; }
-  if (this.height === undefined) { throw "Undefined height for node " + this.key; }
+  if (this.left && this.left.height === undefined) { throw new Error("Undefined height for node " + this.left.key); }
+  if (this.right && this.right.height === undefined) { throw new Error("Undefined height for node " + this.right.key); }
+  if (this.height === undefined) { throw new Error("Undefined height for node " + this.key); }
 
   leftH = this.left ? this.left.height : 0;
   rightH = this.right ? this.right.height : 0;
 
-  if (this.height !== 1 + Math.max(leftH, rightH)) { throw "Height constraint failed for node " + this.key; }
+  if (this.height !== 1 + Math.max(leftH, rightH)) { throw new Error("Height constraint failed for node " + this.key); }
   if (this.left) { this.left.checkHeightCorrect(); }
   if (this.right) { this.right.checkHeightCorrect(); }
 };
@@ -4289,7 +4291,7 @@ _AVLTree.prototype.balanceFactor = function () {
  * Check that the balance factors are all between -1 and 1
  */
 _AVLTree.prototype.checkBalanceFactors = function () {
-  if (Math.abs(this.balanceFactor()) > 1) { throw 'Tree is unbalanced at node ' + this.key; }
+  if (Math.abs(this.balanceFactor()) > 1) { throw new Error('Tree is unbalanced at node ' + this.key); }
 
   if (this.left) { this.left.checkBalanceFactors(); }
   if (this.right) { this.right.checkBalanceFactors(); }
@@ -4468,10 +4470,10 @@ _AVLTree.prototype.insert = function (key, value) {
     // Same key: no change in the tree structure
     if (currentNode.compareKeys(currentNode.key, key) === 0) {
       if (currentNode.unique) {
-        throw { message: "Can't insert key " + key + ", it violates the unique constraint"
-              , key: key
-              , errorType: 'uniqueViolated'
-              };
+        var err = new Error("Can't insert key " + key + ", it violates the unique constraint");
+        err.key = key;
+        err.errorType = 'uniqueViolated';
+        throw err;
       } else {
         currentNode.data.push(value);
       }
@@ -4752,7 +4754,7 @@ BinarySearchTree.prototype.checkNodeOrdering = function () {
   if (this.left) {
     this.left.checkAllNodesFullfillCondition(function (k) {
       if (self.compareKeys(k, self.key) >= 0) {
-        throw 'Tree with root ' + self.key + ' is not a binary search tree';
+        throw new Error('Tree with root ' + self.key + ' is not a binary search tree');
       }
     });
     this.left.checkNodeOrdering();
@@ -4761,7 +4763,7 @@ BinarySearchTree.prototype.checkNodeOrdering = function () {
   if (this.right) {
     this.right.checkAllNodesFullfillCondition(function (k) {
       if (self.compareKeys(k, self.key) <= 0) {
-        throw 'Tree with root ' + self.key + ' is not a binary search tree';
+        throw new Error('Tree with root ' + self.key + ' is not a binary search tree');
       }
     });
     this.right.checkNodeOrdering();
@@ -4774,12 +4776,12 @@ BinarySearchTree.prototype.checkNodeOrdering = function () {
  */
 BinarySearchTree.prototype.checkInternalPointers = function () {
   if (this.left) {
-    if (this.left.parent !== this) { throw 'Parent pointer broken for key ' + this.key; }
+    if (this.left.parent !== this) { throw new Error('Parent pointer broken for key ' + this.key); }
     this.left.checkInternalPointers();
   }
 
   if (this.right) {
-    if (this.right.parent !== this) { throw 'Parent pointer broken for key ' + this.key; }
+    if (this.right.parent !== this) { throw new Error('Parent pointer broken for key ' + this.key); }
     this.right.checkInternalPointers();
   }
 };
@@ -4791,7 +4793,7 @@ BinarySearchTree.prototype.checkInternalPointers = function () {
 BinarySearchTree.prototype.checkIsBST = function () {
   this.checkNodeOrdering();
   this.checkInternalPointers();
-  if (this.parent) { throw "The root shouldn't have a parent"; }
+  if (this.parent) { throw new Error("The root shouldn't have a parent"); }
 };
 
 
@@ -4869,10 +4871,10 @@ BinarySearchTree.prototype.insert = function (key, value) {
   // Same key as root
   if (this.compareKeys(this.key, key) === 0) {
     if (this.unique) {
-      throw { message: "Can't insert key " + key + ", it violates the unique constraint"
-            , key: key
-            , errorType: 'uniqueViolated'
-            };
+      var err = new Error("Can't insert key " + key + ", it violates the unique constraint");
+      err.key = key;
+      err.errorType = 'uniqueViolated';
+      throw err;
     } else {
       this.data.push(value);
     }
@@ -5224,7 +5226,10 @@ function defaultCompareKeysFunction (a, b) {
   if (a > b) { return 1; }
   if (a === b) { return 0; }
 
-  throw { message: "Couldn't compare elements", a: a, b: b };
+  var err = new Error("Couldn't compare elements");
+  err.a = a;
+  err.b = b;
+  throw err;
 }
 module.exports.defaultCompareKeysFunction = defaultCompareKeysFunction;
 
