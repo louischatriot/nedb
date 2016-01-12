@@ -177,7 +177,7 @@ describe('Cursor', function () {
         for (i = 0; i < docs.length - 1; i += 1) {
           assert(docs[i].age < docs[i + 1].age)
         }
-        
+
         cursor.sort({ age: -1 });
         cursor.exec(function (err, docs) {
           assert.isNull(err);
@@ -187,29 +187,54 @@ describe('Cursor', function () {
           }
 
           done();
-        });          
+        });
       });
     });
-    
+
+    it("Sorting strings with custom string comparison function", function (done) {
+      var db = new Datastore({ inMemoryOnly: true, autoload: true
+                             , compareStrings: function (a, b) { return a.length - b.length; }
+                             });
+
+      db.insert({ name: 'alpha' });
+      db.insert({ name: 'charlie' });
+      db.insert({ name: 'zulu' });
+
+      db.find({}).sort({ name: 1 }).exec(function (err, docs) {
+        _.pluck(docs, 'name')[0].should.equal('zulu');
+        _.pluck(docs, 'name')[1].should.equal('alpha');
+        _.pluck(docs, 'name')[2].should.equal('charlie');
+
+        delete db.compareStrings;
+        db.find({}).sort({ name: 1 }).exec(function (err, docs) {
+          _.pluck(docs, 'name')[0].should.equal('alpha');
+          _.pluck(docs, 'name')[1].should.equal('charlie');
+          _.pluck(docs, 'name')[2].should.equal('zulu');
+
+          done();
+        });
+      });
+    });
+
     it('With an empty collection', function (done) {
       async.waterfall([
         function (cb) {
           d.remove({}, { multi: true }, function(err) { return cb(err); })
         }
       , function (cb) {
-          var cursor = new Cursor(d);
-          cursor.sort({ age: 1 });
-          cursor.exec(function (err, docs) {
-            assert.isNull(err);
-            docs.length.should.equal(0);
-            cb();
-          });
-        }
+    var cursor = new Cursor(d);
+    cursor.sort({ age: 1 });
+    cursor.exec(function (err, docs) {
+      assert.isNull(err);
+      docs.length.should.equal(0);
+      cb();
+    });
+      }
       ], done);
     });
-    
+
     it('Ability to chain sorting and exec', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -223,21 +248,21 @@ describe('Cursor', function () {
           });
         }
       , function (cb) {
-          var cursor = new Cursor(d);
-          cursor.sort({ age: -1 }).exec(function (err, docs) {
-            assert.isNull(err);
-            // Results are in descending order
-            for (i = 0; i < docs.length - 1; i += 1) {
-              assert(docs[i].age > docs[i + 1].age)
-            }
-            cb();
-          });
-        }
+    var cursor = new Cursor(d);
+    cursor.sort({ age: -1 }).exec(function (err, docs) {
+      assert.isNull(err);
+      // Results are in descending order
+      for (i = 0; i < docs.length - 1; i += 1) {
+        assert(docs[i].age > docs[i + 1].age)
+      }
+      cb();
+    });
+      }
       ], done);
     });
 
     it('Using limit and sort', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -251,15 +276,15 @@ describe('Cursor', function () {
           });
         }
       , function (cb) {
-          var cursor = new Cursor(d);
-          cursor.sort({ age: -1 }).limit(2).exec(function (err, docs) {
-            assert.isNull(err);
-            docs.length.should.equal(2);
-            docs[0].age.should.equal(89);
-            docs[1].age.should.equal(57);
-            cb();
-          });
-        }
+    var cursor = new Cursor(d);
+    cursor.sort({ age: -1 }).limit(2).exec(function (err, docs) {
+      assert.isNull(err);
+      docs.length.should.equal(2);
+      docs[0].age.should.equal(89);
+      docs[1].age.should.equal(57);
+      cb();
+    });
+      }
       ], done);
     });
 

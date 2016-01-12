@@ -813,6 +813,11 @@ describe('Model', function () {
       model.compareThings({ a: 42, b: 312, c: 54 }, { b: 313, a: 42 }).should.equal(-1);
     });
 
+    it('Can specify custom string comparison function', function () {
+      model.compareThings('hello', 'bloup', function (a, b) { return a < b ? -1 : 1; }).should.equal(1);
+      model.compareThings('hello', 'bloup', function (a, b) { return a > b ? -1 : 1; }).should.equal(-1);
+    });
+
   });   // ==== End of 'Comparing things' ==== //
 
 
