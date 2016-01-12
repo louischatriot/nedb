@@ -786,20 +786,21 @@ var model = require('./model')
     , aggregationOperators = {}
     , groupAggregators = {}
     , Cursor = require('./cursor')
+    , utils = require('./customUtils')
     ;
 
 /**
  * Supported Aggregators for $group functionality
  */
-groupAggregators.$sum = function(sumObj, previousValue,doc){
+groupAggregators.$sum = function(sumValue, previousValue,doc){
     if (!previousValue) previousValue = 0;//initialize it if not initialized yet
     //check operator value
-    if (typeof sumObj ==='string' && sumObj.charAt(0) === '$'){//expression
-        var docProp = sumObj.substr(1);
+    if (typeof sumValue ==='string' && sumValue.charAt(0) === '$'){//expression
+        var docProp = sumValue.substr(1);
         previousValue += doc[docProp];
     }
     else{//simple value
-        previousValue += parseInt(sumObj);
+        previousValue += parseInt(sumValue);
     }
     return previousValue;
 };
@@ -872,10 +873,9 @@ aggregationOperators.$group = function (docs,groupObj,callback) {
     }
     //group object ok.. continue
     var newDataSet = [];
-    var i = docs.length;
     var idElem = groupObj._id;
-    var currentDoc, docId, j,aggregator, docToModify = null;
-    while (i--){
+    var currentDoc, docId, j,aggregator, aggregatorOp, docToModify = null;
+    for (var i = 0, docsLen = docs.length;i<docsLen;i++) {
         currentDoc = docs[i];
         docId = getDocGroupId(idElem,currentDoc);//get doc's _id expression
         //find existing or create new doc
@@ -894,9 +894,10 @@ aggregationOperators.$group = function (docs,groupObj,callback) {
         //apply aggregators
         for (var property in groupObj){
             if (property === '_id') continue;//skip these properties
-            if (!groupAggregators[property]) return callback(new Error('Unsupported aggregator '+property+' used in $group'));
             aggregator = groupObj[property];//get aggregator object
-            docToModify[property] = groupAggregators[property](aggregator, docToModify[property],currentDoc);
+            aggregatorOp = Object.keys(aggregator)[0];
+            if (!groupAggregators[aggregatorOp]) return callback(new Error('Unsupported aggregator '+aggregatorOp+' used in $group'));
+            docToModify[property] = groupAggregators[aggregatorOp](aggregator[aggregatorOp], docToModify[property],currentDoc);
         }
         //appliance of operators finished
     }//end of iteration of result set
@@ -905,32 +906,38 @@ aggregationOperators.$group = function (docs,groupObj,callback) {
 
 aggregationOperators.$project = function (docs,projectObj,callback) {
     var newDataSet = [];
-    var doc,j,projectKey, newDoc,projectValue, dotArray, k, dotArrayLen, dotArrayElem;
+    var doc,j,projectKey, newDoc,projectValue, projectDoc;
     var projectKeys = Object.keys(projectObj);//get project object keys
-    for (var i = 0,docsLen = docs.length;i<len;i++){
+    //check for exclusion of _id
+    var excludeId = false;
+    var idPos = projectKeys.indexOf('_id');
+    if (idPos !== -1){//id found in projection keys
+        if (!projectObj._id){
+            excludeId = true;
+            delete projectObj._id;//remove it from projection obj
+            projectKeys.splice(idPos,1);//remove it from keys array
+        }
+        else{
+            return callback(new Error('_id used in projection but without exclusion'));
+        }
+    }
+    for (var i = 0,docsLen = docs.length;i<docsLen;i++){
         doc = docs[i];
         newDoc = {};//initialize new doc
         j = projectKeys.length;
         while (j--){
             projectKey = projectKeys[j];//current projection key
             projectValue = projectObj[projectKey];
-            if (projectValue === 1 || projectValue === true){//simple inclusion of field
-                newDoc[projectKey] = doc[projectKey];
+            //check type of project key
+            projectDoc = {};
+            projectDoc[projectKey] = projectValue;
+            if (projectKey.indexOf('.') !== -1){//dot notation key
+                projectDoc = utils.convertDotToObj(projectDoc);//convert dot notation to normal obj
             }
-            else if(typeof projectValue === 'string' && projectValue.charAt(0) === '$'){//expressions
-                projectValue = projectValue.substr(1);
-                dotArray = projectValue.split('.');
-                k = 0;
-                dotArrayLen = dotArray.length;
-                projectValue = dotArray[0];
-                while (++k < dotArrayLen){
-                    dotArrayElem = dotArray[k];
-                    projectValue = projectValue[dotArrayElem];
-                    if (typeof projectValue === 'undefined') break;//exit loop, non existing property selected
-                }
-                if (typeof projectValue !== 'undefined') newDoc[projectKey] = projectValue;
-            }
+            //project doc structured, apply it on doc
+            aggregationProject(doc,projectDoc,newDoc);
         }
+        if (!excludeId) newDoc._id = doc._id;
         //newDoc constructed
         newDataSet.push(newDoc);
     }
@@ -961,6 +968,59 @@ function exec(dataset, pipeline, cb){
  */
 
 /**
+ * Applies the projection for aggregation on the provided doc
+ * @param {Object} originalDoc The doc that the projection will be applied on
+ * @param {Object} projectObj The projection object
+ * @param {Object} newDoc The object on which the projected properties will be appended to
+ */
+function aggregationProject (originalDoc,projectObj,newDoc) {
+    var projectKeys = Object.keys(projectObj);//get keys from projection doc
+    var i = projectKeys.length;
+    var key, keyValue, childDoc, tmpDoc, tmpChildArray, dotArray;
+    while (i--){
+        key = projectKeys[i];//get current browsed projection key
+        keyValue = projectObj[key];//get key value
+        //check type of value to see what operation is needed
+        if (keyValue === 1 || keyValue === true){//inclusion of key...
+            if (!!originalDoc && originalDoc.hasOwnProperty(key)) newDoc[key] = originalDoc[key];
+        }
+        else if(typeof keyValue ==='string'){//expression
+            //for now expression will only support, including document fields as computed properties
+            if (keyValue.charAt(0) === '$'){//document field
+                keyValue = keyValue.substr(1);
+                dotArray = keyValue.split('.');
+                keyValue = dotArray[0];
+                childDoc = originalDoc;
+                for (var k = 1, kLen = dotArray.length;k<kLen;k++){
+                    if (!!childDoc && childDoc.hasOwnProperty(keyValue)) childDoc = childDoc[keyValue];
+                    else break;
+                    keyValue = dotArray[k];
+                }
+                //if k is not equal to kLen it means, that loop was interrupted due to not existing property.. so skip
+                if (k === kLen && !!childDoc && childDoc.hasOwnProperty(keyValue)) newDoc[key] = childDoc[keyValue];
+            }
+        }
+        else{//object .... call recursive
+            childDoc = !!originalDoc && originalDoc.hasOwnProperty(key)?originalDoc[key]:null;
+            if (Array.isArray(childDoc)){//array element in original doc, apply for every element
+                tmpChildArray = [];
+                for (var j = 0, childDocLen = childDoc.length;j<childDocLen;j++){
+                    tmpDoc = {};
+                    aggregationProject(childDoc[j],keyValue,tmpDoc);
+                    if (Object.keys(tmpDoc).length > 0) tmpChildArray.push(tmpDoc);//nothing was assigned, remove unnecessary property
+                }//end array element loop
+                if (tmpChildArray.length>0) newDoc[key] = tmpChildArray;
+            }
+            else{//simple object
+                tmpDoc = {};//initialize child of new doc produced, hoping that will get a property
+                aggregationProject(childDoc,keyValue,tmpDoc);
+                if (Object.keys(tmpDoc).length > 0) newDoc[key] = tmpDoc;//nothing was assigned, remove unnecessary property
+            }
+        }
+    }
+}
+
+/**
  * This function will accept the _id element of a $group match operator and a
  * doc and will return the computed value depending on _id content
  * @param {string} groupId the string that will set the field to return
@@ -976,13 +1036,14 @@ function getDocGroupId(groupId,doc){
     return doc[groupId] || null;
 }
 
+
 exports.exec = exec;
-},{"./cursor":6,"./model":11,"async":14}],6:[function(require,module,exports){
+},{"./cursor":6,"./customUtils":7,"./model":11,"async":14}],6:[function(require,module,exports){
 /**
  * Manage access to data, be it to find, update or remove it
  */
 var model = require('./model');
-
+var utils = require('./customUtils');
 
 
 /**
@@ -1059,23 +1120,7 @@ Cursor.prototype.project = function (candidates) {
     action = self._projection[key];
   }
   //construct the projection in object form
-  var projection = {};
-  i = keys.length;
-  var keyParts,keyPart, j, keyPartsLen, root;
-  while(i--){
-    keyParts = keys[i].split('.');//dot notation shows deeper level for object, so we will traverse that
-    keyPartsLen = keyParts.length;
-    root = projection;
-    j = -1;
-    while (++j < keyPartsLen){
-      keyPart = keyParts[j];//get current part of
-      if (j < (keyPartsLen - 1)){//we will go deeper
-        root[keyPart] = root[keyPart] || {};//initialize if not already there
-        root = root[keyPart];//move root deeper for reference
-      }
-    }//end of iteration of keyParts
-    root[keyPart] = self._projection[keys[i]];//assign value
-  }
+  var projection = utils.convertDotToObj(self._projection);
   // Do the actual projection
   var candidate, query, toPush;
   i = candidates.length;
@@ -1083,10 +1128,10 @@ Cursor.prototype.project = function (candidates) {
   while (i--){
     candidate = candidates[i];
     if (action === 1){//inclusion
-      toPush = Cursor.pick(candidate,projection,query);
+      toPush = utils.pick(candidate,projection,query);
     }
     else{//exclusion
-      toPush = Cursor.omit(candidate,projection);
+      toPush = utils.omit(candidate,projection);
     }
     if (!keepId){
       delete toPush._id;
@@ -1183,106 +1228,9 @@ Cursor.prototype.exec = function () {
   this.db.executor.push({ this: this, fn: this._exec, arguments: arguments });
 };
 
-//helper functions
-/**
- * Return only selected document properties.
- * Will also traverse through projection object with dot notation for embedded documents and arrays
- *
- * @param {Object} doc - The source doc from where data will be retrieved
- * @param {Object} projection - The projection doc based on which selection of properties will take place
- * @param {Object} query - The query that came with the operation, in case positional operator '$' was used in project
- */
-Cursor.pick = function(doc,projection,query){
-  var copy = {};//object that will be returned to caller;
-  var projectKeys = Object.keys(projection);
-  var i = projectKeys.length;
-  var key, keyValue, docValue, tmpDoc, j;
-  while (i--){//browse projection properties...
-    key = projectKeys[i];//get hold of current projection key
-    //first we need to see if this property exists in source doc. If not, no further processing is needed
-    if (!doc[key]) continue;//move on to next property
-    //property exists, we should check the property type
-    keyValue = projection[key];
-    docValue = doc[key];
-    if (keyValue === 1 || keyValue === true){//direct inclusion of total source doc property
-      copy[key] = docValue;
-    }
-    //we have deeper level
-    else if (!!keyValue.$ && !Array.isArray(docValue)){//positional operator used on a non array element... skip
-      continue;
-    }
-    else if (!!keyValue.$ && Array.isArray(docValue)){//apply positional operator in array
-      copy[key] = [];//initialize doc array
-      var arrayEl;
-      for (var j = 0, jLen = docValue.length;j<jLen;j++){
-        arrayEl = docValue[j];
-        doc[key] = arrayEl;//set current array element as array property
-        if (model.match(doc,query)){
-          copy[key].push(arrayEl);
-          doc[key] = docValue;//restore original array
-          break;
-        }
-      }
-    }
-    else if (Array.isArray(docValue)){//we have array, apply projection on each element
-      copy[key] = [];//initialize doc array
-      j = docValue.length;
-      while(j--){
-        tmpDoc = Cursor.pick(docValue[j], keyValue, query);
-        if (Object.keys(tmpDoc).length > 0) copy[key].unshift(tmpDoc);//use unshift because we are reverse browsing
-      }
-    }
-    else{//simple embedded document
-      tmpDoc = Cursor.pick(docValue,keyValue,query);
-      if (Object.keys(tmpDoc).length > 0) copy[key] = tmpDoc;
-    }
-  }
-
-  return copy;
-};
-
-/**
- * Return document properties except for the exluded ones.
- * Will also traverse through projection object with dot notation for embedded documents and arrays
- *
- * @param {Object} doc - The source doc from where data will be retrieved
- * @param {Object} projection - The projection doc based on which exclusion of properties will take place
- */
-Cursor.omit = function(doc,projection){
-  var copy = {};//object that will be returned to caller;
-  var docKeys = Object.keys(doc);
-  var i = docKeys.length;
-  var key, projectValue,docValue, tmpDoc, j;
-  while(i--){//browse doc properties
-    key = docKeys[i];//get hold of current doc key
-    //first we need to see if this property exists in projection. If not we should directly include it
-    docValue = doc[key];//get hold of document value for current property key
-    if (!projection.hasOwnProperty(key)){
-      copy[key] = docValue;
-      continue;//continue to next property
-    }
-    //it exists in projection, we should check
-    projectValue = projection[key];
-    if (!!projectValue && Array.isArray(docValue)){//we have document array, apply projection on each element
-      copy[key] = [];//initialize copy array
-      j = docValue.length;
-      while (j--){
-        tmpDoc = Cursor.omit(docValue[j],projectValue);
-        if (Object.keys(tmpDoc).length > 0) copy[key].unshift(tmpDoc);//use unshift because we are reverse browsing
-      }
-    }
-    else if(!!projectValue){//simple embedded document
-      tmpDoc = Cursor.omit(docValue,projectValue);
-      if (Object.keys(tmpDoc).length > 0) copy[key] = tmpDoc;
-    }
-  }
-
-  return copy;
-};
 // Interface
 module.exports = Cursor;
-
-},{"./model":11}],7:[function(require,module,exports){
+},{"./customUtils":7,"./model":11}],7:[function(require,module,exports){
 /**
  * Specific customUtils for the browser, where we don't have access to the Crypto and Buffer modules
  */
