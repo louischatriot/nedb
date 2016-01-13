@@ -7,7 +7,7 @@ var should = require('chai').should()
 
 describe('Aggregation', function () {
   var dataset, dataCopy;
-  before('setup dataset', function () {
+  before(function () {
     dataset = [
       {
         _id: 1,
