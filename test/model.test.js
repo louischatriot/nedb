@@ -814,7 +814,64 @@ describe('Model', function () {
     });
 
   });   // ==== End of 'Comparing things' ==== //
+  
+  describe('Compound Comparing Things', function () {
 
+    it('undefined is the smallest', function () {
+      var otherStuff = [{a: 0, b:0}, {a: 0, b:1}, {a: 1, b:0}, {a: 1, b:1}, {b:0}, {a: 0}];
+      var fields = ['a', 'b'];
+
+      model.compoundCompareThings(fields)(undefined, undefined).should.equal(0);
+
+      otherStuff.forEach(function (stuff) {
+        model.compoundCompareThings(fields)(undefined, stuff).should.equal(-1);
+        model.compoundCompareThings(fields)(stuff, undefined).should.equal(1);
+      });
+    });
+
+    it('Then null', function () {
+      var otherStuff = [{a: 0, b:0}, {a: 0, b:1}, {a: 1, b:0}, {a: 1, b:1}, {b:0}, {a: 0}];
+      var fields = ['a', 'b'];
+
+      model.compoundCompareThings(fields)(null, null).should.equal(0);
+
+      otherStuff.forEach(function (stuff) {
+        model.compoundCompareThings(fields)(null, stuff).should.equal(-1);
+        model.compoundCompareThings(fields)(stuff, null).should.equal(1);
+      });
+    });
+
+    it('Then properties should be compared, returning the first non-zero result, or zero', function () {
+      var examples = [{a: 0, b:0}, {a: 0, b:1}, {a: 1, b:0}, {a: 1, b:1}, {b:0}, {a: 0}];
+      var fields = ['a', 'b'];
+
+      var less = function (a, b) {
+        assert.equal(model.compoundCompareThings(fields)(examples[a], examples[b]), -1);
+      };
+      var more = function (a, b) {
+        assert.equal(model.compoundCompareThings(fields)(examples[b], examples[a]), 1);
+      };
+      
+      less(0, 1);
+      less(0, 2);
+      less(1, 2);
+      less(2, 3);
+      less(5, 0);
+      less(4, 0);
+
+      more(0, 1);
+      more(0, 2);
+      more(1, 2);
+      more(2, 3);
+      more(5, 0);
+      more(4, 0);
+
+      examples.forEach(function (example) {
+        assert.equal(model.compoundCompareThings(fields)(example, model.deepCopy(example)), 0);
+      });
+    });
+
+  });   // ==== End of 'Compound Comparing things' ==== //
 
   describe('Querying', function () {
 

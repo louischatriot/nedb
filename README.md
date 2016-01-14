@@ -538,7 +538,7 @@ NeDB supports indexing. It gives a very nice speed boost and can be used to enfo
 
 To create an index, use `datastore.ensureIndex(options, cb)`, where callback is optional and get passed an error if any (usually a unique constraint that was violated). `ensureIndex` can be called when you want, even after some data was inserted, though it's best to call it at application startup. The options are:  
 
-* **fieldName** (required): name of the field to index. Use the dot notation to index a field in a nested document.
+* **fieldName** (required): name of the field to index. Use the dot notation to index a field in a nested document. For a compound index, use an array of field names.
 * **unique** (optional, defaults to `false`): enforce field uniqueness. Note that a unique index will raise an error if you try to index two documents for which the field is not defined.
 * **sparse** (optional, defaults to `false`): don't index documents for which the field is not defined. Use this option along with "unique" if you want to accept multiple documents for which it is not defined.
 
