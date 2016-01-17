@@ -133,21 +133,21 @@ describe('Model', function () {
       b = model.serialize(e3);
       b = model.serialize(e4);
     });
-    
+
     it('Can serialize string fields with a new line without breaking the DB', function (done) {
       var db1, db2
         , badString = "world\r\nearth\nother\rline"
-        ;
-      
+      ;
+
       if (fs.existsSync('workspace/test1.db')) { fs.unlinkSync('workspace/test1.db'); }
       fs.existsSync('workspace/test1.db').should.equal(false);
       db1 = new Datastore({ filename: 'workspace/test1.db' });
-      
+
       db1.loadDatabase(function (err) {
         assert.isNull(err);
         db1.insert({ hello: badString }, function (err) {
           assert.isNull(err);
-        
+
           db2 = new Datastore({ filename: 'workspace/test1.db' });
           db2.loadDatabase(function (err) {
             assert.isNull(err);
@@ -1125,52 +1125,58 @@ describe('Model', function () {
 
     });
 
-    
-    describe('Query operator array $size', function () {
 
-        it('Can query on the size of an array field', function () {
-          // Non nested documents
-          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 0 } }).should.equal(false);
-          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 1 } }).should.equal(false);
-          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 2 } }).should.equal(false);
-          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 3 } }).should.equal(true);
-            
-          // Nested documents
-          model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 0 } }).should.equal(false);
-          model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 1 } }).should.equal(false);
-          model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 2 } }).should.equal(true);
-          model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 3 } }).should.equal(false);
+    describe('Comparing on arrays', function () {
 
-          // Using a projected array
-          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.names": { $size: 0 } }).should.equal(false);
-          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.names": { $size: 1 } }).should.equal(false);
-          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.names": { $size: 2 } }).should.equal(false);
-          model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.names": { $size: 3 } }).should.equal(true);
-        });
+      it("Can perform a direct array match", function () {
+        model.match({ planets: ['Earth', 'Mars', 'Pluto'], something: 'else' }, { planets: ['Earth', 'Mars'] }).should.equal(false);
+        model.match({ planets: ['Earth', 'Mars', 'Pluto'], something: 'else' }, { planets: ['Earth', 'Mars', 'Pluto'] }).should.equal(true);
+        model.match({ planets: ['Earth', 'Mars', 'Pluto'], something: 'else' }, { planets: ['Earth', 'Pluto', 'Mars'] }).should.equal(false);
+      });
 
-        it('$size operator works with empty arrays', function () {
-          model.match({ childrens: [] }, { "childrens": { $size: 0 } }).should.equal(true);
-          model.match({ childrens: [] }, { "childrens": { $size: 2 } }).should.equal(false);
-          model.match({ childrens: [] }, { "childrens": { $size: 3 } }).should.equal(false);
-        });
+      it('Can query on the size of an array field', function () {
+        // Non nested documents
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 0 } }).should.equal(false);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 1 } }).should.equal(false);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 2 } }).should.equal(false);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $size: 3 } }).should.equal(true);
 
-        it('Should throw an error if a query operator is used without comparing to an integer', function () {
-          (function () { model.match({ a: [1, 5] }, { a: { $size: 1.4 } }); }).should.throw();
-          (function () { model.match({ a: [1, 5] }, { a: { $size: 'fdf' } }); }).should.throw();
-          (function () { model.match({ a: [1, 5] }, { a: { $size: { $lt: 5 } } }); }).should.throw();
-        });
+        // Nested documents
+        model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 0 } }).should.equal(false);
+        model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 1 } }).should.equal(false);
+        model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 2 } }).should.equal(true);
+        model.match({ hello: 'world', description: { satellites: ['Moon', 'Hubble'], diameter: 6300 } }, { "description.satellites": { $size: 3 } }).should.equal(false);
 
-        it('Using $size operator on a non-array field should prevent match but not throw', function () {
-          model.match({ a: 5 }, { a: { $size: 1 } }).should.equal(false);
-        });
-        
-        it('Can use $size several times in the same matcher', function () {
-          model.match({ childrens: [ 'Riri', 'Fifi', 'Loulou' ] }, { "childrens": { $size: 3, $size: 3 } }).should.equal(true);
-          model.match({ childrens: [ 'Riri', 'Fifi', 'Loulou' ] }, { "childrens": { $size: 3, $size: 4 } }).should.equal(false);   // Of course this can never be true
-        });
-        
+        // Using a projected array
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.names": { $size: 0 } }).should.equal(false);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.names": { $size: 1 } }).should.equal(false);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.names": { $size: 2 } }).should.equal(false);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.names": { $size: 3 } }).should.equal(true);
+      });
+
+      it('$size operator works with empty arrays', function () {
+        model.match({ childrens: [] }, { "childrens": { $size: 0 } }).should.equal(true);
+        model.match({ childrens: [] }, { "childrens": { $size: 2 } }).should.equal(false);
+        model.match({ childrens: [] }, { "childrens": { $size: 3 } }).should.equal(false);
+      });
+
+      it('Should throw an error if a query operator is used without comparing to an integer', function () {
+        (function () { model.match({ a: [1, 5] }, { a: { $size: 1.4 } }); }).should.throw();
+        (function () { model.match({ a: [1, 5] }, { a: { $size: 'fdf' } }); }).should.throw();
+        (function () { model.match({ a: [1, 5] }, { a: { $size: { $lt: 5 } } }); }).should.throw();
+      });
+
+      it('Using $size operator on a non-array field should prevent match but not throw', function () {
+        model.match({ a: 5 }, { a: { $size: 1 } }).should.equal(false);
+      });
+
+      it('Can use $size several times in the same matcher', function () {
+        model.match({ childrens: [ 'Riri', 'Fifi', 'Loulou' ] }, { "childrens": { $size: 3, $size: 3 } }).should.equal(true);
+        model.match({ childrens: [ 'Riri', 'Fifi', 'Loulou' ] }, { "childrens": { $size: 3, $size: 4 } }).should.equal(false);   // Of course this can never be true
+      });
+
     });
-    
+
 
     describe('Logical operators $or, $and, $not', function () {
 
