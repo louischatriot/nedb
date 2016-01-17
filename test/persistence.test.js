@@ -144,7 +144,7 @@ describe('Persistence', function () {
     treatedData.length.should.equal(2);
     _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
     _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
-  });  
+  });
 
   it('Compact database on load', function (done) {
     d.insert({ a: 2 }, function () {
@@ -297,6 +297,15 @@ describe('Persistence', function () {
         });
       });
     });
+  });
+
+  it("Can listen to compaction events", function (done) {
+    d.on('compaction.done', function () {
+      d.removeAllListeners('compaction.done');   // Tidy up for next tests
+      done();
+    });
+
+    d.persistence.compactDatafile();
   });
 
 
