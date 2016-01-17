@@ -630,6 +630,13 @@ Connect and Express, backed by nedb
 * If you've outgrown NeDB, switching to MongoDB won't be too hard as it is the same API. Use <a href="https://github.com/louischatriot/nedb-to-mongodb" target="_blank">this utility</a> to transfer the data from a NeDB database to a MongoDB collection
 * An ODM for NeDB: <a href="https://github.com/scottwrobinson/camo" target="_blank">Camo</a>
 
+## Pull requests
+If you submit a pull request, thanks! There are a couple rules to follow though to make it manageable:
+* The pull request should be atomic, i.e. contain only one feature. If it contains more, please submit multiple pull requests. Reviewing massive, 1000 loc+ pull requests is extremely hard.
+* Likewise, if for one unique feature the pull request grows too large (more than 200 loc tests not included), please get in touch first.
+* Please stick to the current coding style. It's important that the code uses a coherent style for readability.
+* Don't forget tests for your new feature.
+* Do not build the browser version in your branch, I'll take care of it once the code is merged.
 
 ## Bug reporting guidelines
 If you report a bug, thank you! That said for the process to be manageable please strictly adhere to the following guidelines. I'll not be able to handle bug reports that don't:
