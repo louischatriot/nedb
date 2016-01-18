@@ -1123,7 +1123,7 @@ function Datastore (options) {
   }); }
 }
 
-util.inherits(Datastore, require('events'));
+util.inherits(Datastore, require('events').EventEmitter);
 
 
 /**
