@@ -522,7 +522,64 @@ describe('Database', function () {
       });
     });
 
+    it('Cannot returned expired docs', function (done) {
+      var now = new Date()
+        , pastDate = new Date(now.getTime() - 1000)
+        , futureDate = new Date(now.getTime() + 500)
+        , farFutureDate = new Date(now.getTime() + 1000)
+        ;
+      d.ensureIndex({ fieldName: 'ex', expireAfterSeconds: 1 }, function (err) {
+        d.insert({ a: 4, ex: pastDate }, function (err, _doc1) {
+          d.insert({ a: 6, ex: futureDate }, function (err, _doc2) {
+            d.insert({ a: 4, ex: farFutureDate, an: 'other' }, function (err, _doc3) {
+              d.insert({ a: 9, ex: pastDate }, function (err, _doc4) {
+                var data = d.getCandidates({ a: { $gte: 4 }}).sort(function(a, b) {
+                  return a.ex - b.ex;
+                });
+
+                data.length.should.equal(2);
+                assert.deepEqual(data, [{ _id: _doc2._id, a: 6, ex: futureDate, $$expiry: { ex: 1 } }, { _id: _doc3._id, a: 4, ex: farFutureDate, an: 'other', $$expiry: { ex: 1 } }]);
+
+                d.removeIndex('ex', done);
+              });
+            });
+          });
+        });
+      });
+    });
+
   });   // ==== End of '#getCandidates' ==== //
+
+
+  describe('#getAllData', function() {
+
+    it('Cannot returned expired docs', function (done) {
+      var now = new Date()
+        , pastDate = new Date(now.getTime() - 1000)
+        , futureDate = new Date(now.getTime() + 500)
+        , farFutureDate = new Date(now.getTime() + 1000)
+        ;
+      d.ensureIndex({ fieldName: 'ex', expireAfterSeconds: 1 }, function (err) {
+        d.insert({ a: 4, ex: pastDate }, function (err, _doc1) {
+          d.insert({ a: 6, ex: futureDate }, function (err, _doc2) {
+            d.insert({ a: 4, ex: farFutureDate, an: 'other' }, function (err, _doc3) {
+              d.insert({ a: 9, ex: pastDate }, function (err, _doc4) {
+                var data = d.getAllData().sort(function(a, b) {
+                  return a.ex - b.ex;
+                });
+
+                data.length.should.equal(2);
+                assert.deepEqual(data, [{ _id: _doc2._id, a: 6, ex: futureDate, $$expiry: { ex: 1 } }, { _id: _doc3._id, a: 4, ex: farFutureDate, an: 'other', $$expiry: { ex: 1 } }]);
+
+                d.removeIndex('ex', done);
+              });
+            });
+          });
+        });
+      });
+    });
+
+  });   // ==== End of '#getAllData' ==== //
 
 
   describe('Find', function () {
@@ -837,6 +894,35 @@ describe('Database', function () {
       });
     });
 
+    it('Cannot returned expired docs', function (done) {
+      var now = new Date()
+        , pastDate = new Date(now.getTime() - 1000)
+        , futureDate = new Date(now.getTime() + 500)
+        , farFutureDate = new Date(now.getTime() + 1000)
+        ;
+      d.ensureIndex({ fieldName: 'ex', expireAfterSeconds: 1 }, function (err) {
+        d.insert({ a: 4, ex: pastDate }, function (err, _doc1) {
+          d.insert({ a: 6, ex: futureDate }, function (err, _doc2) {
+            d.insert({ a: 4, ex: farFutureDate, an: 'other' }, function (err, _doc3) {
+              d.insert({ a: 9, ex: pastDate }, function (err, _doc4) {
+                d.find({}).sort({ ex: 1 }).exec(function (err, data) {
+                  data.length.should.equal(2);
+
+                  // The '$$expiry' property should be hidden from consumers
+                  assert.isUndefined(data[0].$$expiry);
+                  assert.isUndefined(data[1].$$expiry);
+
+                  assert.deepEqual(data, [{ _id: _doc2._id, a: 6, ex: futureDate }, { _id: _doc3._id, a: 4, ex: farFutureDate, an: 'other' }]);
+
+                  d.removeIndex('ex', done);
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
   });   // ==== End of 'Find' ==== //
 
   describe('Count', function() {
@@ -903,6 +989,28 @@ describe('Database', function () {
                   docs.should.equal(0);
 
                   done();
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it('Cannot count expired docs', function (done) {
+      var now = new Date()
+        , pastDate = new Date(now.getTime() - 1000)
+        , futureDate = new Date(now.getTime() + 500)
+        , farFutureDate = new Date(now.getTime() + 1000)
+        ;
+      d.ensureIndex({ fieldName: 'ex', expireAfterSeconds: 1 }, function (err) {
+        d.insert({ a: 4, ex: pastDate }, function (err, _doc1) {
+          d.insert({ a: 6, ex: futureDate }, function (err, _doc2) {
+            d.insert({ a: 4, ex: farFutureDate, an: 'other' }, function (err, _doc3) {
+              d.insert({ a: 9, ex: pastDate }, function (err, _doc4) {
+                d.count({}, function (err, count) {
+                  count.should.equal(2);
+                  d.removeIndex('ex', done);
                 });
               });
             });
@@ -1713,6 +1821,7 @@ describe('Database', function () {
             d.indexes.z.fieldName.should.equal('z');
             d.indexes.z.unique.should.equal(false);
             d.indexes.z.sparse.should.equal(false);
+            assert.isNull(d.indexes.z.expireAfterSeconds);
             d.indexes.z.tree.getNumberOfKeys().should.equal(3);
             d.indexes.z.tree.search('1')[0].should.equal(d.getAllData()[0]);
             d.indexes.z.tree.search('2')[0].should.equal(d.getAllData()[1]);
@@ -2645,6 +2754,215 @@ describe('Database', function () {
       });
 
     });   // ==== End of 'Persisting indexes' ====
+
+
+    describe('Expiring TTL indexes', function () {
+
+      it('Can retrieve documents that do not have a Date value for the indexed field', function (done) {
+        d.ensureIndex({ fieldName: 'ex', expireAfterSeconds: 1 }, function (err) {
+          d.insert({ a: 4, ex: 'blah' }, function (err, _doc1) {
+            d.insert({ a: 6, ex: 'foo' }, function (err, _doc2) {
+              d.insert({ a: 4, ex: 'bar', an: 'other' }, function (err, _doc3) {
+                d.insert({ a: 9, ex: 'baz' }, function (err, _doc4) {
+                  d.find({}).sort({ ex: 1 }).exec(function (err, data) {
+                    data.length.should.equal(4);
+
+                    assert.deepEqual(data, [
+                      { _id: _doc3._id, a: 4, ex: 'bar', an: 'other' },
+                      { _id: _doc4._id, a: 9, ex: 'baz' },
+                      { _id: _doc1._id, a: 4, ex: 'blah' },
+                      { _id: _doc2._id, a: 6, ex: 'foo' }
+                    ]);
+
+                    d.remove({ _id: { $in: [_doc1._id, _doc2._id, _doc3._id, _doc4._id] } }, function(err, numRemoved) {
+                      d.removeIndex('ex', done);
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+
+      it('Cannot retrieve documents that expire immediately', function (done) {
+        var now = new Date();
+        d.ensureIndex({ fieldName: 'ex', expireAfterSeconds: 0 }, function (err) {
+          d.insert({ a: 4, ex: now }, function (err, _doc1) {
+            d.insert({ a: 6, ex: now }, function (err, _doc2) {
+              d.insert({ a: 4, ex: now, an: 'other' }, function (err, _doc3) {
+                d.insert({ a: 9, ex: now }, function (err, _doc4) {
+                  d.count({}, function (err, count) {
+                    count.should.equal(0);
+                    d.removeIndex('ex', done);
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+
+      it('Cannot retrieve documents that expired before they were inserted', function (done) {
+        var now = new Date();
+        d.ensureIndex({ fieldName: 'ex', expireAfterSeconds: 1 }, function (err) {
+          d.insert({ a: 4, ex: new Date(now.getTime() - 2500) }, function (err, _doc1) {
+            d.insert({ a: 6, ex: new Date(now.getTime() - 2000) }, function (err, _doc2) {
+              d.insert({ a: 4, ex: new Date(now.getTime() - 1500), an: 'other' }, function (err, _doc3) {
+                d.insert({ a: 9, ex: new Date(now.getTime() - 1000) }, function (err, _doc4) {
+                  d.count({}, function (err, count) {
+                    count.should.equal(0);
+                    d.removeIndex('ex', done);
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+
+      it('Can retrieve documents that have not yet expired', function (done) {
+        var now = new Date();
+        d.ensureIndex({ fieldName: 'ex', expireAfterSeconds: 1 }, function (err) {
+          d.insert({ a: 4, ex: now }, function (err, _doc1) {
+            d.insert({ a: 6, ex: new Date(now.getTime() + 250) }, function (err, _doc2) {
+              d.insert({ a: 4, ex: new Date(now.getTime() + 500), an: 'other' }, function (err, _doc3) {
+                d.insert({ a: 9, ex: new Date(now.getTime() + 750) }, function (err, _doc4) {
+                  d.find({}).sort({ ex: 1 }).exec(function (err, data) {
+                    data.length.should.equal(4);
+
+                    assert.deepEqual(data, [
+                      { _id: _doc1._id, a: 4, ex: now },
+                      { _id: _doc2._id, a: 6, ex: new Date(now.getTime() + 250) },
+                      { _id: _doc3._id, a: 4, ex: new Date(now.getTime() + 500), an: 'other' },
+                      { _id: _doc4._id, a: 9, ex: new Date(now.getTime() + 750) }
+                    ]);
+
+                    setTimeout(function() {
+                      d.find({}).sort({ ex: 1 }).exec(function (err, data) {
+                        data.length.should.equal(4);
+
+                        assert.deepEqual(data, [
+                          { _id: _doc1._id, a: 4, ex: now },
+                          { _id: _doc2._id, a: 6, ex: new Date(now.getTime() + 250) },
+                          { _id: _doc3._id, a: 4, ex: new Date(now.getTime() + 500), an: 'other' },
+                          { _id: _doc4._id, a: 9, ex: new Date(now.getTime() + 750) }
+                        ]);
+
+                        d.removeIndex('ex', done);
+                      });
+                    }, 500);
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+
+      it('Cannot retrieve documents that have expired', function (done) {
+        var now = new Date();
+        d.ensureIndex({ fieldName: 'ex', expireAfterSeconds: 1 }, function (err) {
+          d.insert({ a: 4, ex: now }, function (err, _doc1) {
+            d.insert({ a: 6, ex: new Date(now.getTime() + 250) }, function (err, _doc2) {
+              d.insert({ a: 4, ex: new Date(now.getTime() + 500), an: 'other' }, function (err, _doc3) {
+                d.insert({ a: 9, ex: new Date(now.getTime() + 750) }, function (err, _doc4) {
+                  d.find({}).sort({ ex: 1 }).exec(function (err, data) {
+                    data.length.should.equal(4);
+
+                    assert.deepEqual(data, [
+                      { _id: _doc1._id, a: 4, ex: now },
+                      { _id: _doc2._id, a: 6, ex: new Date(now.getTime() + 250) },
+                      { _id: _doc3._id, a: 4, ex: new Date(now.getTime() + 500), an: 'other' },
+                      { _id: _doc4._id, a: 9, ex: new Date(now.getTime() + 750) }
+                    ]);
+
+                    setTimeout(function() {
+                      d.find({}).sort({ ex: 1 }).exec(function (err, data) {
+                        data.length.should.equal(3);
+
+                        assert.deepEqual(data, [
+                          { _id: _doc2._id, a: 6, ex: new Date(now.getTime() + 250) },
+                          { _id: _doc3._id, a: 4, ex: new Date(now.getTime() + 500), an: 'other' },
+                          { _id: _doc4._id, a: 9, ex: new Date(now.getTime() + 750) }
+                        ]);
+
+                        setTimeout(function() {
+                          d.find({}).sort({ ex: 1 }).exec(function (err, data) {
+                            data.length.should.equal(0);
+                            assert.deepEqual(data, []);
+                            d.removeIndex('ex', done);
+                          });
+                        }, 750);
+                      });
+                    }, 1000);
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+
+      it('Can apply multiple TTL indexes', function (done) {
+        var now = new Date();
+        d.ensureIndex({ fieldName: 'ex', expireAfterSeconds: 2 }, function (err) {
+          d.ensureIndex({ fieldName: 'ex2', expireAfterSeconds: 1 }, function (err) {
+            d.insert({ a: 4, ex: now, ex2: now }, function (err, _doc1) {
+              d.insert({ a: 6, ex: now, ex2: new Date(now.getTime() + 500) }, function (err, _doc2) {
+                d.insert({ a: 4, ex: now, ex2: new Date(now.getTime() + 1000), an: 'other' }, function (err, _doc3) {
+                  d.insert({ a: 9, ex: now, ex2: new Date(now.getTime() + 5000) }, function (err, _doc4) {
+                    d.find({}).sort({ ex2: 1 }).exec(function (err, data) {
+                      data.length.should.equal(4);
+
+                      assert.deepEqual(data, [
+                        { _id: _doc1._id, a: 4, ex: now, ex2: now },
+                        { _id: _doc2._id, a: 6, ex: now, ex2: new Date(now.getTime() + 500) },
+                        { _id: _doc3._id, a: 4, ex: now, ex2: new Date(now.getTime() + 1000), an: 'other' },
+                        { _id: _doc4._id, a: 9, ex: now, ex2: new Date(now.getTime() + 5000) }
+                      ]);
+
+                      setTimeout(function() {
+                        d.find({}).sort({ ex2: 1 }).exec(function (err, data) {
+                          data.length.should.equal(3);
+
+                          assert.deepEqual(data, [
+                            { _id: _doc2._id, a: 6, ex: now, ex2: new Date(now.getTime() + 500) },
+                            { _id: _doc3._id, a: 4, ex: now, ex2: new Date(now.getTime() + 1000), an: 'other' },
+                            { _id: _doc4._id, a: 9, ex: now, ex2: new Date(now.getTime() + 5000) }
+                          ]);
+
+                          setTimeout(function() {
+                            d.find({}).sort({ ex2: 1 }).exec(function (err, data) {
+                              data.length.should.equal(2);
+
+                              assert.deepEqual(data, [
+                                { _id: _doc3._id, a: 4, ex: now, ex2: new Date(now.getTime() + 1000), an: 'other' },
+                                { _id: _doc4._id, a: 9, ex: now, ex2: new Date(now.getTime() + 5000) }
+                              ]);
+
+                              setTimeout(function() {
+                                d.find({}).sort({ ex2: 1 }).exec(function (err, data) {
+                                  data.length.should.equal(0);
+                                  assert.deepEqual(data, []);
+                                  d.removeIndex('ex', done);
+                                });
+                              }, 500);
+                            });
+                          }, 500);
+                        });
+                      }, 1000);
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+
+    });   // ==== End of 'Expiring TTL indexes' ====
+
 
     it('Results of getMatching should never contain duplicates', function (done) {
       d.ensureIndex({ fieldName: 'bad' });
