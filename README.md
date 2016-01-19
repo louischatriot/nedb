@@ -553,6 +553,7 @@ To create an index, use `datastore.ensureIndex(options, cb)`, where callback is 
 * **fieldName** (required): name of the field to index. Use the dot notation to index a field in a nested document.
 * **unique** (optional, defaults to `false`): enforce field uniqueness. Note that a unique index will raise an error if you try to index two documents for which the field is not defined.
 * **sparse** (optional, defaults to `false`): don't index documents for which the field is not defined. Use this option along with "unique" if you want to accept multiple documents for which it is not defined.
+* **expireAfterSeconds** (number of seconds, optional): if set, the created index is a TTL (time to live) index, that will automatically remove documents when the system date becomes larger than the date on the indexed field plus `expireAfterSeconds`
 
 Note: the `_id` is automatically indexed with a unique constraint, no need to call `ensureIndex` on it.
 
@@ -586,6 +587,10 @@ db.insert({ somefield: 'nedb' }, function (err) {
 
 // Remove index on field somefield
 db.removeIndex('somefield', function (err) {
+});
+
+// Example of using expireAfterSeconds to remove documents 1 hour after their creation (timestampData option is true here)
+db.ensureIndex({ fieldName: 'createdAt', expireAfterSeconds: 3600 }, function (err) {
 });
 ```
 
