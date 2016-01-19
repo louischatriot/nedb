@@ -598,6 +598,36 @@ describe('Database', function () {
       });
     });
 
+    it("Document where indexed field is absent or not a date are ignored", function (done) {
+      d.ensureIndex({ fieldName: 'exp', expireAfterSeconds: 0.2 }, function () {
+        d.insert({ hello: 'world1', exp: new Date() }, function () {
+          d.insert({ hello: 'world2', exp: "not a date" }, function () {
+            d.insert({ hello: 'world3' }, function () {
+              setTimeout(function () {
+                d.find({}, function (err, docs) {
+                  assert.isNull(err);
+                  docs.length.should.equal(3);
+
+                  setTimeout(function () {
+                    d.find({}, function (err, docs) {
+                      assert.isNull(err);
+                      docs.length.should.equal(2);
+
+
+                      docs[0].hello.should.not.equal('world1');
+                      docs[1].hello.should.not.equal('world1');
+
+                      done();
+                    });
+                  }, 101);
+                });
+              }, 100);
+            });
+          });
+        });
+      });
+    });
+
   });   // ==== End of '#getCandidates' ==== //
 
 
