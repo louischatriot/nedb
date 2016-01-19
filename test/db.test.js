@@ -424,7 +424,7 @@ describe('Database', function () {
   });   // ==== End of 'Insert' ==== //
 
 
-  describe('#getCandidates', function () {
+  describe.only('#getCandidates', function () {
 
     it('Can use an index to get docs with a basic match', function (done) {
       d.ensureIndex({ fieldName: 'tf' }, function (err) {
@@ -520,6 +520,67 @@ describe('Database', function () {
                   done();
                 });
               });
+            });
+          });
+        });
+      });
+    });
+
+    it("Can set a TTL index that expires documents", function (done) {
+      d.ensureIndex({ fieldName: 'exp', expireAfterSeconds: 0.2 }, function () {
+        d.insert({ hello: 'world', exp: new Date() }, function () {
+          setTimeout(function () {
+            d.findOne({}, function (err, doc) {
+              assert.isNull(err);
+              doc.hello.should.equal('world');
+
+              setTimeout(function () {
+                d.findOne({}, function (err, doc) {
+                  assert.isNull(err);
+                  assert.isNull(doc);
+
+                  d.findOne({}, function (err, doc) {
+                    assert.isNull(err);
+                    assert.isNull(doc);
+
+                    done();
+                  });
+                });
+              }, 101);
+            });
+          }, 100);
+        });
+      });
+    });
+
+    it("TTL indexes can expire multiple documents and only what needs to be expired", function (done) {
+      d.ensureIndex({ fieldName: 'exp', expireAfterSeconds: 0.2 }, function () {
+        d.insert({ hello: 'world1', exp: new Date() }, function () {
+          d.insert({ hello: 'world2', exp: new Date() }, function () {
+            d.insert({ hello: 'world3', exp: new Date((new Date()).getTime() + 100) }, function () {
+              setTimeout(function () {
+                d.find({}, function (err, docs) {
+                  assert.isNull(err);
+                  docs.length.should.equal(3);
+
+                  setTimeout(function () {
+                    d.find({}, function (err, docs) {
+                      assert.isNull(err);
+                      docs.length.should.equal(1);
+                      docs[0].hello.should.equal('world3');
+
+                      setTimeout(function () {
+                        d.find({}, function (err, docs) {
+                          assert.isNull(err);
+                          docs.length.should.equal(0);
+
+                          done();
+                        });
+                      }, 101);
+                    });
+                  }, 101);
+                });
+              }, 100);
             });
           });
         });
