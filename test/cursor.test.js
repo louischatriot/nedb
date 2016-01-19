@@ -97,7 +97,7 @@ describe('Cursor', function () {
       }
       ], done);
     });
-    
+
     it('With an empty collection', function (done) {
       async.waterfall([
         function (cb) {
@@ -113,7 +113,7 @@ describe('Cursor', function () {
         }
       ], done);
     });
-    
+
     it('With a limit', function (done) {
       var cursor = new Cursor(d);
       cursor.limit(3);
@@ -289,7 +289,7 @@ describe('Cursor', function () {
     });
 
     it('Using a limit higher than total number of docs shouldnt cause an error', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -308,7 +308,7 @@ describe('Cursor', function () {
     });
 
     it('Using limit and skip with sort', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);

@@ -432,16 +432,17 @@ describe('Database', function () {
           d.insert({ tf: 6 }, function () {
             d.insert({ tf: 4, an: 'other' }, function (err, _doc2) {
               d.insert({ tf: 9 }, function () {
-                var data = d.getCandidates({ r: 6, tf: 4 })
-                  , doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
-                  , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
-                  ;
+                d.getCandidates({ r: 6, tf: 4 }, function (err, data) {
+                  var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
+                    , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
+                    ;
 
-                data.length.should.equal(2);
-                assert.deepEqual(doc1, { _id: doc1._id, tf: 4 });
-                assert.deepEqual(doc2, { _id: doc2._id, tf: 4, an: 'other' });
+                  data.length.should.equal(2);
+                  assert.deepEqual(doc1, { _id: doc1._id, tf: 4 });
+                  assert.deepEqual(doc2, { _id: doc2._id, tf: 4, an: 'other' });
 
-                done();
+                  done();
+                });
               });
             });
           });
@@ -455,16 +456,17 @@ describe('Database', function () {
           d.insert({ tf: 6 }, function (err, _doc1) {
             d.insert({ tf: 4, an: 'other' }, function (err) {
               d.insert({ tf: 9 }, function (err, _doc2) {
-                var data = d.getCandidates({ r: 6, tf: { $in: [6, 9, 5] } })
-                  , doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
-                  , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
-                  ;
+                d.getCandidates({ r: 6, tf: { $in: [6, 9, 5] } }, function (err, data) {
+                  var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
+                    , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
+                    ;
 
-                data.length.should.equal(2);
-                assert.deepEqual(doc1, { _id: doc1._id, tf: 6 });
-                assert.deepEqual(doc2, { _id: doc2._id, tf: 9 });
+                  data.length.should.equal(2);
+                  assert.deepEqual(doc1, { _id: doc1._id, tf: 6 });
+                  assert.deepEqual(doc2, { _id: doc2._id, tf: 9 });
 
-                done();
+                  done();
+                });
               });
             });
           });
@@ -478,20 +480,21 @@ describe('Database', function () {
           d.insert({ tf: 6 }, function (err, _doc2) {
             d.insert({ tf: 4, an: 'other' }, function (err, _doc3) {
               d.insert({ tf: 9 }, function (err, _doc4) {
-                var data = d.getCandidates({ r: 6, notf: { $in: [6, 9, 5] } })
-                  , doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
-                  , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
-                  , doc3 = _.find(data, function (d) { return d._id === _doc3._id; })
-                  , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
-                  ;
+                d.getCandidates({ r: 6, notf: { $in: [6, 9, 5] } }, function (err, data) {
+                  var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
+                    , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
+                    , doc3 = _.find(data, function (d) { return d._id === _doc3._id; })
+                    , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
+                    ;
 
-                data.length.should.equal(4);
-                assert.deepEqual(doc1, { _id: doc1._id, tf: 4 });
-                assert.deepEqual(doc2, { _id: doc2._id, tf: 6 });
-                assert.deepEqual(doc3, { _id: doc3._id, tf: 4, an: 'other' });
-                assert.deepEqual(doc4, { _id: doc4._id, tf: 9 });
+                  data.length.should.equal(4);
+                  assert.deepEqual(doc1, { _id: doc1._id, tf: 4 });
+                  assert.deepEqual(doc2, { _id: doc2._id, tf: 6 });
+                  assert.deepEqual(doc3, { _id: doc3._id, tf: 4, an: 'other' });
+                  assert.deepEqual(doc4, { _id: doc4._id, tf: 9 });
 
-                done();
+                  done();
+                });
               });
             });
           });
@@ -505,16 +508,17 @@ describe('Database', function () {
           d.insert({ tf: 6 }, function (err, _doc2) {
             d.insert({ tf: 4, an: 'other' }, function (err, _doc3) {
               d.insert({ tf: 9 }, function (err, _doc4) {
-                var data = d.getCandidates({ r: 6, tf: { $lte: 9, $gte: 6 } })
-                  , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
-                  , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
-                  ;
+                d.getCandidates({ r: 6, tf: { $lte: 9, $gte: 6 } }, function (err, data) {
+                  var doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
+                    , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
+                    ;
 
-                data.length.should.equal(2);
-                assert.deepEqual(doc2, { _id: doc2._id, tf: 6 });
-                assert.deepEqual(doc4, { _id: doc4._id, tf: 9 });
+                  data.length.should.equal(2);
+                  assert.deepEqual(doc2, { _id: doc2._id, tf: 6 });
+                  assert.deepEqual(doc4, { _id: doc4._id, tf: 9 });
 
-                done();
+                  done();
+                });
               });
             });
           });
@@ -2649,9 +2653,10 @@ describe('Database', function () {
     it('Results of getMatching should never contain duplicates', function (done) {
       d.ensureIndex({ fieldName: 'bad' });
       d.insert({ bad: ['a', 'b'] }, function () {
-        var res = d.getCandidates({ bad: { $in: ['a', 'b'] } });
-        res.length.should.equal(1);
-        done();
+        d.getCandidates({ bad: { $in: ['a', 'b'] } }, function (err, res) {
+          res.length.should.equal(1);
+          done();
+        });
       });
     });
 
