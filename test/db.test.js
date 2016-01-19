@@ -424,7 +424,7 @@ describe('Database', function () {
   });   // ==== End of 'Insert' ==== //
 
 
-  describe.only('#getCandidates', function () {
+  describe('#getCandidates', function () {
 
     it('Can use an index to get docs with a basic match', function (done) {
       d.ensureIndex({ fieldName: 'tf' }, function (err) {
@@ -539,12 +539,23 @@ describe('Database', function () {
                   assert.isNull(err);
                   assert.isNull(doc);
 
-                  d.findOne({}, function (err, doc) {
-                    assert.isNull(err);
-                    assert.isNull(doc);
+                  d.on('compaction.done', function () {
+                    // After compaction, no more mention of the document, correctly removed
+                    var datafileContents = fs.readFileSync(testDb, 'utf8');
+                    datafileContents.split('\n').length.should.equal(2);
+                    assert.isNull(datafileContents.match(/world/));
 
-                    done();
+                    // New datastore on same datafile is empty
+                    var d2 = new Datastore({ filename: testDb, autoload: true });
+                    d2.findOne({}, function (err, doc) {
+                      assert.isNull(err);
+                      assert.isNull(doc);
+
+                      done();
+                    });
                   });
+
+                  d.persistence.compactDatafile();
                 });
               }, 101);
             });
