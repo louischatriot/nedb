@@ -589,7 +589,8 @@ db.insert({ somefield: 'nedb' }, function (err) {
 db.removeIndex('somefield', function (err) {
 });
 
-// Example of using expireAfterSeconds to remove documents 1 hour after their creation (timestampData option is true here)
+// Example of using expireAfterSeconds to remove documents 1 hour
+// after their creation (timestampData option is true here)
 db.ensureIndex({ fieldName: 'createdAt', expireAfterSeconds: 3600 }, function (err) {
 });
 ```
