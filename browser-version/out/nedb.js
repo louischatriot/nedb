@@ -850,8 +850,8 @@ aggregationOperators.$unwind = function (docs, unwindElement, callback) {
 
 aggregationOperators.$sort = function (docs, sortObj, callback) {
   var tmpDb = {
-    getCandidates: function () {
-      return docs.slice(0);//return copy of docs
+    getCandidates: function (query, cb) {
+      cb(null,docs.slice(0));//return copy of docs
     }
   };
   var tmpCursor = new Cursor(tmpDb);//construct cursor to use already built in functionality for sorting in cursor prototype
@@ -1149,76 +1149,83 @@ Cursor.prototype.project = function (candidates) {
  *
  * @param {Function} callback - Signature: err, results
  */
-Cursor.prototype._exec = function(callback) {
-  var candidates = this.db.getCandidates(this.query)
-      , res = [], added = 0, skipped = 0, self = this
-      , error = null
-      , i, keys, key
-      ;
+Cursor.prototype._exec = function(_callback) {
+  var res = [], added = 0, skipped = 0, self = this
+    , error = null
+    , i, keys, key
+    ;
 
-  try {
-    for (i = 0; i < candidates.length; i += 1) {
-      if (model.match(candidates[i], this.query)) {
-        // If a sort is defined, wait for the results to be sorted before applying limit and skip
-        if (!this._sort) {
-          if (this._skip && this._skip > skipped) {
-            skipped += 1;
+  function callback (error, res) {
+    if (self.execFn) {
+      return self.execFn(error, res, _callback);
+    } else {
+      return _callback(error, res);
+    }
+  }
+
+  this.db.getCandidates(this.query, function (err, candidates) {
+    if (err) { return callback(err); }
+
+    try {
+      for (i = 0; i < candidates.length; i += 1) {
+        if (model.match(candidates[i], self.query)) {
+          // If a sort is defined, wait for the results to be sorted before applying limit and skip
+          if (!self._sort) {
+            if (self._skip && self._skip > skipped) {
+              skipped += 1;
+            } else {
+              res.push(candidates[i]);
+              added += 1;
+              if (self._limit && self._limit <= added) { break; }
+            }
           } else {
             res.push(candidates[i]);
-            added += 1;
-            if (this._limit && this._limit <= added) { break; }
           }
-        } else {
-          res.push(candidates[i]);
         }
       }
+    } catch (err) {
+      return callback(err);
     }
-  } catch (err) {
-    return callback(err);
-  }
 
-  // Apply all sorts
-  if (this._sort) {
-    keys = Object.keys(this._sort);
+    // Apply all sorts
+    if (self._sort) {
+      keys = Object.keys(self._sort);
 
-    // Sorting
-    var criteria = [];
-    for (i = 0; i < keys.length; i++) {
-      key = keys[i];
-      criteria.push({ key: key, direction: self._sort[key] });
-    }
-    res.sort(function(a, b) {
-      var criterion, compare, i;
-      for (i = 0; i < criteria.length; i++) {
-        criterion = criteria[i];
-        compare = criterion.direction * model.compareThings(model.getDotValue(a, criterion.key), model.getDotValue(b, criterion.key));
-        if (compare !== 0) {
-          return compare;
-        }
+      // Sorting
+      var criteria = [];
+      for (i = 0; i < keys.length; i++) {
+        key = keys[i];
+        criteria.push({ key: key, direction: self._sort[key] });
       }
-      return 0;
-    });
+      res.sort(function(a, b) {
+        var criterion, compare, i;
+        for (i = 0; i < criteria.length; i++) {
+          criterion = criteria[i];
+          compare = criterion.direction * model.compareThings(model.getDotValue(a, criterion.key), model.getDotValue(b, criterion.key), self.db.compareStrings);
+          if (compare !== 0) {
+            return compare;
+          }
+        }
+        return 0;
+      });
 
-    // Applying limit and skip
-    var limit = this._limit || res.length
-        , skip = this._skip || 0;
+      // Applying limit and skip
+      var limit = self._limit || res.length
+        , skip = self._skip || 0;
 
-    res = res.slice(skip, skip + limit);
-  }
+      res = res.slice(skip, skip + limit);
+    }
 
-  // Apply projection
-  try {
-    res = this.project(res);
-  } catch (e) {
-    error = e;
-    res = undefined;
-  }
+    // Apply projection
+    try {
+      res = self.project(res);
+    } catch (e) {
+      error = e;
+      res = undefined;
+    }
 
-  if (this.execFn) {
-    return this.execFn(error, res, callback);
-  } else {
     return callback(error, res);
-  }
+  });
 };
 
 Cursor.prototype.exec = function () {
@@ -1332,6 +1339,10 @@ var customUtils = require('./customUtils')
  * @param {Function} options.onload Optional, if autoload is used this will be called after the load database with the error object as parameter. If you don't pass it the error will be thrown
  * @param {Function} options.afterSerialization/options.beforeDeserialization Optional, serialization hooks
  * @param {Number} options.corruptAlertThreshold Optional, threshold after which an alert is thrown if too much data is corrupt
+ * @param {Function} options.compareStrings Optional, string comparison function that overrides default for sorting
+ *
+ * Event Emitter - Events
+ * * compaction.done - Fired whenever a compaction operation was finished
  */
 function Datastore (options) {
   var filename;
@@ -1356,6 +1367,9 @@ function Datastore (options) {
     this.filename = filename;
   }
 
+  // String comparison function
+  this.compareStrings = options.compareStrings;
+
   // Persistence handling
   this.persistence = new Persistence({ db: this, nodeWebkitAppName: options.nodeWebkitAppName
                                       , afterSerialization: options.afterSerialization
@@ -1373,6 +1387,7 @@ function Datastore (options) {
   // binary is always well-balanced
   this.indexes = {};
   this.indexes._id = new Index({ fieldName: '_id', unique: true });
+  this.ttlIndexes = {};
 
   // Queue a load of the database right away and call the onload handler
   // By default (no onload handler), if there is an error there, no operation will be possible so warn the user by throwing an exception
@@ -1380,6 +1395,8 @@ function Datastore (options) {
     if (err) { throw err; }
   }); }
 }
+
+util.inherits(Datastore, require('events').EventEmitter);
 
 
 /**
@@ -1417,6 +1434,7 @@ Datastore.prototype.resetIndexes = function (newData) {
  * @param {String} options.fieldName
  * @param {Boolean} options.unique
  * @param {Boolean} options.sparse
+ * @param {Number} options.expireAfterSeconds - Optional, if set this index becomes a TTL index (only works on Date fields, not arrays of Date)
  * @param {Function} cb Optional callback, signature: err
  */
 Datastore.prototype.ensureIndex = function (options, cb) {
@@ -1433,6 +1451,7 @@ Datastore.prototype.ensureIndex = function (options, cb) {
   if (this.indexes[options.fieldName]) { return callback(null); }
 
   this.indexes[options.fieldName] = new Index(options);
+  if (options.expireAfterSeconds !== undefined) { this.ttlIndexes[options.fieldName] = options.expireAfterSeconds; }   // With this implementation index creation is not necessary to ensure TTL but we stick with MongoDB's API here
 
   try {
     this.indexes[options.fieldName].insert(this.getAllData());
@@ -1545,50 +1564,89 @@ Datastore.prototype.updateIndexes = function (oldDoc, newDoc) {
  * One way to make it better would be to enable the use of multiple indexes if the first usable index
  * returns too much data. I may do it in the future.
  *
- * TODO: needs to be moved to the Cursor module
+ * Returned candidates will be scanned to find and remove all expired documents
+ *
+ * @param {Query} query
+ * @param {Boolean} dontExpireStaleDocs Optional, defaults to false, if true don't remove stale docs. Useful for the remove function which shouldn't be impacted by expirations
+ * @param {Function} callback Signature err, docs
  */
-Datastore.prototype.getCandidates = function (query) {
+Datastore.prototype.getCandidates = function (query, dontExpireStaleDocs, callback) {
   var indexNames = Object.keys(this.indexes)
+    , self = this
     , usableQueryKeys;
 
-  // For a basic match
-  usableQueryKeys = [];
-  Object.keys(query).forEach(function (k) {
-    if (typeof query[k] === 'string' || typeof query[k] === 'number' || typeof query[k] === 'boolean' || util.isDate(query[k]) || query[k] === null) {
-      usableQueryKeys.push(k);
-    }
-  });
-  usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
-  if (usableQueryKeys.length > 0) {
-    return this.indexes[usableQueryKeys[0]].getMatching(query[usableQueryKeys[0]]);
+  if (typeof dontExpireStaleDocs === 'function') {
+    callback = dontExpireStaleDocs;
+    dontExpireStaleDocs = false;
   }
 
-  // For a $in match
-  usableQueryKeys = [];
-  Object.keys(query).forEach(function (k) {
-    if (query[k] && query[k].hasOwnProperty('$in')) {
-      usableQueryKeys.push(k);
+  async.waterfall([
+  // STEP 1: get candidates list by checking indexes from most to least frequent usecase
+  function (cb) {
+    // For a basic match
+    usableQueryKeys = [];
+    Object.keys(query).forEach(function (k) {
+      if (typeof query[k] === 'string' || typeof query[k] === 'number' || typeof query[k] === 'boolean' || util.isDate(query[k]) || query[k] === null) {
+        usableQueryKeys.push(k);
+      }
+    });
+    usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
+    if (usableQueryKeys.length > 0) {
+      return cb(null, self.indexes[usableQueryKeys[0]].getMatching(query[usableQueryKeys[0]]));
     }
-  });
-  usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
-  if (usableQueryKeys.length > 0) {
-    return this.indexes[usableQueryKeys[0]].getMatching(query[usableQueryKeys[0]].$in);
-  }
 
-  // For a comparison match
-  usableQueryKeys = [];
-  Object.keys(query).forEach(function (k) {
-    if (query[k] && (query[k].hasOwnProperty('$lt') || query[k].hasOwnProperty('$lte') || query[k].hasOwnProperty('$gt') || query[k].hasOwnProperty('$gte'))) {
-      usableQueryKeys.push(k);
+    // For a $in match
+    usableQueryKeys = [];
+    Object.keys(query).forEach(function (k) {
+      if (query[k] && query[k].hasOwnProperty('$in')) {
+        usableQueryKeys.push(k);
+      }
+    });
+    usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
+    if (usableQueryKeys.length > 0) {
+      return cb(null, self.indexes[usableQueryKeys[0]].getMatching(query[usableQueryKeys[0]].$in));
     }
-  });
-  usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
-  if (usableQueryKeys.length > 0) {
-    return this.indexes[usableQueryKeys[0]].getBetweenBounds(query[usableQueryKeys[0]]);
-  }
 
-  // By default, return all the DB data
-  return this.getAllData();
+    // For a comparison match
+    usableQueryKeys = [];
+    Object.keys(query).forEach(function (k) {
+      if (query[k] && (query[k].hasOwnProperty('$lt') || query[k].hasOwnProperty('$lte') || query[k].hasOwnProperty('$gt') || query[k].hasOwnProperty('$gte'))) {
+        usableQueryKeys.push(k);
+      }
+    });
+    usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
+    if (usableQueryKeys.length > 0) {
+      return cb(null, self.indexes[usableQueryKeys[0]].getBetweenBounds(query[usableQueryKeys[0]]));
+    }
+
+    // By default, return all the DB data
+    return cb(null, self.getAllData());
+  }
+  // STEP 2: remove all expired documents
+  , function (docs) {
+    if (dontExpireStaleDocs) { return callback(null, docs); }
+
+    var expiredDocsIds = [], validDocs = [], ttlIndexesFieldNames = Object.keys(self.ttlIndexes);
+
+    docs.forEach(function (doc) {
+      var valid = true;
+      ttlIndexesFieldNames.forEach(function (i) {
+        if (doc[i] !== undefined && util.isDate(doc[i]) && Date.now() > doc[i].getTime() + self.ttlIndexes[i] * 1000) {
+          valid = false;
+        }
+      });
+      if (valid) { validDocs.push(doc); } else { expiredDocsIds.push(doc._id); }
+    });
+
+    async.eachSeries(expiredDocsIds, function (_id, cb) {
+      self._remove({ _id: _id }, {}, function (err) {
+        if (err) { return callback(err); }
+        return cb();
+      });
+    }, function (err) {
+      return callback(null, validDocs);
+    });
+  }]);
 };
 
 
@@ -1850,48 +1908,49 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
     });
   }
   , function () {   // Perform the update
-    var modifiedDoc
-      , candidates = self.getCandidates(query)
-      , modifications = []
-      ;
+    var modifiedDoc , modifications = [];
 
-    // Preparing update (if an error is thrown here neither the datafile nor
-    // the in-memory indexes are affected)
-    try {
-      for (i = 0; i < candidates.length; i += 1) {
-        if (model.match(candidates[i], query) && (multi || numReplaced === 0)) {
-          numReplaced += 1;
-          modifiedDoc = model.modify(candidates[i], updateQuery, query);
-          if (self.timestampData) { modifiedDoc.updatedAt = new Date(); }
-          modifications.push({ oldDoc: candidates[i], newDoc: modifiedDoc });
-        }
-      }
-    } catch (err) {
-      return callback(err);
-    }
-
-    // Change the docs in memory
-    try {
-        self.updateIndexes(modifications);
-    } catch (err) {
-      return callback(err);
-    }
-
-    // Update the datafile
-    var updatedDocs = _.pluck(modifications, 'newDoc');
-    self.persistence.persistNewState(updatedDocs, function (err) {
+    self.getCandidates(query, function (err, candidates) {
       if (err) { return callback(err); }
-      if (!options.returnUpdatedDocs) {
-        return callback(null, numReplaced);
-      } else {
-        var updatedDocsDC = [];
-        updatedDocs.forEach(function (doc) { updatedDocsDC.push(model.deepCopy(doc)); });
-        return callback(null, numReplaced, updatedDocsDC);
+
+      // Preparing update (if an error is thrown here neither the datafile nor
+      // the in-memory indexes are affected)
+      try {
+        for (i = 0; i < candidates.length; i += 1) {
+          if (model.match(candidates[i], query) && (multi || numReplaced === 0)) {
+            numReplaced += 1;
+            modifiedDoc = model.modify(candidates[i], updateQuery, query);
+            if (self.timestampData) { modifiedDoc.updatedAt = new Date(); }
+            modifications.push({ oldDoc: candidates[i], newDoc: modifiedDoc });
+          }
+        }
+      } catch (err) {
+        return callback(err);
       }
+
+      // Change the docs in memory
+      try {
+        self.updateIndexes(modifications);
+      } catch (err) {
+        return callback(err);
+      }
+
+      // Update the datafile
+      var updatedDocs = _.pluck(modifications, 'newDoc');
+      self.persistence.persistNewState(updatedDocs, function (err) {
+        if (err) { return callback(err); }
+        if (!options.returnUpdatedDocs) {
+          return callback(null, numReplaced);
+        } else {
+          var updatedDocsDC = [];
+          updatedDocs.forEach(function (doc) { updatedDocsDC.push(model.deepCopy(doc)); });
+          return callback(null, numReplaced, updatedDocsDC);
+        }
+      });
     });
-  }
-  ]);
+  }]);
 };
+
 Datastore.prototype.update = function () {
   this.executor.push({ this: this, fn: this._update, arguments: arguments });
 };
@@ -1909,32 +1968,33 @@ Datastore.prototype.update = function () {
  */
 Datastore.prototype._remove = function (query, options, cb) {
   var callback
-    , self = this
-    , numRemoved = 0
-    , multi
-    , removedDocs = []
-    , candidates = this.getCandidates(query)
+    , self = this, numRemoved = 0, removedDocs = [], multi
     ;
 
   if (typeof options === 'function') { cb = options; options = {}; }
   callback = cb || function () {};
   multi = options.multi !== undefined ? options.multi : false;
 
-  try {
-    candidates.forEach(function (d) {
-      if (model.match(d, query) && (multi || numRemoved === 0)) {
-        numRemoved += 1;
-        removedDocs.push({ $$deleted: true, _id: d._id });
-        self.removeFromIndexes(d);
-      }
-    });
-  } catch (err) { return callback(err); }
-
-  self.persistence.persistNewState(removedDocs, function (err) {
+  this.getCandidates(query, true, function (err, candidates) {
     if (err) { return callback(err); }
-    return callback(null, numRemoved);
+
+    try {
+      candidates.forEach(function (d) {
+        if (model.match(d, query) && (multi || numRemoved === 0)) {
+          numRemoved += 1;
+          removedDocs.push({ $$deleted: true, _id: d._id });
+          self.removeFromIndexes(d);
+        }
+      });
+    } catch (err) { return callback(err); }
+
+    self.persistence.persistNewState(removedDocs, function (err) {
+      if (err) { return callback(err); }
+      return callback(null, numRemoved);
+    });
   });
 };
+
 Datastore.prototype.remove = function () {
   this.executor.push({ this: this, fn: this._remove, arguments: arguments });
 };
@@ -1969,10 +2029,9 @@ Datastore.prototype.aggregate = function (pipeline, options, cb){
 };
 
 
-
 module.exports = Datastore;
 
-},{"./aggregation":5,"./cursor":6,"./customUtils":7,"./executor":9,"./indexes":10,"./model":11,"./persistence":12,"async":14,"underscore":20,"util":3}],9:[function(require,module,exports){
+},{"./aggregation":5,"./cursor":6,"./customUtils":7,"./executor":9,"./indexes":10,"./model":11,"./persistence":12,"async":14,"events":1,"underscore":20,"util":3}],9:[function(require,module,exports){
 var process=require("__browserify_process");/**
  * Responsible for sequentially executing actions on the database
  */
@@ -2142,12 +2201,12 @@ Index.prototype.insert = function (doc) {
         break;
       }
     }
-    
+
     if (error) {
       for (i = 0; i < failingI; i += 1) {
         this.tree.delete(keys[i], doc);
       }
-      
+
       throw error;
     }
   }
@@ -2533,9 +2592,12 @@ function compareArrays (a, b) {
  * In the case of objects and arrays, we deep-compare
  * If two objects dont have the same type, the (arbitrary) type hierarchy is: undefined, null, number, strings, boolean, dates, arrays, objects
  * Return -1 if a < b, 1 if a > b and 0 if a = b (note that equality here is NOT the same as defined in areThingsEqual!)
+ *
+ * @param {Function} _compareStrings String comparing function, returning -1, 0 or 1, overriding default string comparison (useful for languages with accented letters)
  */
-function compareThings (a, b) {
-  var aKeys, bKeys, comp, i;
+function compareThings (a, b, _compareStrings) {
+  var aKeys, bKeys, comp, i
+    , compareStrings = _compareStrings || compareNSB;
 
   // undefined
   if (a === undefined) { return b === undefined ? 0 : -1; }
@@ -2550,8 +2612,8 @@ function compareThings (a, b) {
   if (typeof b === 'number') { return typeof a === 'number' ? compareNSB(a, b) : 1; }
 
   // Strings
-  if (typeof a === 'string') { return typeof b === 'string' ? compareNSB(a, b) : -1; }
-  if (typeof b === 'string') { return typeof a === 'string' ? compareNSB(a, b) : 1; }
+  if (typeof a === 'string') { return typeof b === 'string' ? compareStrings(a, b) : -1; }
+  if (typeof b === 'string') { return typeof a === 'string' ? compareStrings(a, b) : 1; }
 
   // Booleans
   if (typeof a === 'boolean') { return typeof b === 'boolean' ? compareNSB(a, b) : -1; }
@@ -2875,7 +2937,7 @@ function areThingsEqual (a, b) {
 
   // Arrays (no match since arrays are used as a $in)
   // undefined (no match since they mean field doesn't exist and can't be serialized)
-  if (util.isArray(a) || util.isArray(b) || a === undefined || b === undefined) { return false; }
+  if ((!(util.isArray(a) && util.isArray(b)) && (util.isArray(a) || util.isArray(b))) || a === undefined || b === undefined) { return false; }
 
   // General objects (check for deep equality)
   // a and b should be objects at this point
@@ -3108,6 +3170,11 @@ function matchQueryPart (obj, queryKey, queryValue, treatObjAsValue) {
 
   // Check if the value is an array if we don't force a treatment as value
   if (util.isArray(objValue) && !treatObjAsValue) {
+    // If the queryValue is an array, try to perform an exact match
+    if (util.isArray(queryValue)) {
+      return matchQueryPart(obj, queryKey, queryValue, true);
+    }
+
     // Check if we are using an array-specific comparison function
     if (queryValue !== null && typeof queryValue === 'object' && !util.isRegExp(queryValue)) {
       keys = Object.keys(queryValue);
@@ -3125,7 +3192,7 @@ function matchQueryPart (obj, queryKey, queryValue, treatObjAsValue) {
 
   // queryValue is an actual object. Determine whether it contains comparison operators
   // or only normal fields. Mixed objects are not allowed
-  if (queryValue !== null && typeof queryValue === 'object' && !util.isRegExp(queryValue)) {
+  if (queryValue !== null && typeof queryValue === 'object' && !util.isRegExp(queryValue) && !util.isArray(queryValue)) {
     keys = Object.keys(queryValue);
     firstChars = _.map(keys, function (item) { return item[0]; });
     dollarFirstChars = _.filter(firstChars, function (c) { return c === '$'; });
@@ -3327,7 +3394,11 @@ Persistence.prototype.persistCachedDatabase = function (cb) {
     }
   });
 
-  storage.crashSafeWriteFile(this.filename, toPersist, callback);
+  storage.crashSafeWriteFile(this.filename, toPersist, function (err) {
+    if (err) { return callback(err); }
+    self.db.emit('compaction.done');
+    return callback(null);
+  });
 };
 
 
