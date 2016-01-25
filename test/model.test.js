@@ -520,6 +520,35 @@ describe('Model', function () {
         }).should.throw();
       });
 
+      it('Can use the $slice modifier to limits the number of array elements', function () {
+        var obj = { arr: ['hello'] }
+          , modified;
+
+        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 1 } } });
+        assert.deepEqual(modified, { arr: ['hello'] });
+
+        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: -1 } } });
+        assert.deepEqual(modified, { arr: ['everything'] });
+
+        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 0 } } });
+        assert.deepEqual(modified, { arr: [] });
+
+        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 2 } } });
+        assert.deepEqual(modified, { arr: ['hello', 'world'] });
+
+        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: -2 } } });
+        assert.deepEqual(modified, { arr: ['earth', 'everything'] });
+
+        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: -20 } } });
+        assert.deepEqual(modified, { arr: ['hello', 'world', 'earth', 'everything'] });
+
+        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 20 } } });
+        assert.deepEqual(modified, { arr: ['hello', 'world', 'earth', 'everything'] });
+
+        modified = model.modify(obj, { $push: { arr: { $each: [], $slice: 1 } } });
+        assert.deepEqual(modified, { arr: ['hello'] });
+      });
+
     });   // End of '$push modifier'
 
     describe('$addToSet modifier', function () {
