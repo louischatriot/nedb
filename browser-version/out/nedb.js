@@ -778,19 +778,276 @@ process.chdir = function (dir) {
 
 },{}],5:[function(require,module,exports){
 /**
- * Manage access to data, be it to find, update or remove it
+ * Created by mitsos on 1/11/16.
  */
+
 var model = require('./model')
-  , _ = require('underscore')
+  , async = require('async')
+  , aggregationOperators = {}
+  , accumulators = {}
+  , Cursor = require('./cursor')
+  , utils = require('./customUtils')
   ;
 
+/**
+ * Supported Aggregators for $group functionality
+ */
+accumulators.$sum = function (sumValue, previousValue, doc) {
+  if (!previousValue) previousValue = 0;//initialize it if not initialized yet
+  //check operator value
+  if (typeof sumValue === 'string' && sumValue.charAt(0) === '$') {//expression
+    var docProp = sumValue.substr(1);
+    previousValue += doc[docProp];
+  }
+  else {//simple value
+    previousValue += parseInt(sumValue);
+  }
+  return previousValue;
+};
+
+/**
+ * Aggegation Operators that will be supported in aggregation pipeline
+ */
+
+aggregationOperators.$match = function (docs, matchObj, callback) {
+  var newDataSet = [];
+  for (var i = 0, docsLen = docs.length;i<docsLen;i++){
+    if (model.match(docs[i],matchObj)) newDataSet.push(docs[i]);//add if meets query criteria
+  }
+  callback(null, newDataSet);//return the filtered set
+};
+
+aggregationOperators.$unwind = function (docs, unwindElement, callback) {
+  if (unwindElement.charAt(0) === '$') unwindElement = unwindElement.substr(1);// remove first dollar character if there
+  //browse results and unwind them
+  var newDataSet = [];
+  var doc, docUnwindEl, newUnwindDoc, refDoc;
+  for (var i = 0, docLen = docs.length; i < docLen; i++) {
+    doc = docs[i];
+    docUnwindEl = doc[unwindElement];
+    if (typeof doc[unwindElement] === 'undefined') {
+      continue;//does not exist, continue
+    }
+    else if (Array.isArray(docUnwindEl)) {//manually unwind
+      var unwindElemLen = docUnwindEl.length;
+      if (unwindElemLen === 0) continue;//array element without any content, skip
+      refDoc = {};//initialize starting point of reference doc to be used in unwinded elements
+      for (var key in doc){
+        if (key !== unwindElement) refDoc[key] = doc[key];//assign all except for element to unwind
+      }
+      for (var j = 0; j < unwindElemLen; j++) {//loop array field element from original doc
+        newUnwindDoc = model.deepCopy(refDoc);//copy original doc
+        newUnwindDoc[unwindElement] = docUnwindEl[j];//the current doc of the array element that's unwinded
+        newDataSet.push(newUnwindDoc);
+      }//end loop of doc field
+    }
+    else {//not an array element, error
+      return callback(new Error('$unwind operator used on non-array field: ' + unwindElement));
+    }
+  }//end loop for docs, new Dataset created
+  callback(null, newDataSet);
+};
+
+aggregationOperators.$sort = function (docs, sortObj, callback) {
+  var tmpDb = {
+    getCandidates: function (query, cb) {
+      cb(null,docs.slice(0));//return copy of docs
+    }
+  };
+  var tmpCursor = new Cursor(tmpDb);//construct cursor to use already built in functionality for sorting in cursor prototype
+  tmpCursor.sort(sortObj);//apply sort object
+  tmpCursor._exec(callback);//call internal functionality of cursor to provide results
+};
+
+aggregationOperators.$skip = function (docs, skip, callback) {
+  //if (skip > docs.length) {
+  //  return callback(new Error('Skip option provided ' + skip + ' greater than actual length of provided dataset'));
+  //}
+  callback(null, docs.slice(skip));
+};
+
+aggregationOperators.$limit = function (docs, limit, callback) {
+  return callback(null, docs.slice(0, limit));
+};
+
+aggregationOperators.$group = function (docs, groupObj, callback) {
+  if (typeof groupObj._id === 'undefined') {
+    return callback(new Error('Group Object in operator does not contain an _id field'));
+  }
+  //group object ok.. continue
+  var newDataSet = [];
+  var idElem = groupObj._id;
+  var currentDoc, docId, j, accumulator, accumulatorOp, docToModify = null;
+  for (var i = 0, docsLen = docs.length; i < docsLen; i++) {
+    currentDoc = docs[i];
+    docId = getDocGroupId(idElem, currentDoc);//get doc's _id expression
+    //find existing or create new doc
+    docToModify = null;//initialiaze selection of doc
+    j = newDataSet.length;
+    while (j--) {
+      if (newDataSet[j]._id !== docId) continue;
+      //doc found
+      docToModify = newDataSet[j];
+      break;///found no need to iterate
+    }
+    //check if docToModify was not found in order to create it
+    if (!docToModify) {
+      docToModify = {_id: docId};//add the group match _id
+      newDataSet.push(docToModify);
+    }
+    //apply aggregators
+    for (var property in groupObj) {
+      if (property === '_id') continue;//skip these properties
+      accumulator = groupObj[property];//get accumulator object
+      accumulatorOp = Object.keys(accumulator)[0];
+      if (!accumulators[accumulatorOp]) return callback(new Error('Unsupported accumulator ' + accumulatorOp + ' used in $group'));
+      docToModify[property] = accumulators[accumulatorOp](accumulator[accumulatorOp], docToModify[property], currentDoc);
+    }
+    //appliance of operators finished
+  }//end of iteration of result set
+  callback(null, newDataSet);
+};
+
+aggregationOperators.$project = function (docs, projectObj, callback) {
+  var newDataSet = [];
+  var doc, j, projectKey, newDoc, projectValue, projectDoc;
+  //check for exclusion of _id
+  var excludeId = false;
+  if (typeof projectObj._id !== 'undefined' && !projectObj._id) {
+    excludeId = true;
+    delete projectObj._id;//remove it from projection obj
+  }
+  var projectKeys = Object.keys(projectObj);//get project object keys
+  for (var i = 0, docsLen = docs.length; i < docsLen; i++) {
+    doc = docs[i];
+    newDoc = {};//initialize new doc
+    j = projectKeys.length;
+    while (j--) {
+      projectKey = projectKeys[j];//current projection key
+      projectValue = projectObj[projectKey];
+      //check type of project key
+      projectDoc = {};
+      projectDoc[projectKey] = projectValue;
+      if (projectKey.indexOf('.') !== -1) {//dot notation key
+        projectDoc = utils.convertDotToObj(projectDoc);//convert dot notation to normal obj
+      }
+      //project doc structured, apply it on doc
+      aggregationProject(doc, projectDoc, newDoc);
+    }
+    if (!excludeId && typeof newDoc._id === 'undefined') newDoc._id = doc._id;
+    //newDoc constructed
+    newDataSet.push(newDoc);
+  }
+  callback(null, newDataSet);
+};
+
+/**
+ * Run the Aggregation pipeline of operators upon the provided dataset
+ * @param {Array} dataset The array of objects that will have the aggregation operations applied on
+ * @param {Array} pipeline The array that will hold the aggregation operators that should be applied on the provided dataset
+ * @param {Function} cb The callback function that will accept the result with signature (err,resultDocsArray)
+ */
+function exec(dataset, pipeline, cb) {
+  async.reduce(pipeline, dataset, function (docs, operator, callback) {
+    //check to find which operator to use
+    var operation = Object.keys(operator)[0];//get the key of the operator in pipeline to determine operation
+    if (!aggregationOperators[operation]) {
+      return callback(new Error('Unknown aggregation operator ' + operation + ' used.'));
+    }
+    else {//operation exists, call it
+      aggregationOperators[operation](docs, operator[operation], callback);
+    }
+  }, cb);
+}
+
+/**
+ * Helper Functions
+ */
+
+/**
+ * Applies the projection for aggregation on the provided doc
+ * @param {Object} originalDoc The doc that the projection will be applied on
+ * @param {Object} projectObj The projection object
+ * @param {Object} newDoc The object on which the projected properties will be appended to
+ */
+function aggregationProject(originalDoc, projectObj, newDoc) {
+  var projectKeys = Object.keys(projectObj);//get keys from projection doc
+  var i = projectKeys.length;
+  var key, keyValue, childDoc, tmpDoc, tmpChildArray, dotArray;
+  while (i--) {
+    key = projectKeys[i];//get current browsed projection key
+    keyValue = projectObj[key];//get key value
+    //check type of value to see what operation is needed
+    if (keyValue === 1 || keyValue === true) {//inclusion of key...
+      if (!!originalDoc && originalDoc.hasOwnProperty(key)) newDoc[key] = originalDoc[key];
+    }
+    else if (typeof keyValue === 'string') {//expression
+      //for now expression will only support, including document fields as computed properties!!!!!!!
+      if (keyValue.charAt(0) === '$') {//document field
+        keyValue = keyValue.substr(1);
+        dotArray = keyValue.split('.');
+        keyValue = dotArray[0];
+        childDoc = originalDoc;
+        for (var k = 1, kLen = dotArray.length; k < kLen; k++) {
+          if (!!childDoc && childDoc.hasOwnProperty(keyValue)) childDoc = childDoc[keyValue];
+          else break;
+          keyValue = dotArray[k];
+        }
+        //if k is not equal to kLen it means, that loop was interrupted due to not existing property.. so skip
+        if (k === kLen && !!childDoc && childDoc.hasOwnProperty(keyValue)) newDoc[key] = childDoc[keyValue];
+      }
+    }
+    else {//object .... call recursive
+      childDoc = !!originalDoc && originalDoc.hasOwnProperty(key) ? originalDoc[key] : null;
+      if (Array.isArray(childDoc)) {//array element in original doc, apply for every element
+        tmpChildArray = [];
+        for (var j = 0, childDocLen = childDoc.length; j < childDocLen; j++) {
+          tmpDoc = {};
+          aggregationProject(childDoc[j], keyValue, tmpDoc);
+          if (Object.keys(tmpDoc).length > 0) tmpChildArray.push(tmpDoc);//nothing was assigned, remove unnecessary property
+        }//end array element loop
+        if (tmpChildArray.length > 0) newDoc[key] = tmpChildArray;
+      }
+      else {//simple object
+        tmpDoc = {};//initialize child of new doc produced, hoping that will get a property
+        aggregationProject(childDoc, keyValue, tmpDoc);
+        if (Object.keys(tmpDoc).length > 0) newDoc[key] = tmpDoc;//nothing was assigned, remove unnecessary property
+      }
+    }
+  }
+}
+
+/**
+ * This function will accept the _id element of a $group match operator and a
+ * doc and will return the computed value depending on _id content
+ * @param {string} groupId the string that will set the field to return
+ * @param {object} doc The object from which we want the id extracted
+ * @returns {*} the id field from the doc
+ */
+function getDocGroupId(groupId, doc) {
+  if (!groupId || (typeof groupId === 'string' && groupId.charAt(0) !== '$')) {//either null or not expression
+    return groupId;
+  }
+  //expression
+  groupId = groupId.substr(1);//remove first dollar character
+  return doc[groupId] || null;
+}
+
+
+exports.exec = exec;
+},{"./cursor":6,"./customUtils":7,"./model":11,"async":14}],6:[function(require,module,exports){
+/**
+ * Manage access to data, be it to find, update or remove it
+ */
+var model = require('./model');
+var utils = require('./customUtils');
 
 
 /**
  * Create a new cursor for this collection
  * @param {Datastore} db - The datastore this cursor is bound to
  * @param {Query} query - The query this cursor will operate on
- * @param {Function} execDn - Handler to be executed after cursor has found the results and before the callback passed to find/findOne/update/remove
+ * @param {Function} execFn - Handler to be executed after cursor has found the results and before the callback passed to find/findOne/update/remove
  */
 function Cursor (db, query, execFn) {
   this.db = db;
@@ -842,35 +1099,45 @@ Cursor.prototype.projection = function(projection) {
  * Apply the projection
  */
 Cursor.prototype.project = function (candidates) {
-  var res = [], self = this
-    , keepId, action, keys
-    ;
+  var res = [], self = this, keepId, action, keys, key, i;
 
   if (this._projection === undefined || Object.keys(this._projection).length === 0) {
     return candidates;
   }
 
-  keepId = this._projection._id === 0 ? false : true;
-  this._projection = _.omit(this._projection, '_id');
+  keepId = self._projection._id !== 0;
+  delete this._projection._id;//remove _id property from projection if there
 
   // Check for consistency
-  keys = Object.keys(this._projection);
-  keys.forEach(function (k) {
-    if (action !== undefined && self._projection[k] !== action) { throw new Error("Can't both keep and omit fields except for _id"); }
-    action = self._projection[k];
-  });
-
+  keys = Object.keys(self._projection);
+  i = keys.length;
+  while (i--){
+    key = keys[i];
+    if (action !== undefined && self._projection[key] !== action) { throw new Error("Can't both keep and omit fields except for _id"); }
+    action = self._projection[key];
+  }
+  //construct the projection in object form
+  var projection = utils.convertDotToObj(self._projection);
   // Do the actual projection
-  candidates.forEach(function (candidate) {
-    var toPush = action === 1 ? _.pick(candidate, keys) : _.omit(candidate, keys);
-    if (keepId) {
-      toPush._id = candidate._id;
-    } else {
+  var candidate, query, toPush;
+  i = candidates.length;
+  query = self.query;
+  while (i--){
+    candidate = candidates[i];
+    if (action === 1){//inclusion
+      toPush = utils.pick(candidate,projection,query);
+    }
+    else{//exclusion
+      toPush = utils.omit(candidate,projection);
+    }
+    if (!keepId){
       delete toPush._id;
     }
-    res.push(toPush);
-  });
-
+    else{
+      toPush._id = candidate._id;
+    }
+    res.unshift(toPush);
+  }
   return res;
 };
 
@@ -882,88 +1149,92 @@ Cursor.prototype.project = function (candidates) {
  *
  * @param {Function} callback - Signature: err, results
  */
-Cursor.prototype._exec = function(callback) {
-  var candidates = this.db.getCandidates(this.query)
-    , res = [], added = 0, skipped = 0, self = this
+Cursor.prototype._exec = function(_callback) {
+  var res = [], added = 0, skipped = 0, self = this
     , error = null
     , i, keys, key
     ;
 
-  try {
-    for (i = 0; i < candidates.length; i += 1) {
-      if (model.match(candidates[i], this.query)) {
-        // If a sort is defined, wait for the results to be sorted before applying limit and skip
-        if (!this._sort) {
-          if (this._skip && this._skip > skipped) {
-            skipped += 1;
+  function callback (error, res) {
+    if (self.execFn) {
+      return self.execFn(error, res, _callback);
+    } else {
+      return _callback(error, res);
+    }
+  }
+
+  this.db.getCandidates(this.query, function (err, candidates) {
+    if (err) { return callback(err); }
+
+    try {
+      for (i = 0; i < candidates.length; i += 1) {
+        if (model.match(candidates[i], self.query)) {
+          // If a sort is defined, wait for the results to be sorted before applying limit and skip
+          if (!self._sort) {
+            if (self._skip && self._skip > skipped) {
+              skipped += 1;
+            } else {
+              res.push(candidates[i]);
+              added += 1;
+              if (self._limit && self._limit <= added) { break; }
+            }
           } else {
             res.push(candidates[i]);
-            added += 1;
-            if (this._limit && this._limit <= added) { break; }
           }
-        } else {
-          res.push(candidates[i]);
         }
       }
+    } catch (err) {
+      return callback(err);
     }
-  } catch (err) {
-    return callback(err);
-  }
 
-  // Apply all sorts
-  if (this._sort) {
-    keys = Object.keys(this._sort);
+    // Apply all sorts
+    if (self._sort) {
+      keys = Object.keys(self._sort);
 
-    // Sorting
-    var criteria = [];
-    for (i = 0; i < keys.length; i++) {
-      key = keys[i];
-      criteria.push({ key: key, direction: self._sort[key] });
-    }
-    res.sort(function(a, b) {
-      var criterion, compare, i;
-      for (i = 0; i < criteria.length; i++) {
-        criterion = criteria[i];
-        compare = criterion.direction * model.compareThings(model.getDotValue(a, criterion.key), model.getDotValue(b, criterion.key), self.db.compareStrings);
-        if (compare !== 0) {
-          return compare;
-        }
+      // Sorting
+      var criteria = [];
+      for (i = 0; i < keys.length; i++) {
+        key = keys[i];
+        criteria.push({ key: key, direction: self._sort[key] });
       }
-      return 0;
-    });
+      res.sort(function(a, b) {
+        var criterion, compare, i;
+        for (i = 0; i < criteria.length; i++) {
+          criterion = criteria[i];
+          compare = criterion.direction * model.compareThings(model.getDotValue(a, criterion.key), model.getDotValue(b, criterion.key), self.db.compareStrings);
+          if (compare !== 0) {
+            return compare;
+          }
+        }
+        return 0;
+      });
 
-    // Applying limit and skip
-    var limit = this._limit || res.length
-      , skip = this._skip || 0;
+      // Applying limit and skip
+      var limit = self._limit || res.length
+        , skip = self._skip || 0;
 
-    res = res.slice(skip, skip + limit);
-  }
+      res = res.slice(skip, skip + limit);
+    }
 
-  // Apply projection
-  try {
-    res = this.project(res);
-  } catch (e) {
-    error = e;
-    res = undefined;
-  }
+    // Apply projection
+    try {
+      res = self.project(res);
+    } catch (e) {
+      error = e;
+      res = undefined;
+    }
 
-  if (this.execFn) {
-    return this.execFn(error, res, callback);
-  } else {
     return callback(error, res);
-  }
+  });
 };
 
 Cursor.prototype.exec = function () {
   this.db.executor.push({ this: this, fn: this._exec, arguments: arguments });
 };
 
-
-
 // Interface
 module.exports = Cursor;
-
-},{"./model":10,"underscore":19}],6:[function(require,module,exports){
+},{"./customUtils":7,"./model":11}],7:[function(require,module,exports){
 /**
  * Specific customUtils for the browser, where we don't have access to the Crypto and Buffer modules
  */
@@ -1043,7 +1314,7 @@ function uid (len) {
 
 module.exports.uid = uid;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var customUtils = require('./customUtils')
   , model = require('./model')
   , async = require('async')
@@ -1053,6 +1324,7 @@ var customUtils = require('./customUtils')
   , _ = require('underscore')
   , Persistence = require('./persistence')
   , Cursor = require('./cursor')
+  , aggregation = require('./aggregation')
   ;
 
 
@@ -1115,6 +1387,7 @@ function Datastore (options) {
   // binary is always well-balanced
   this.indexes = {};
   this.indexes._id = new Index({ fieldName: '_id', unique: true });
+  this.ttlIndexes = {};
 
   // Queue a load of the database right away and call the onload handler
   // By default (no onload handler), if there is an error there, no operation will be possible so warn the user by throwing an exception
@@ -1161,6 +1434,7 @@ Datastore.prototype.resetIndexes = function (newData) {
  * @param {String} options.fieldName
  * @param {Boolean} options.unique
  * @param {Boolean} options.sparse
+ * @param {Number} options.expireAfterSeconds - Optional, if set this index becomes a TTL index (only works on Date fields, not arrays of Date)
  * @param {Function} cb Optional callback, signature: err
  */
 Datastore.prototype.ensureIndex = function (options, cb) {
@@ -1177,6 +1451,7 @@ Datastore.prototype.ensureIndex = function (options, cb) {
   if (this.indexes[options.fieldName]) { return callback(null); }
 
   this.indexes[options.fieldName] = new Index(options);
+  if (options.expireAfterSeconds !== undefined) { this.ttlIndexes[options.fieldName] = options.expireAfterSeconds; }   // With this implementation index creation is not necessary to ensure TTL but we stick with MongoDB's API here
 
   try {
     this.indexes[options.fieldName].insert(this.getAllData());
@@ -1289,50 +1564,89 @@ Datastore.prototype.updateIndexes = function (oldDoc, newDoc) {
  * One way to make it better would be to enable the use of multiple indexes if the first usable index
  * returns too much data. I may do it in the future.
  *
- * TODO: needs to be moved to the Cursor module
+ * Returned candidates will be scanned to find and remove all expired documents
+ *
+ * @param {Query} query
+ * @param {Boolean} dontExpireStaleDocs Optional, defaults to false, if true don't remove stale docs. Useful for the remove function which shouldn't be impacted by expirations
+ * @param {Function} callback Signature err, docs
  */
-Datastore.prototype.getCandidates = function (query) {
+Datastore.prototype.getCandidates = function (query, dontExpireStaleDocs, callback) {
   var indexNames = Object.keys(this.indexes)
+    , self = this
     , usableQueryKeys;
 
-  // For a basic match
-  usableQueryKeys = [];
-  Object.keys(query).forEach(function (k) {
-    if (typeof query[k] === 'string' || typeof query[k] === 'number' || typeof query[k] === 'boolean' || util.isDate(query[k]) || query[k] === null) {
-      usableQueryKeys.push(k);
-    }
-  });
-  usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
-  if (usableQueryKeys.length > 0) {
-    return this.indexes[usableQueryKeys[0]].getMatching(query[usableQueryKeys[0]]);
+  if (typeof dontExpireStaleDocs === 'function') {
+    callback = dontExpireStaleDocs;
+    dontExpireStaleDocs = false;
   }
 
-  // For a $in match
-  usableQueryKeys = [];
-  Object.keys(query).forEach(function (k) {
-    if (query[k] && query[k].hasOwnProperty('$in')) {
-      usableQueryKeys.push(k);
+  async.waterfall([
+  // STEP 1: get candidates list by checking indexes from most to least frequent usecase
+  function (cb) {
+    // For a basic match
+    usableQueryKeys = [];
+    Object.keys(query).forEach(function (k) {
+      if (typeof query[k] === 'string' || typeof query[k] === 'number' || typeof query[k] === 'boolean' || util.isDate(query[k]) || query[k] === null) {
+        usableQueryKeys.push(k);
+      }
+    });
+    usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
+    if (usableQueryKeys.length > 0) {
+      return cb(null, self.indexes[usableQueryKeys[0]].getMatching(query[usableQueryKeys[0]]));
     }
-  });
-  usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
-  if (usableQueryKeys.length > 0) {
-    return this.indexes[usableQueryKeys[0]].getMatching(query[usableQueryKeys[0]].$in);
-  }
 
-  // For a comparison match
-  usableQueryKeys = [];
-  Object.keys(query).forEach(function (k) {
-    if (query[k] && (query[k].hasOwnProperty('$lt') || query[k].hasOwnProperty('$lte') || query[k].hasOwnProperty('$gt') || query[k].hasOwnProperty('$gte'))) {
-      usableQueryKeys.push(k);
+    // For a $in match
+    usableQueryKeys = [];
+    Object.keys(query).forEach(function (k) {
+      if (query[k] && query[k].hasOwnProperty('$in')) {
+        usableQueryKeys.push(k);
+      }
+    });
+    usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
+    if (usableQueryKeys.length > 0) {
+      return cb(null, self.indexes[usableQueryKeys[0]].getMatching(query[usableQueryKeys[0]].$in));
     }
-  });
-  usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
-  if (usableQueryKeys.length > 0) {
-    return this.indexes[usableQueryKeys[0]].getBetweenBounds(query[usableQueryKeys[0]]);
-  }
 
-  // By default, return all the DB data
-  return this.getAllData();
+    // For a comparison match
+    usableQueryKeys = [];
+    Object.keys(query).forEach(function (k) {
+      if (query[k] && (query[k].hasOwnProperty('$lt') || query[k].hasOwnProperty('$lte') || query[k].hasOwnProperty('$gt') || query[k].hasOwnProperty('$gte'))) {
+        usableQueryKeys.push(k);
+      }
+    });
+    usableQueryKeys = _.intersection(usableQueryKeys, indexNames);
+    if (usableQueryKeys.length > 0) {
+      return cb(null, self.indexes[usableQueryKeys[0]].getBetweenBounds(query[usableQueryKeys[0]]));
+    }
+
+    // By default, return all the DB data
+    return cb(null, self.getAllData());
+  }
+  // STEP 2: remove all expired documents
+  , function (docs) {
+    if (dontExpireStaleDocs) { return callback(null, docs); }
+
+    var expiredDocsIds = [], validDocs = [], ttlIndexesFieldNames = Object.keys(self.ttlIndexes);
+
+    docs.forEach(function (doc) {
+      var valid = true;
+      ttlIndexesFieldNames.forEach(function (i) {
+        if (doc[i] !== undefined && util.isDate(doc[i]) && Date.now() > doc[i].getTime() + self.ttlIndexes[i] * 1000) {
+          valid = false;
+        }
+      });
+      if (valid) { validDocs.push(doc); } else { expiredDocsIds.push(doc._id); }
+    });
+
+    async.eachSeries(expiredDocsIds, function (_id, cb) {
+      self._remove({ _id: _id }, {}, function (err) {
+        if (err) { return callback(err); }
+        return cb();
+      });
+    }, function (err) {
+      return callback(null, validDocs);
+    });
+  }]);
 };
 
 
@@ -1594,48 +1908,49 @@ Datastore.prototype._update = function (query, updateQuery, options, cb) {
     });
   }
   , function () {   // Perform the update
-    var modifiedDoc
-      , candidates = self.getCandidates(query)
-      , modifications = []
-      ;
+    var modifiedDoc , modifications = [];
 
-    // Preparing update (if an error is thrown here neither the datafile nor
-    // the in-memory indexes are affected)
-    try {
-      for (i = 0; i < candidates.length; i += 1) {
-        if (model.match(candidates[i], query) && (multi || numReplaced === 0)) {
-          numReplaced += 1;
-          modifiedDoc = model.modify(candidates[i], updateQuery);
-          if (self.timestampData) { modifiedDoc.updatedAt = new Date(); }
-          modifications.push({ oldDoc: candidates[i], newDoc: modifiedDoc });
-        }
-      }
-    } catch (err) {
-      return callback(err);
-    }
-
-    // Change the docs in memory
-    try {
-        self.updateIndexes(modifications);
-    } catch (err) {
-      return callback(err);
-    }
-
-    // Update the datafile
-    var updatedDocs = _.pluck(modifications, 'newDoc');
-    self.persistence.persistNewState(updatedDocs, function (err) {
+    self.getCandidates(query, function (err, candidates) {
       if (err) { return callback(err); }
-      if (!options.returnUpdatedDocs) {
-        return callback(null, numReplaced);
-      } else {
-        var updatedDocsDC = [];
-        updatedDocs.forEach(function (doc) { updatedDocsDC.push(model.deepCopy(doc)); });
-        return callback(null, numReplaced, updatedDocsDC);
+
+      // Preparing update (if an error is thrown here neither the datafile nor
+      // the in-memory indexes are affected)
+      try {
+        for (i = 0; i < candidates.length; i += 1) {
+          if (model.match(candidates[i], query) && (multi || numReplaced === 0)) {
+            numReplaced += 1;
+            modifiedDoc = model.modify(candidates[i], updateQuery, query);
+            if (self.timestampData) { modifiedDoc.updatedAt = new Date(); }
+            modifications.push({ oldDoc: candidates[i], newDoc: modifiedDoc });
+          }
+        }
+      } catch (err) {
+        return callback(err);
       }
+
+      // Change the docs in memory
+      try {
+        self.updateIndexes(modifications);
+      } catch (err) {
+        return callback(err);
+      }
+
+      // Update the datafile
+      var updatedDocs = _.pluck(modifications, 'newDoc');
+      self.persistence.persistNewState(updatedDocs, function (err) {
+        if (err) { return callback(err); }
+        if (!options.returnUpdatedDocs) {
+          return callback(null, numReplaced);
+        } else {
+          var updatedDocsDC = [];
+          updatedDocs.forEach(function (doc) { updatedDocsDC.push(model.deepCopy(doc)); });
+          return callback(null, numReplaced, updatedDocsDC);
+        }
+      });
     });
-  }
-  ]);
+  }]);
 };
+
 Datastore.prototype.update = function () {
   this.executor.push({ this: this, fn: this._update, arguments: arguments });
 };
@@ -1653,44 +1968,70 @@ Datastore.prototype.update = function () {
  */
 Datastore.prototype._remove = function (query, options, cb) {
   var callback
-    , self = this
-    , numRemoved = 0
-    , multi
-    , removedDocs = []
-    , candidates = this.getCandidates(query)
+    , self = this, numRemoved = 0, removedDocs = [], multi
     ;
 
   if (typeof options === 'function') { cb = options; options = {}; }
   callback = cb || function () {};
   multi = options.multi !== undefined ? options.multi : false;
 
-  try {
-    candidates.forEach(function (d) {
-      if (model.match(d, query) && (multi || numRemoved === 0)) {
-        numRemoved += 1;
-        removedDocs.push({ $$deleted: true, _id: d._id });
-        self.removeFromIndexes(d);
-      }
-    });
-  } catch (err) { return callback(err); }
-
-  self.persistence.persistNewState(removedDocs, function (err) {
+  this.getCandidates(query, true, function (err, candidates) {
     if (err) { return callback(err); }
-    return callback(null, numRemoved);
+
+    try {
+      candidates.forEach(function (d) {
+        if (model.match(d, query) && (multi || numRemoved === 0)) {
+          numRemoved += 1;
+          removedDocs.push({ $$deleted: true, _id: d._id });
+          self.removeFromIndexes(d);
+        }
+      });
+    } catch (err) { return callback(err); }
+
+    self.persistence.persistNewState(removedDocs, function (err) {
+      if (err) { return callback(err); }
+      return callback(null, numRemoved);
+    });
   });
 };
+
 Datastore.prototype.remove = function () {
   this.executor.push({ this: this, fn: this._remove, arguments: arguments });
 };
 
-
-
-
+/**
+ * Perform aggregation with provided pipeline operators on Dataset
+ * @param {Array} pipeline will hold the sequence of operators to be applied by the aggregation process
+ * @param {Object} options Aggregation options
+ * @param {Function} cb Callback function that will be passed the error or results
+ */
+Datastore.prototype.aggregate = function (pipeline, options, cb){
+  var pipeLen = pipeline.length;
+  if (pipeLen < 1){//check for pipeline containing operators
+    return cb(new Error('No aggregators provided in the aggregation pipeline to execute'));
+  }
+  //pipeline has operators
+  var firstOperator = pipeline[0];
+  //check if first operator is $match (to reduce dataset), or else we need to provide the whole dataset as input to aggregation
+  var query = {};//initialize to empty query
+  if (firstOperator.$match){//match operator
+    pipeline.shift();//remove match operator from the start of pipeline
+    query = firstOperator.$match;
+  }
+  var cursor = new Cursor(this,query);
+  cursor.exec(function(err,resultDocs){
+    if (!!err) return cb(err);//we had error
+    //no error, check if pipeline has remaining operators to apply, if not just return the results
+    if (pipeline.length < 1) return cb(null,resultDocs);
+    //pipeline still has operators, pass on to aggregation
+    aggregation.exec(resultDocs,pipeline,cb);
+  });
+};
 
 
 module.exports = Datastore;
 
-},{"./cursor":5,"./customUtils":6,"./executor":8,"./indexes":9,"./model":10,"./persistence":11,"async":13,"events":1,"underscore":19,"util":3}],8:[function(require,module,exports){
+},{"./aggregation":5,"./cursor":6,"./customUtils":7,"./executor":9,"./indexes":10,"./model":11,"./persistence":12,"async":14,"events":1,"underscore":20,"util":3}],9:[function(require,module,exports){
 var process=require("__browserify_process");/**
  * Responsible for sequentially executing actions on the database
  */
@@ -1769,7 +2110,7 @@ Executor.prototype.processBuffer = function () {
 // Interface
 module.exports = Executor;
 
-},{"__browserify_process":4,"async":13}],9:[function(require,module,exports){
+},{"__browserify_process":4,"async":14}],10:[function(require,module,exports){
 var BinarySearchTree = require('binary-search-tree').AVLTree
   , model = require('./model')
   , _ = require('underscore')
@@ -1860,12 +2201,12 @@ Index.prototype.insert = function (doc) {
         break;
       }
     }
-    
+
     if (error) {
       for (i = 0; i < failingI; i += 1) {
         this.tree.delete(keys[i], doc);
       }
-      
+
       throw error;
     }
   }
@@ -2065,7 +2406,7 @@ Index.prototype.getAll = function () {
 // Interface
 module.exports = Index;
 
-},{"./model":10,"binary-search-tree":14,"underscore":19,"util":3}],10:[function(require,module,exports){
+},{"./model":11,"binary-search-tree":15,"underscore":20,"util":3}],11:[function(require,module,exports){
 /**
  * Handle models (i.e. docs)
  * Serialization/deserialization
@@ -2431,16 +2772,47 @@ lastStepModifierFunctions.$inc = function (obj, field, value) {
   }
 };
 
+/**
+ * Updates the value of the field, only if specified field is greater than the current value of the field
+ */
+lastStepModifierFunctions.$max = function (obj, field, value) {
+  if (typeof obj[field] === 'undefined') obj[field] = value;
+  else if (value > obj[field]) obj[field] = value;
+};
+
+/**
+ * Updates the value of the field, only if specified field is smaller than the current value of the field
+ */
+lastStepModifierFunctions.$min = function (obj, field, value) {
+  if (typeof obj[field] === 'undefined') obj[field] = value;
+  else if (value < obj[field]) obj[field] = value;
+};
+
 // Given its name, create the complete modifier function
 function createModifierFunction (modifier) {
-  return function (obj, field, value) {
+  return function (obj, field, value, query, originalDoc) {
     var fieldParts = typeof field === 'string' ? field.split('.') : field;
 
     if (fieldParts.length === 1) {
       lastStepModifierFunctions[modifier](obj, field, value);
     } else {
+      //check for update positional operator
+      if (fieldParts[1] === '$'){//next element is positional operator on this key
+        var arrayKey = fieldParts[0];
+        var arrayField = obj[arrayKey];
+        if (!Array.isArray(arrayField)) throw new Error('Positional update operator applied on non array element');
+        //find index of array that matches
+        for (var i = 0, len = arrayField.length;i<len;i++){//try each element of the array to find the first that matches
+          obj[arrayKey] = [arrayField[i]];
+          if (match(originalDoc,query)){//array field Matches
+            obj[arrayKey] = arrayField;//restore whole array
+            fieldParts[1] = i;//replace positional operator with match found...
+            break;//continue
+          }
+        }
+      }
       obj[fieldParts[0]] = obj[fieldParts[0]] || {};
-      modifierFunctions[modifier](obj[fieldParts[0]], fieldParts.slice(1), value);
+      modifierFunctions[modifier](obj[fieldParts[0]], fieldParts.slice(1), value, query, originalDoc);
     }
   };
 }
@@ -2454,7 +2826,7 @@ Object.keys(lastStepModifierFunctions).forEach(function (modifier) {
 /**
  * Modify a DB object according to an update query
  */
-function modify (obj, updateQuery) {
+function modify (obj, updateQuery, query) {
   var keys = Object.keys(updateQuery)
     , firstChars = _.map(keys, function (item) { return item[0]; })
     , dollarFirstChars = _.filter(firstChars, function (c) { return c === '$'; })
@@ -2488,7 +2860,15 @@ function modify (obj, updateQuery) {
 
       keys = Object.keys(updateQuery[m]);
       keys.forEach(function (k) {
-        modifierFunctions[m](newDoc, k, updateQuery[m][k]);
+        //check for update positional operator usage without including the array field in query
+        var $pos = k.indexOf('.$');
+        if ($pos !== -1){//position update operator included
+          var arrayField = k.substr(0,$pos);//remove the dot part
+          if (!includedInQuery(query,arrayField)){
+            throw new Error('Positional operator used ($) but array field not mentioned in query');
+          }
+        }
+        modifierFunctions[m](newDoc, k, updateQuery[m][k], query, newDoc);
       });
     });
   }
@@ -2667,7 +3047,21 @@ comparisonFunctions.$size = function (obj, value) {
 
     return (obj.length == value);
 };
+
+comparisonFunctions.$elemMatch = function(obj,value){
+  if (!util.isArray(obj)) { return false; }
+  var i = obj.length;
+  var result = false;//initialize result
+  while(i--){
+    if (match(obj[i],value)){//if match for array element, return true
+      result = true;
+      break;
+    }
+  }
+  return result;
+};
 arrayComparisonFunctions.$size = true;
+arrayComparisonFunctions.$elemMatch = true;
 
 
 /**
@@ -2828,6 +3222,28 @@ function matchQueryPart (obj, queryKey, queryValue, treatObjAsValue) {
   return true;
 }
 
+/**
+ * This function will check whether field in dot notation is mentioned in the query object
+ * @param query
+ * @param field
+ */
+function includedInQuery(query,field){
+  var queryKeys = Object.keys(query);//get query keys
+  var i = queryKeys.length, key;
+  while(i--){
+    key = queryKeys[i];
+    if (key.indexOf(field) !== -1) return true;//found match including array field in key
+  }
+  //nothing found
+  var fieldArray = field.split('.');
+  if (fieldArray.length === 1) return false;//single field so not included
+  else {//embedded field
+    var rootFieldDoc = query[fieldArray[0]];
+    if (!rootFieldDoc) return false;//embedded field not specified in query
+    //embedded field specified
+    return includedInQuery(rootFieldDoc,fieldArray.slice(1).join('.'));
+  }
+}
 
 // Interface
 module.exports.serialize = serialize;
@@ -2841,7 +3257,7 @@ module.exports.match = match;
 module.exports.areThingsEqual = areThingsEqual;
 module.exports.compareThings = compareThings;
 
-},{"underscore":19,"util":3}],11:[function(require,module,exports){
+},{"underscore":20,"util":3}],12:[function(require,module,exports){
 var process=require("__browserify_process");/**
  * Handle every persistence-related task
  * The interface Datastore expects to be implemented is
@@ -3157,7 +3573,7 @@ Persistence.prototype.loadDatabase = function (cb) {
 // Interface
 module.exports = Persistence;
 
-},{"./customUtils":6,"./indexes":9,"./model":10,"./storage":12,"__browserify_process":4,"async":13,"path":2}],12:[function(require,module,exports){
+},{"./customUtils":7,"./indexes":10,"./model":11,"./storage":13,"__browserify_process":4,"async":14,"path":2}],13:[function(require,module,exports){
 /**
  * Way data is stored for this database
  * For a Node.js/Node Webkit database it's the file system
@@ -3254,7 +3670,7 @@ module.exports.mkdirp = mkdirp;
 module.exports.ensureDatafileIntegrity = ensureDatafileIntegrity;
 
 
-},{"localforage":18}],13:[function(require,module,exports){
+},{"localforage":19}],14:[function(require,module,exports){
 var process=require("__browserify_process");/*global setImmediate: false, setTimeout: false, console: false */
 (function () {
 
@@ -4214,11 +4630,11 @@ var process=require("__browserify_process");/*global setImmediate: false, setTim
 
 }());
 
-},{"__browserify_process":4}],14:[function(require,module,exports){
+},{"__browserify_process":4}],15:[function(require,module,exports){
 module.exports.BinarySearchTree = require('./lib/bst');
 module.exports.AVLTree = require('./lib/avltree');
 
-},{"./lib/avltree":15,"./lib/bst":16}],15:[function(require,module,exports){
+},{"./lib/avltree":16,"./lib/bst":17}],16:[function(require,module,exports){
 /**
  * Self-balancing binary search tree using the AVL implementation
  */
@@ -4675,7 +5091,7 @@ AVLTree.prototype.delete = function (key, value) {
 // Interface
 module.exports = AVLTree;
 
-},{"./bst":16,"./customUtils":17,"underscore":19,"util":3}],16:[function(require,module,exports){
+},{"./bst":17,"./customUtils":18,"underscore":20,"util":3}],17:[function(require,module,exports){
 /**
  * Simple binary search tree
  */
@@ -5220,7 +5636,7 @@ BinarySearchTree.prototype.prettyPrint = function (printData, spacing) {
 // Interface
 module.exports = BinarySearchTree;
 
-},{"./customUtils":17}],17:[function(require,module,exports){
+},{"./customUtils":18}],18:[function(require,module,exports){
 /**
  * Return an array with the numbers from 0 to n-1, in a random order
  */
@@ -5263,10 +5679,10 @@ function defaultCheckValueEquality (a, b) {
 }
 module.exports.defaultCheckValueEquality = defaultCheckValueEquality;
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 var process=require("__browserify_process"),global=self;/*!
     localForage -- Offline Storage, Improved
-    Version 1.3.0
+    Version 1.3.1
     https://mozilla.github.io/localForage
     (c) 2013-2015 Mozilla, Apache License 2.0
 */
@@ -6667,7 +7083,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            dbInfo.db = dbContext.db = db;
 	            self._dbInfo = dbInfo;
 	            // Share the final connection amongst related localForages.
-	            for (var k in forages) {
+	            for (var k = 0; k < forages.length; k++) {
 	                var forage = forages[k];
 	                if (forage !== self) {
 	                    // Self is already up-to-date.
@@ -6861,10 +7277,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var dbInfo;
 	            self.ready().then(function () {
 	                dbInfo = self._dbInfo;
-	                return _checkBlobSupport(dbInfo.db);
-	            }).then(function (blobSupport) {
-	                if (!blobSupport && value instanceof Blob) {
-	                    return _encodeBlob(value);
+	                if (value instanceof Blob) {
+	                    return _checkBlobSupport(dbInfo.db).then(function (blobSupport) {
+	                        if (blobSupport) {
+	                            return value;
+	                        }
+	                        return _encodeBlob(value);
+	                    });
 	                }
 	                return value;
 	            }).then(function (value) {
@@ -8045,7 +8464,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ ])
 });
 ;
-},{"__browserify_process":4}],19:[function(require,module,exports){
+},{"__browserify_process":4}],20:[function(require,module,exports){
 //     Underscore.js 1.4.4
 //     http://underscorejs.org
 //     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
@@ -9273,6 +9692,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 }).call(this);
 
-},{}]},{},[7])(7)
+},{}]},{},[8])(8)
 });
 ;

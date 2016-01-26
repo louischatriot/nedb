@@ -684,15 +684,15 @@ describe('Cursor', function () {
 
     beforeEach(function (done) {
       // We don't know the order in which docs wil be inserted but we ensure correctness by testing both sort orders
-      d.insert({ age: 5, name: 'Jo', planet: 'B' }, function (err, _doc0) {
+      d.insert({ age: 5, name: 'Jo', planet: 'B', phone:{home:124544,work:34252345}, pets:[{animal:'dog', name:'Mitsos'}, {animal:'Cat', name:'Giannis'}]}, function (err, _doc0) {
         doc0 = _doc0;
-        d.insert({ age: 57, name: 'Louis', planet: 'R' }, function (err, _doc1) {
+        d.insert({ age: 57, name: 'Louis', planet: 'R', phone:{home:2345,work:23455}, pets:[{animal:'snake', name:'Kopria'}, {animal:'tiger', name:'Tasos'}]}, function (err, _doc1) {
           doc1 = _doc1;
-          d.insert({ age: 52, name: 'Grafitti', planet: 'C' }, function (err, _doc2) {
+          d.insert({ age: 52, name: 'Grafitti', planet: 'C', phone:{home:52346234,work:7643745}}, function (err, _doc2) {
             doc2 = _doc2;
-            d.insert({ age: 23, name: 'LM', planet: 'S' }, function (err, _doc3) {
+            d.insert({ age: 23, name: 'LM', planet: 'S', phone:{home:345634523,work:3456345}}, function (err, _doc3) {
               doc3 = _doc3;
-              d.insert({ age: 89, planet: 'Earth' }, function (err, _doc4) {
+              d.insert({ age: 89, planet: 'Earth', phone:{home:3456345,work:7347345}}, function (err, _doc4) {
                 doc4 = _doc4;
                 return done();
               });
@@ -757,11 +757,90 @@ describe('Cursor', function () {
         });
       });
     });
+  
+    it('Can take only the expected fields on embedded documents', function (done) {
+      var cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });   // For easier finding
+      cursor.projection({ 'phone.home':1 , name: 1 });
+      cursor.exec(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(5);
+        // Takes the _id by default
+        assert.deepEqual(docs[0], { phone:{home:124544}, name: 'Jo', _id: doc0._id });
+        assert.deepEqual(docs[1], { phone:{home:345634523}, name: 'LM', _id: doc3._id });
+        assert.deepEqual(docs[2], { phone:{home:52346234}, name: 'Grafitti', _id: doc2._id });
+        assert.deepEqual(docs[3], { phone:{home:2345}, name: 'Louis', _id: doc1._id });
+        assert.deepEqual(docs[4], { phone:{home:3456345}, _id: doc4._id });   // No problems if one field to take doesn't exist
+
+        cursor.projection({ 'phone.home':1 , name: 1, _id: 0 });
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(5);
+          assert.deepEqual(docs[0], { phone:{home:124544}, name: 'Jo' });
+          assert.deepEqual(docs[1], { phone:{home:345634523}, name: 'LM'});
+          assert.deepEqual(docs[2], { phone:{home:52346234}, name: 'Grafitti'});
+          assert.deepEqual(docs[3], { phone:{home:2345}, name: 'Louis'});
+          assert.deepEqual(docs[4], { phone:{home:3456345}});   // No problems if one field to take doesn't exist
+
+          done();
+        });
+      });
+    });
+
+    it('Can take only the expected fields on array documents', function (done) {
+      var cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });   // For easier finding
+      cursor.projection({ 'phone.home':1 , 'pets.animal':1 , name: 1 });
+      cursor.exec(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(5);
+        // Takes the _id by default
+        assert.deepEqual(docs[0], { phone:{home:124544}, name: 'Jo', pets:[{animal:'dog'}, {animal:'Cat'}], _id: doc0._id });
+        assert.deepEqual(docs[1], { phone:{home:345634523}, name: 'LM', _id: doc3._id });
+        assert.deepEqual(docs[2], { phone:{home:52346234}, name: 'Grafitti', _id: doc2._id });
+        assert.deepEqual(docs[3], { phone:{home:2345}, name: 'Louis', pets:[{animal:'snake'}, {animal:'tiger'}], _id: doc1._id });
+        assert.deepEqual(docs[4], { phone:{home:3456345}, _id: doc4._id });   // No problems if one field to take doesn't exist
+
+        cursor.projection({ 'phone.home':1 , 'pets.animal':1, name: 1, _id: 0 });
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(5);
+          assert.deepEqual(docs[0], { phone:{home:124544}, name: 'Jo', pets:[{animal:'dog'}, {animal:'Cat'}] });
+          assert.deepEqual(docs[1], { phone:{home:345634523}, name: 'LM'});
+          assert.deepEqual(docs[2], { phone:{home:52346234}, name: 'Grafitti'});
+          assert.deepEqual(docs[3], { phone:{home:2345}, name: 'Louis', pets:[{animal:'snake'}, {animal:'tiger'}]});
+          assert.deepEqual(docs[4], { phone:{home:3456345}});   // No problems if one field to take doesn't exist
+
+          done();
+        });
+      });
+    });
+
+    it('Can take only the expected fields on array documents with positional operator', function (done) {
+      var cursor = new Cursor(d, {'pets.animal':'dog'});
+      cursor.sort({ age: 1 });   // For easier finding
+      cursor.projection({ 'phone.home':1 , 'pets.$':1 , name: 1 });
+      cursor.exec(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(1);
+        // Takes the _id by default
+        assert.deepEqual(docs[0], { phone:{home:124544}, name: 'Jo', pets:[{animal:'dog', name:'Mitsos'}], _id: doc0._id });
+
+        cursor.projection({ 'phone.home':1 , 'pets.$':1, name: 1, _id: 0 });
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(1);
+          assert.deepEqual(docs[0], { phone:{home:124544}, name: 'Jo', pets:[{animal:'dog', name:'Mitsos'}] });
+
+          done();
+        });
+      });
+    });
 
     it('Can omit only the expected fields', function (done) {
       var cursor = new Cursor(d, {});
       cursor.sort({ age: 1 });   // For easier finding
-      cursor.projection({ age: 0, name: 0 });
+      cursor.projection({ age: 0, name: 0, phone:0, pets:0 });
       cursor.exec(function (err, docs) {
         assert.isNull(err);
         docs.length.should.equal(5);
@@ -772,7 +851,7 @@ describe('Cursor', function () {
         assert.deepEqual(docs[3], { planet: 'R', _id: doc1._id });
         assert.deepEqual(docs[4], { planet: 'Earth', _id: doc4._id });
 
-        cursor.projection({ age: 0, name: 0, _id: 0 });
+        cursor.projection({ age: 0, name: 0, _id: 0 , phone:0, pets:0 });
         cursor.exec(function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(5);
@@ -781,6 +860,64 @@ describe('Cursor', function () {
           assert.deepEqual(docs[2], { planet: 'C' });
           assert.deepEqual(docs[3], { planet: 'R' });
           assert.deepEqual(docs[4], { planet: 'Earth' });
+
+          done();
+        });
+      });
+    });
+
+    it('Can omit only the expected fields from embedded documents', function (done) {
+      var cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });   // For easier finding
+      cursor.projection({ age: 0, name: 0, 'phone.work':0, pets:0 });
+      cursor.exec(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(5);
+        // Takes the _id by default
+        assert.deepEqual(docs[0], { planet: 'B', phone:{home:124544}, _id: doc0._id });
+        assert.deepEqual(docs[1], { planet: 'S', phone:{home:345634523}, _id: doc3._id });
+        assert.deepEqual(docs[2], { planet: 'C', phone:{home:52346234}, _id: doc2._id });
+        assert.deepEqual(docs[3], { planet: 'R', phone:{home:2345}, _id: doc1._id });
+        assert.deepEqual(docs[4], { planet: 'Earth', phone:{home:3456345}, _id: doc4._id });
+
+        cursor.projection({ age: 0, name: 0, 'phone.work':0, _id: 0 , phone:0, pets:0 });
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(5);
+          assert.deepEqual(docs[0], { planet: 'B', phone:{home:124544} });
+          assert.deepEqual(docs[1], { planet: 'S', phone:{home:345634523} });
+          assert.deepEqual(docs[2], { planet: 'C', phone:{home:52346234} });
+          assert.deepEqual(docs[3], { planet: 'R', phone:{home:2345} });
+          assert.deepEqual(docs[4], { planet: 'Earth', phone:{home:3456345} });
+
+          done();
+        });
+      });
+    });
+
+    it('Can omit only the expected fields from embedded document arrays', function (done) {
+      var cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });   // For easier finding
+      cursor.projection({ age: 0, name: 0, 'phone.work':0, 'pets.animal':0 });
+      cursor.exec(function (err, docs) {
+        assert.isNull(err);
+        docs.length.should.equal(5);
+        // Takes the _id by default
+        assert.deepEqual(docs[0], { planet: 'B', phone:{home:124544}, pets:[{name:'Mitsos'}, {name:'Giannis'}], _id: doc0._id });
+        assert.deepEqual(docs[1], { planet: 'S', phone:{home:345634523}, _id: doc3._id });
+        assert.deepEqual(docs[2], { planet: 'C', phone:{home:52346234}, _id: doc2._id });
+        assert.deepEqual(docs[3], { planet: 'R', phone:{home:2345}, pets:[{name:'Kopria'}, {name:'Tasos'}], _id: doc1._id });
+        assert.deepEqual(docs[4], { planet: 'Earth', phone:{home:3456345}, _id: doc4._id });
+
+        cursor.projection({ age: 0, name: 0, 'phone.work':0, _id: 0 , phone:0, 'pets.animal':0  });
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          docs.length.should.equal(5);
+          assert.deepEqual(docs[0], { planet: 'B', phone:{home:124544}, pets:[{name:'Mitsos'}, {name:'Giannis'}]});
+          assert.deepEqual(docs[1], { planet: 'S', phone:{home:345634523} });
+          assert.deepEqual(docs[2], { planet: 'C', phone:{home:52346234} });
+          assert.deepEqual(docs[3], { planet: 'R', phone:{home:2345}, pets:[{name:'Kopria'}, {name:'Tasos'}]});
+          assert.deepEqual(docs[4], { planet: 'Earth', phone:{home:3456345} });
 
           done();
         });

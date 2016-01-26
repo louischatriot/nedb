@@ -14,7 +14,7 @@ results
 npm-debug.log
 workspace
 node_modules
-
+.idea
 browser-version/src
 browser-version/node_modules
 

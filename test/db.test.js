@@ -1795,6 +1795,81 @@ describe('Database', function () {
 
   });   // ==== End of 'Remove' ==== //
 
+  describe('Aggregate', function () {
+    var dB, dataset;
+    before(function(done){
+      dataset = [
+        {
+          username: 'Mitsos',
+          gender: 'male',
+          posts: [
+            {
+              title: 'foo',
+              content: 'bar'
+            },
+            {
+              title: 'some',
+              content: 'thing'
+            }
+          ],
+          someArr: [
+            {
+              prop: 'tsiki'
+            },
+            {
+              prop: 'baila'
+            }
+          ]
+        },
+        {
+          username: 'Kate',
+          gender: 'female',
+          subdoc: {
+            tika: 'taka'
+          },
+          posts: [
+            {
+              title: 'sek',
+              content: 'lana'
+            },
+            {
+              title: 'rou',
+              content: 'fouses'
+            }
+          ],
+          emptyArr: []
+        }
+      ];
+      dB = new Datastore({inMemoryOnly:true, autoload:true});
+      dB.insert(dataset,function(err,docs){
+        done(err);
+      });
+    });
+
+    it('returns an error to the callback if empty pipeline provided', function(done){
+      dB.aggregate([],null,function(err,docs){
+        should.not.exist(docs);
+        err.should.be.instanceof(Error);
+        err.should.have.property('message','No aggregators provided in the aggregation pipeline to execute');
+        done();
+      })
+    });
+
+    it('should correctly apply a different combination of aggregation operators', function (done){
+      var pipeline = [
+        {$match:{gender:'male'}},
+        {$unwind:'$posts'},
+        {$project:{'posts.content':1, _id:0}}
+      ];
+      dB.aggregate(pipeline,null,function(err,docs){
+        should.not.exist(err);
+        docs.should.have.length(2);
+        docs[0].should.deep.equal({posts:{content:dataset[0].posts[0].content}});
+        docs[1].should.deep.equal({posts:{content:dataset[0].posts[1].content}});
+        done();
+      });
+    });
+  });
 
   describe('Using indexes', function () {
 
