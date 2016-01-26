@@ -208,7 +208,7 @@ describe('Model', function () {
 
       model.checkObject(obj);
     });
-    
+
     it('Can check if an object is a primitive or not', function () {
       model.isPrimitiveType(5).should.equal(true);
       model.isPrimitiveType('sdsfdfs').should.equal(true);
@@ -520,7 +520,7 @@ describe('Model', function () {
         }).should.throw();
       });
 
-      it('Can use the $slice modifier to limits the number of array elements', function () {
+      it('Can use the $slice modifier to limit the number of array elements', function () {
         var obj = { arr: ['hello'] }
           , modified;
 
@@ -547,6 +547,18 @@ describe('Model', function () {
 
         modified = model.modify(obj, { $push: { arr: { $each: [], $slice: 1 } } });
         assert.deepEqual(modified, { arr: ['hello'] });
+
+        // $each not specified, but $slice is
+        modified = model.modify(obj, { $push: { arr: { $slice: 1 } } });
+        assert.deepEqual(modified, { arr: ['hello'] });
+
+        (function () {
+          modified = model.modify(obj, { $push: { arr: { $slice: 1, unauthorized: true } } });
+        }).should.throw();
+
+        (function () {
+          modified = model.modify(obj, { $push: { arr: { $each: [], unauthorized: true } } });
+        }).should.throw();
       });
 
     });   // End of '$push modifier'
