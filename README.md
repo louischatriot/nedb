@@ -665,6 +665,7 @@ If you submit a pull request, thanks! There are a couple rules to follow though 
 * Don't forget tests for your new feature. Also don't forget to run the whole test suite before submitting to make sure you didn't introduce regressions.
 * Do not build the browser version in your branch, I'll take care of it once the code is merged.
 * Update the readme accordingly.
+* Last but not least: keep in mind what NeDB's mindset is! The goal is not to be a replacement for MongoDB, but to have a pure JS database, easy to use, cross platform, fast and expressive enough for the target projects (small and self contained apps on server/desktop/browser/mobile). Sometimes it's better to shoot for simplicity than for API completeness with regards to MongoDB.
 
 ## Bug reporting guidelines
 If you report a bug, thank you! That said for the process to be manageable please strictly adhere to the following guidelines. I'll not be able to handle bug reports that don't:
