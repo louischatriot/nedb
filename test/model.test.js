@@ -1216,6 +1216,30 @@ describe('Model', function () {
         model.match({ childrens: [ 'Riri', 'Fifi', 'Loulou' ] }, { "childrens": { $size: 3, $size: 4 } }).should.equal(false);   // Of course this can never be true
       });
 
+      it('Can query array documents with multiple simultaneous conditions', function () {
+        // Non nested documents
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $elemMatch: { name: "Dewey", age: 7 } } }).should.equal(true);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $elemMatch: { name: "Dewey", age: 12 } } }).should.equal(false);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $elemMatch: { name: "Louie", age: 3 } } }).should.equal(false);
+
+        // Nested documents
+        model.match({ outer: { childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] } }, { "outer.childrens": { $elemMatch: { name: "Dewey", age: 7 } } }).should.equal(true);
+        model.match({ outer: { childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] } }, { "outer.childrens": { $elemMatch: { name: "Dewey", age: 12 } } }).should.equal(false);
+        model.match({ outer: { childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] } }, { "outer.childrens": { $elemMatch: { name: "Louie", age: 3 } } }).should.equal(false);
+
+      });
+
+      it('$elemMatch operator works with empty arrays', function () {
+        model.match({ childrens: [] }, { "childrens": { $elemMatch: { name: "Mitsos" } } }).should.equal(false);
+        model.match({ childrens: [] }, { "childrens": { $elemMatch: {} } }).should.equal(false);
+      });
+
+      it('Can use more complex comparisons inside nested query documents', function () {
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $elemMatch: { name: "Dewey", age: { $gt: 6, $lt: 8 } } } }).should.equal(true);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $elemMatch: { name: "Dewey", age: { $in: [ 6, 7, 8 ] } } } } ).should.equal(true);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $elemMatch: { name: "Dewey", age: { $gt: 6, $lt: 7 } } } }).should.equal(false);
+        model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $elemMatch: { name: "Louie", age: { $gt: 6, $lte: 7 } } } }).should.equal(false);
+      });
     });
 
 
