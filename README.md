@@ -271,7 +271,7 @@ db.find({ planet: { $regex: /ar/, $nin: ['Jupiter', 'Earth'] } }, function (err,
 ```
 
 #### Array fields
-When a field in a document is an array, NeDB first tries to see if the query value is an array to perform an exact match, then whether there is an array-specific comparison function (for now there is only `$size`) being used. If not, the query is treated as a query on every element and there is a match if at least one element matches.
+When a field in a document is an array, NeDB first tries to see if the query value is an array to perform an exact match, then whether there is an array-specific comparison function (for now there is only `$size` and `$elemMatch`) being used. If not, the query is treated as a query on every element and there is a match if at least one element matches.
 
 ```javascript
 // Exact match
@@ -283,6 +283,20 @@ db.find({ satellites: ['Deimos', 'Phobos'] }, function (err, docs) {
 })
 
 // Using an array-specific comparison function
+// $elemMatch operator will provide match for a document, if an element from the array field satisfies all the conditions specified with the `$elemMatch` operator
+db.find({ completeData: { planets: { $elemMatch: { name: 'Earth', number: 3 } } } }, function (err, docs) {
+  // docs contains documents with id 5 (completeData)
+});
+
+db.find({ completeData: { planets: { $elemMatch: { name: 'Earth', number: 5 } } } }, function (err, docs) {
+  // docs is empty
+});
+
+// You can use inside #elemMatch query any known document query operator
+db.find({ completeData: { planets: { $elemMatch: { name: 'Earth', number: { $gt: 2 } } } } }, function (err, docs) {
+  // docs contains documents with id 5 (completeData)
+});
+
 // Note: you can't use nested comparison functions, e.g. { $size: { $lt: 5 } } will throw an error
 db.find({ satellites: { $size: 2 } }, function (err, docs) {
   // docs contains Mars
