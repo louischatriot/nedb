@@ -432,7 +432,7 @@ db.count({}, function (err, count) {
 * `query` is the same kind of finding query you use with `find` and `findOne`
 * `update` specifies how the documents should be modified. It is either a new document or a set of modifiers (you cannot use both together, it doesn't make sense!)
   * A new document will replace the matched docs
-  * The modifiers create the fields they need to modify if they don't exist, and you can apply them to subdocs. Available field modifiers are `$set` to change a field's value, `$unset` to delete a field, `$inc` to increment a field's value and `$min`, `$max` to check if specified field is smaller or is greater than the current value of the field. To work on arrays, you have `$push`, `$pop`, `$addToSet`, `$pull`, and the special `$each` and `$slice`. See examples below for the syntax.
+  * The modifiers create the fields they need to modify if they don't exist, and you can apply them to subdocs. Available field modifiers are `$set` to change a field's value, `$unset` to delete a field, `$inc` to increment a field's value and `$min`, `$max` to change field's value, only if provided value is less (greater equivalently for $max) than the current field's value. To work on arrays, you have `$push`, `$pop`, `$addToSet`, `$pull`, and the special `$each` and `$slice`. See examples below for the syntax.
 * `options` is an object with two possible parameters
   * `multi` (defaults to `false`) which allows the modification of several documents if set to true
   * `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything. If your `update` is a simple object with no modifiers, it is the inserted document. In the other case, the `query` is stripped from all operator recursively, and the `update` is applied to it.
@@ -544,11 +544,11 @@ db.update({ _id: 'id6' }, { $push: { fruits: { $each: ['banana'], $slice: 2 } } 
 // Update the value of the field, only if specified field is smaller or greater than the current value of the field
 // Let's say the database contains this document
 // doc = { _id: 'id1', name: 'Name', value: 5 }
-// $min can be used to update field if current value is greater than the specified value 
+// $min can be used to update field if provided value is less than the current document value 
 db.update({ _id: 'id1' }, { $min: { value: 2 } }, {}, function () {
   // The document will be updated to { _id: 'id1', name: 'Name', value: 2 }
 });
-// $max can be used to update field if current value is smaller than the specified value 
+// $max can be used to update field if provided value is greater than the current document value 
 db.update({ _id: 'id1' }, { $max: { value: 8 } }, {}, function () {
   // The document will be updated to { _id: 'id1', name: 'Name', value: 8 }
 });
