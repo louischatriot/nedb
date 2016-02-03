@@ -709,15 +709,15 @@ describe('Model', function () {
         modified = model.modify(obj, { $pull: { arr: { b: 3 } } });
         assert.deepEqual(modified, { arr: [{ b: 2 }] });
       });
-      
+
       it('Can use any kind of nedb query with $pull', function () {
         var obj = { arr: [4, 7, 12, 2], other: 'yup' }
           , modified
-          ;
-      
+        ;
+
         modified = model.modify(obj, { $pull: { arr: { $gte: 5 } } });
         assert.deepEqual(modified, { arr: [4, 2], other: 'yup' });
-        
+
         obj = { arr: [{ b: 4 }, { b: 7 }, { b: 1 }], other: 'yeah' };
         modified = model.modify(obj, { $pull: { arr: { b: { $gte: 5} } } });
         assert.deepEqual(modified, { arr: [{ b: 4 }, { b: 1 }], other: 'yeah' });
@@ -727,73 +727,71 @@ describe('Model', function () {
 
     describe('$max modifier', function () {
       it('Will set the field to the updated value if value is greater than current one, without modifying the original object', function () {
-        var obj = { some:'thing', number: 10}
-            , updateQuery = {$max:{number:12}}
-            , modified = model.modify(obj,updateQuery);
+        var obj = { some:'thing', number: 10 }
+            , updateQuery = { $max: { number:12 } }
+            , modified = model.modify(obj, updateQuery);
 
-        modified.should.deep.equal({some:'thing',number:12});
-
-        obj.should.deep.equal({some:'thing', number:10});
+        modified.should.deep.equal({ some: 'thing', number: 12 });
+        obj.should.deep.equal({ some: 'thing', number: 10 });
       });
 
       it('Will not update the field if new value is smaller than current one', function () {
-        var obj = { some:'thing', number: 10}
-            , updateQuery = {$max:{number:9}}
-            , modified = model.modify(obj,updateQuery);
+        var obj = { some:'thing', number: 10 }
+            , updateQuery = { $max: { number: 9 } }
+            , modified = model.modify(obj, updateQuery);
 
-        modified.should.deep.equal({some:'thing',number:10});
+        modified.should.deep.equal({ some:'thing', number:10 });
       });
 
       it('Will create the field if it does not exist', function () {
-        var obj = {some:'thing'}
-            , updateQuery = {$max:{number:10}}
-            , modified = model.modify(obj,updateQuery);
+        var obj = { some: 'thing' }
+            , updateQuery = { $max: { number: 10 } }
+            , modified = model.modify(obj, updateQuery);
 
-        modified.should.deep.equal({some:'thing', number:10});
+        modified.should.deep.equal({ some: 'thing', number: 10 });
       });
 
       it('Works on embedded documents', function () {
-        var obj = {some:'thing', somethingElse:{number:10}}
-            , updateQuery = {$max:{'somethingElse.number':12}}
+        var obj = { some: 'thing', somethingElse: { number:10 } }
+            , updateQuery = { $max: { 'somethingElse.number': 12 } }
             , modified = model.modify(obj,updateQuery);
 
-        modified.should.deep.equal({some:'thing',somethingElse:{number:12}});
+        modified.should.deep.equal({ some: 'thing', somethingElse: { number:12 } });
       });
     });// End of '$max modifier'
 
     describe('$min modifier', function () {
       it('Will set the field to the updated value if value is smaller than current one, without modifying the original object', function () {
-        var obj = { some:'thing', number: 10}
-            , updateQuery = {$min:{number:8}}
-            , modified = model.modify(obj,updateQuery);
+        var obj = { some:'thing', number: 10 }
+            , updateQuery = { $min: { number: 8 } }
+            , modified = model.modify(obj, updateQuery);
 
-        modified.should.deep.equal({some:'thing',number:8});
-
-        obj.should.deep.equal({some:'thing', number:10});
+        modified.should.deep.equal({ some: 'thing', number: 8 });
+        obj.should.deep.equal({ some: 'thing', number: 10 });
       });
 
       it('Will not update the field if new value is greater than current one', function () {
-        var obj = { some:'thing', number: 10}
-            , updateQuery = {$min:{number:12}}
-            , modified = model.modify(obj,updateQuery);
+        var obj = { some: 'thing', number: 10 }
+            , updateQuery = { $min: { number: 12 } }
+            , modified = model.modify(obj, updateQuery);
 
-        modified.should.deep.equal({some:'thing',number:10});
+        modified.should.deep.equal({ some: 'thing', number: 10 });
       });
 
       it('Will create the field if it does not exist', function () {
-        var obj = {some:'thing'}
-            , updateQuery = {$min:{number:10}}
-            , modified = model.modify(obj,updateQuery);
+        var obj = { some: 'thing' }
+            , updateQuery = { $min: { number: 10 } }
+            , modified = model.modify(obj, updateQuery);
 
-        modified.should.deep.equal({some:'thing', number:10});
+        modified.should.deep.equal({ some: 'thing', number: 10 });
       });
 
       it('Works on embedded documents', function () {
-        var obj = {some:'thing', somethingElse:{number:10}}
-            , updateQuery = {$min:{'somethingElse.number':8}}
-            , modified = model.modify(obj,updateQuery);
+        var obj = { some: 'thing', somethingElse: { number: 10 } }
+            , updateQuery = { $min: { 'somethingElse.number': 8 } }
+            , modified = model.modify(obj, updateQuery);
 
-        modified.should.deep.equal({some:'thing',somethingElse:{number:8}});
+        modified.should.deep.equal({ some: 'thing', somethingElse: { number: 8 } } );
       });
     });// End of '$min modifier'
 
