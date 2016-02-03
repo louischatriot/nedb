@@ -880,7 +880,7 @@ describe('Cursor', function () {
         assert.deepEqual(docs[3], { planet: 'R', phone: { home: 2345 }, _id: doc1._id });
         assert.deepEqual(docs[4], { planet: 'Earth', phone: { home: 3456345 }, _id: doc4._id });
 
-        cursor.projection({ age: 0, name: 0, 'phone.work': 0, _id: 0 , phone: 0, pets: 0 });
+        cursor.projection({ age: 0, name: 0, 'phone.work': 0, _id: 0, pets: 0 });
         cursor.exec(function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(5);
@@ -909,7 +909,7 @@ describe('Cursor', function () {
         assert.deepEqual(docs[3], { planet: 'R', phone: { home: 2345 }, pets: [{ name: 'Kopria' }, { name: 'Tasos' }], _id: doc1._id });
         assert.deepEqual(docs[4], { planet: 'Earth', phone: { home: 3456345 }, _id: doc4._id });
 
-        cursor.projection({ age: 0, name: 0, 'phone.work': 0, _id: 0 , phone: 0, 'pets.animal': 0  });
+        cursor.projection({ age: 0, name: 0, 'phone.work': 0, _id: 0, 'pets.animal': 0  });
         cursor.exec(function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(5);
