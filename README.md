@@ -577,6 +577,10 @@ db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
   // numRemoved = 3
   // All planets from the solar system were removed
 });
+
+// Removing all documents with the 'match-all' query
+db.remove({}, { multi: true }, function (err, numRemoved) {
+});
 ```
 
 ### Indexing
