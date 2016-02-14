@@ -256,36 +256,36 @@ describe('Model', function () {
       res.subobj.a.should.equal('b');
       res.subobj.b.should.equal('c');
     });
-    
+
     it('Should deep copy the contents of an array', function () {
       var a = [{ hello: 'world' }]
         , b = model.deepCopy(a)
-        ;
-        
+      ;
+
       b[0].hello.should.equal('world');
       b[0].hello = 'another';
       b[0].hello.should.equal('another');
-      a[0].hello.should.equal('world');      
+      a[0].hello.should.equal('world');
     });
-    
+
     it('Without the strictKeys option, everything gets deep copied', function () {
       var a = { a: 4, $e: 'rrr', 'eee.rt': 42, nested: { yes: 1, 'tt.yy': 2, $nopenope: 3 }, array: [{ 'rr.hh': 1 }, { yes: true }, { $yes: false }] }
         , b = model.deepCopy(a)
-        ;
-        
+      ;
+
       assert.deepEqual(a, b);
     });
-    
+
     it('With the strictKeys option, only valid keys gets deep copied', function () {
       var a = { a: 4, $e: 'rrr', 'eee.rt': 42, nested: { yes: 1, 'tt.yy': 2, $nopenope: 3 }, array: [{ 'rr.hh': 1 }, { yes: true }, { $yes: false }] }
         , b = model.deepCopy(a, true)
-        ;
-        
+      ;
+
       assert.deepEqual(b, { a: 4, nested: { yes: 1 }, array: [{}, { yes: true }, {}] });
     });
 
   });   // ==== End of 'Deep copying' ==== //
-  
+
 
   describe('Modifying documents', function () {
 
@@ -380,13 +380,21 @@ describe('Model', function () {
 
         _.isEqual(modified, { yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } }).should.equal(true);
       });
+
+      it("Doesn't replace a falsy field by an object when recursively following dot notation", function () {
+        var obj = { nested: false }
+          , updateQuery = { $set: { "nested.now": 'it is' } }
+          , modified = model.modify(obj, updateQuery);
+
+        assert.deepEqual(modified, { nested: false });   // Object not modified as the nested field doesn't exist
+      });
     });   // End of '$set modifier'
-    
+
     describe('$unset modifier', function () {
-    
+
       it('Can delete a field, not throwing an error if the field doesnt exist', function () {
         var obj, updateQuery, modified;
-      
+
         obj = { yup: 'yes', other: 'also' }
         updateQuery = { $unset: { yup: true } }
         modified = model.modify(obj, updateQuery);
@@ -396,46 +404,52 @@ describe('Model', function () {
         updateQuery = { $unset: { nope: true } }
         modified = model.modify(obj, updateQuery);
         assert.deepEqual(modified, obj);
-        
+
         obj = { yup: 'yes', other: 'also' }
         updateQuery = { $unset: { nope: true, other: true } }
         modified = model.modify(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes' });
       });
-      
+
       it('Can unset sub-fields and entire nested documents', function () {
         var obj, updateQuery, modified;
-      
+
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { nested: true } }
         modified = model.modify(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes' });
-      
+
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { 'nested.a': true } }
         modified = model.modify(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes', nested: { b: 'yeah' } });
-      
+
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { 'nested.a': true, 'nested.b': true } }
         modified = model.modify(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes', nested: {} });
       });
-      
+
+      it.only("When unsetting nested fields, should not create an empty parent to nested field", function () {
+        var obj = model.modify({ argh: true }, { $unset: { 'bad.worse': true } });
+
+        console.log(obj);
+      });
+
     });   // End of '$unset modifier'
 
     describe('$inc modifier', function () {
       it('Throw an error if you try to use it with a non-number or on a non number field', function () {
         (function () {
-        var obj = { some: 'thing', yup: 'yes', nay: 2 }
-          , updateQuery = { $inc: { nay: 'notanumber' } }
-          , modified = model.modify(obj, updateQuery);
+          var obj = { some: 'thing', yup: 'yes', nay: 2 }
+            , updateQuery = { $inc: { nay: 'notanumber' } }
+            , modified = model.modify(obj, updateQuery);
         }).should.throw();
 
         (function () {
-        var obj = { some: 'thing', yup: 'yes', nay: 'nope' }
-          , updateQuery = { $inc: { nay: 1 } }
-          , modified = model.modify(obj, updateQuery);
+          var obj = { some: 'thing', yup: 'yes', nay: 'nope' }
+            , updateQuery = { $inc: { nay: 1 } }
+            , modified = model.modify(obj, updateQuery);
         }).should.throw();
       });
 

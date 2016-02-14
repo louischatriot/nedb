@@ -684,9 +684,9 @@ describe('Cursor', function () {
 
     beforeEach(function (done) {
       // We don't know the order in which docs wil be inserted but we ensure correctness by testing both sort orders
-      d.insert({ age: 5, name: 'Jo', planet: 'B' }, function (err, _doc0) {
+      d.insert({ age: 5, name: 'Jo', planet: 'B', toys: { bebe: true, ballon: 'much' } }, function (err, _doc0) {
         doc0 = _doc0;
-        d.insert({ age: 57, name: 'Louis', planet: 'R' }, function (err, _doc1) {
+        d.insert({ age: 57, name: 'Louis', planet: 'R', toys: { ballon: 'yeah', bebe: false } }, function (err, _doc1) {
           doc1 = _doc1;
           d.insert({ age: 52, name: 'Grafitti', planet: 'C' }, function (err, _doc2) {
             doc2 = _doc2;
@@ -766,20 +766,20 @@ describe('Cursor', function () {
         assert.isNull(err);
         docs.length.should.equal(5);
         // Takes the _id by default
-        assert.deepEqual(docs[0], { planet: 'B', _id: doc0._id });
+        assert.deepEqual(docs[0], { planet: 'B', _id: doc0._id, toys: { bebe: true, ballon: 'much' } });
         assert.deepEqual(docs[1], { planet: 'S', _id: doc3._id });
         assert.deepEqual(docs[2], { planet: 'C', _id: doc2._id });
-        assert.deepEqual(docs[3], { planet: 'R', _id: doc1._id });
+        assert.deepEqual(docs[3], { planet: 'R', _id: doc1._id, toys: { bebe: false, ballon: 'yeah' } });
         assert.deepEqual(docs[4], { planet: 'Earth', _id: doc4._id });
 
         cursor.projection({ age: 0, name: 0, _id: 0 });
         cursor.exec(function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(5);
-          assert.deepEqual(docs[0], { planet: 'B' });
+          assert.deepEqual(docs[0], { planet: 'B', toys: { bebe: true, ballon: 'much' } });
           assert.deepEqual(docs[1], { planet: 'S' });
           assert.deepEqual(docs[2], { planet: 'C' });
-          assert.deepEqual(docs[3], { planet: 'R' });
+          assert.deepEqual(docs[3], { planet: 'R', toys: { bebe: false, ballon: 'yeah' } });
           assert.deepEqual(docs[4], { planet: 'Earth' });
 
           done();
@@ -794,8 +794,57 @@ describe('Cursor', function () {
       cursor.exec(function (err, docs) {
         assert.isNotNull(err);
         assert.isUndefined(docs);
-        done();
+
+        cursor.projection({ age: 1, _id: 0 });
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          assert.deepEqual(docs[0], { age: 5 });
+          assert.deepEqual(docs[1], { age: 23 });
+          assert.deepEqual(docs[2], { age: 52 });
+          assert.deepEqual(docs[3], { age: 57 });
+          assert.deepEqual(docs[4], { age: 89 });
+
+          cursor.projection({ age: 0, toys: 0, planet: 0, _id: 1 });
+          cursor.exec(function (err, docs) {
+            assert.isNull(err);
+            assert.deepEqual(docs[0], { name: 'Jo', _id: doc0._id });
+            assert.deepEqual(docs[1], { name: 'LM', _id: doc3._id });
+            assert.deepEqual(docs[2], { name: 'Grafitti', _id: doc2._id });
+            assert.deepEqual(docs[3], { name: 'Louis', _id: doc1._id });
+            assert.deepEqual(docs[4], { _id: doc4._id });
+
+            done();
+          });
+        });
       });
+    });
+
+    it("Projections on embedded documents - omit type", function (done) {
+      //var query = { $set: { 'a.b': 1, 'a.c': 'world', 'single': true } };
+      //var obj = model.modify({}, query);
+
+      //console.log("==================");
+      //console.log(obj);
+
+      //obj = model.modify(obj, { $unset: { 'a.b': true, 'a.c': true } });
+
+      //console.log("==================");
+      //console.log(obj);
+
+      var obj = model.modify({ argh: true }, { $unset: { 'nope.nono': 'but yes' } });
+
+      console.log(obj);
+
+      done();
+
+      //var cursor = new Cursor(d, { age: 23 });
+      //cursor.sort({ age: 1 });   // For easier finding
+      //cursor.projection({ name: 0, planet: 0, 'toys.bebe': 0 });
+      //cursor.exec(function (err, docs) {
+        //console.log(docs);
+
+        //done();
+      //});
     });
 
   });   // ==== End of 'Projections' ====
