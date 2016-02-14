@@ -688,7 +688,7 @@ describe('Cursor', function () {
         doc0 = _doc0;
         d.insert({ age: 57, name: 'Louis', planet: 'R', toys: { ballon: 'yeah', bebe: false } }, function (err, _doc1) {
           doc1 = _doc1;
-          d.insert({ age: 52, name: 'Grafitti', planet: 'C' }, function (err, _doc2) {
+          d.insert({ age: 52, name: 'Grafitti', planet: 'C', toys: { bebe: 'kind of' } }, function (err, _doc2) {
             doc2 = _doc2;
             d.insert({ age: 23, name: 'LM', planet: 'S' }, function (err, _doc3) {
               doc3 = _doc3;
@@ -768,7 +768,7 @@ describe('Cursor', function () {
         // Takes the _id by default
         assert.deepEqual(docs[0], { planet: 'B', _id: doc0._id, toys: { bebe: true, ballon: 'much' } });
         assert.deepEqual(docs[1], { planet: 'S', _id: doc3._id });
-        assert.deepEqual(docs[2], { planet: 'C', _id: doc2._id });
+        assert.deepEqual(docs[2], { planet: 'C', _id: doc2._id, toys: { bebe: 'kind of' } });
         assert.deepEqual(docs[3], { planet: 'R', _id: doc1._id, toys: { bebe: false, ballon: 'yeah' } });
         assert.deepEqual(docs[4], { planet: 'Earth', _id: doc4._id });
 
@@ -778,7 +778,7 @@ describe('Cursor', function () {
           docs.length.should.equal(5);
           assert.deepEqual(docs[0], { planet: 'B', toys: { bebe: true, ballon: 'much' } });
           assert.deepEqual(docs[1], { planet: 'S' });
-          assert.deepEqual(docs[2], { planet: 'C' });
+          assert.deepEqual(docs[2], { planet: 'C', toys: { bebe: 'kind of' } });
           assert.deepEqual(docs[3], { planet: 'R', toys: { bebe: false, ballon: 'yeah' } });
           assert.deepEqual(docs[4], { planet: 'Earth' });
 
@@ -819,32 +819,19 @@ describe('Cursor', function () {
       });
     });
 
-    it.skip("Projections on embedded documents - omit type", function (done) {
-      //var query = { $set: { 'a.b': 1, 'a.c': 'world', 'single': true } };
-      //var obj = model.modify({}, query);
+    it("Projections on embedded documents - omit type", function (done) {
+      var cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });   // For easier finding
+      cursor.projection({ name: 0, planet: 0, 'toys.bebe': 0, _id: 0 });
+      cursor.exec(function (err, docs) {
+        assert.deepEqual(docs[0], { age: 5, toys: { ballon: 'much' } });
+        assert.deepEqual(docs[1], { age: 23 });
+        assert.deepEqual(docs[2], { age: 52, toys: {} });
+        assert.deepEqual(docs[3], { age: 57, toys: { ballon: 'yeah' } });
+        assert.deepEqual(docs[4], { age: 89 });
 
-      //console.log("==================");
-      //console.log(obj);
-
-      //obj = model.modify(obj, { $unset: { 'a.b': true, 'a.c': true } });
-
-      //console.log("==================");
-      //console.log(obj);
-
-      var obj = model.modify({ argh: true }, { $unset: { 'nope.nono': 'but yes' } });
-
-      console.log(obj);
-
-      done();
-
-      //var cursor = new Cursor(d, { age: 23 });
-      //cursor.sort({ age: 1 });   // For easier finding
-      //cursor.projection({ name: 0, planet: 0, 'toys.bebe': 0 });
-      //cursor.exec(function (err, docs) {
-        //console.log(docs);
-
-        //done();
-      //});
+        done();
+      });
     });
 
   });   // ==== End of 'Projections' ====
