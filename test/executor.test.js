@@ -125,7 +125,7 @@ function testExecutorWorksWithoutCallback (d, done) {
 }
 
 
-describe.only('Executor', function () {
+describe('Executor', function () {
 
   describe('With persistent database', function () {
     var d;
