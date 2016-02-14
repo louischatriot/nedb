@@ -430,10 +430,15 @@ describe('Model', function () {
         assert.deepEqual(modified, { yup: 'yes', nested: {} });
       });
 
-      it.only("When unsetting nested fields, should not create an empty parent to nested field", function () {
+      it("When unsetting nested fields, should not create an empty parent to nested field", function () {
         var obj = model.modify({ argh: true }, { $unset: { 'bad.worse': true } });
+        assert.deepEqual(obj, { argh: true });
 
-        console.log(obj);
+        obj = model.modify({ argh: true, bad: { worse: 'oh' } }, { $unset: { 'bad.worse': true } });
+        assert.deepEqual(obj, { argh: true, bad: {} });
+
+        obj = model.modify({ argh: true, bad: {} }, { $unset: { 'bad.worse': true } });
+        assert.deepEqual(obj, { argh: true, bad: {} });
       });
 
     });   // End of '$unset modifier'

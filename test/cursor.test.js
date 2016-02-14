@@ -819,7 +819,7 @@ describe('Cursor', function () {
       });
     });
 
-    it("Projections on embedded documents - omit type", function (done) {
+    it.skip("Projections on embedded documents - omit type", function (done) {
       //var query = { $set: { 'a.b': 1, 'a.c': 'world', 'single': true } };
       //var obj = model.modify({}, query);
 
