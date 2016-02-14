@@ -38,12 +38,31 @@ function testThrowInCallback (d, done) {
   });
 }
 
+// Test that if the callback is falsy, the next DB operations will still be executed
+function testFalsyCallback (d, done) {
+  d.insert({ a: 1 }, null);
+  process.nextTick(function () {
+    d.update({ a: 1 }, { a: 2 }, {}, null);
+    process.nextTick(function () {
+      d.update({ a: 2 }, { a: 1 }, null);
+      process.nextTick(function () {
+        d.remove({ a: 2 }, {}, null);
+        process.nextTick(function () {
+          d.remove({ a: 2 }, null);
+          process.nextTick(function () {
+            d.find({}, done);
+          });
+        });
+      });
+    });
+  });
+}
 
 // Test that operations are executed in the right order
 // We prevent Mocha from catching the exception we throw on purpose by remembering all current handlers, remove them and register them back after test ends
 function testRightOrder (d, done) {
   var currentUncaughtExceptionHandlers = process.listeners('uncaughtException');
-  
+
   process.removeAllListeners('uncaughtException');
 
   process.on('uncaughtException', function (err) {
@@ -80,8 +99,6 @@ function testRightOrder (d, done) {
   });
 }
 
-
-
 // Note:  The following test does not have any assertion because it
 // is meant to address the deprecation warning:
 // (node) warning: Recursive process.nextTick detected. This will break in the next version of node. Please use setImmediate for recursive deferral.
@@ -95,9 +112,20 @@ var testEventLoopStarvation = function(d, done){
      });
    }
    done();
- };
+};
 
-describe('Executor', function () {
+// Test that operations are executed in the right order even with no callback
+function testExecutorWorksWithoutCallback (d, done) {
+  d.insert({ a: 1 });
+  d.insert({ a: 2 }, false);
+  d.find({}, function (err, docs) {
+    docs.length.should.equal(2);
+    done();
+  });
+}
+
+
+describe.only('Executor', function () {
 
   describe('With persistent database', function () {
     var d;
@@ -130,7 +158,11 @@ describe('Executor', function () {
     it('A throw in a callback doesnt prevent execution of next operations', function(done) {
       testThrowInCallback(d, done);
     });
-    
+
+    it('A falsy callback doesnt prevent execution of next operations', function(done) {
+      testFalsyCallback(d, done);
+    });
+
     it('Operations are executed in the right order', function(done) {
       testRightOrder(d, done);
     });
@@ -138,7 +170,11 @@ describe('Executor', function () {
     it('Does not starve event loop and raise warning when more than 1000 callbacks are in queue', function(done){
       testEventLoopStarvation(d, done);
     });
-  
+
+    it('Works in the right order even with no supplied callback', function(done){
+      testExecutorWorksWithoutCallback(d, done);
+    });
+
   });   // ==== End of 'With persistent database' ====
 
 
@@ -159,11 +195,19 @@ describe('Executor', function () {
     it('A throw in a callback doesnt prevent execution of next operations', function(done) {
       testThrowInCallback(d, done);
     });
-  
+
+    it('A falsy callback doesnt prevent execution of next operations', function(done) {
+      testFalsyCallback(d, done);
+    });
+
     it('Operations are executed in the right order', function(done) {
       testRightOrder(d, done);
     });
-  
+
+    it('Works in the right order even with no supplied callback', function(done){
+      testExecutorWorksWithoutCallback(d, done);
+    });
+
   });   // ==== End of 'With non persistent database' ====
 
 });
