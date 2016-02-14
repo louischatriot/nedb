@@ -834,6 +834,21 @@ describe('Cursor', function () {
       });
     });
 
+    it("Projections on embedded documents - pick type", function (done) {
+      var cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });   // For easier finding
+      cursor.projection({ name: 1, 'toys.ballon': 1, _id: 0 });
+      cursor.exec(function (err, docs) {
+        assert.deepEqual(docs[0], { name: 'Jo', toys: { ballon: 'much' } });
+        assert.deepEqual(docs[1], { name: 'LM' });
+        assert.deepEqual(docs[2], { name: 'Grafitti' });
+        assert.deepEqual(docs[3], { name: 'Louis', toys: { ballon: 'yeah' } });
+        assert.deepEqual(docs[4], {});
+
+        done();
+      });
+    });
+
   });   // ==== End of 'Projections' ====
 
 });
