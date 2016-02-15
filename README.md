@@ -377,7 +377,7 @@ db.find({}).sort({ firstField: 1, secondField: -1 }) ...   // You understand how
 ```
 
 #### Projections
-You can give `find` and `findOne` an optional second argument, `projections`. The syntax is the same as MongoDB: `{ a: 1, b: 1 }` to return only the `a` and `b` fields, `{ a: 0, b: 0 }` to omit these two fields. You cannot use both modes at the time, except for `_id` which is by default always returned and which you can choose to omit.
+You can give `find` and `findOne` an optional second argument, `projections`. The syntax is the same as MongoDB: `{ a: 1, b: 1 }` to return only the `a` and `b` fields, `{ a: 0, b: 0 }` to omit these two fields. You cannot use both modes at the time, except for `_id` which is by default always returned and which you can choose to omit. You can project on nested documents.
 
 ```javascript
 // Same database as above
@@ -403,9 +403,13 @@ db.find({ planet: 'Mars' }, { planet: 0, system: 1 }, function (err, docs) {
 });
 
 // You can also use it in a Cursor way but this syntax is not compatible with MongoDB
-// If upstream compatibility is important don't use this method
 db.find({ planet: 'Mars' }).projection({ planet: 1, system: 1 }).exec(function (err, docs) {
   // docs is [{ planet: 'Mars', system: 'solar', _id: 'id1' }]
+});
+
+// Project on a nested document
+db.findOne({ planet: 'Earth' }).projection({ planet: 1, 'humans.genders': 1 }).exec(function (err, doc) {
+  // doc is { planet: 'Earth', _id: 'id2', humans: { genders: 2 } }
 });
 ```
 
@@ -437,9 +441,11 @@ db.count({}, function (err, count) {
   * `multi` (defaults to `false`) which allows the modification of several documents if set to true
   * `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything. If your `update` is a simple object with no modifiers, it is the inserted document. In the other case, the `query` is stripped from all operator recursively, and the `update` is applied to it.
   * `returnUpdatedDocs` (defaults to `false`, not MongoDB-compatible) if set to true and update is not an upsert, will return the array of documents matched bu the find query and updated. Updated documents will be returned even if the update did not actually modify them
-* `callback` (optional) signature: `err`, `numReplaced`, `newDoc`
-  * `numReplaced` is the number of documents replaced
-  * `newDoc` is the created document if the upsert mode was chosen and a document was inserted
+* `callback` (optional) signature: `(err, numAffected, affectedDocuments, upsert)`. **Warning**: the API was changed between v1.7.4 and v1.8. Please refer to the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log</a> to see the change.
+  * For an upsert, `affectedDocuments` contains the inserted document and the `upsert` flag is set to `true`.
+  * For a standard update with `returnUpdatedDocs` flag set to `false`, `affectedDocuments` is not set.
+  * For a standard update with `returnUpdatedDocs` flag set to `true` and `multi` to `false`, `affectedDocuments` is the updated document.
+  * For a standard update with `returnUpdatedDocs` flag set to `true` and `multi` to `true`, `affectedDocuments` is the array of updated documents.
 
 **Note**: you can't change a document's _id.
 
