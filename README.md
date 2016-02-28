@@ -440,7 +440,7 @@ db.count({}, function (err, count) {
 * `options` is an object with two possible parameters
   * `multi` (defaults to `false`) which allows the modification of several documents if set to true
   * `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything. If your `update` is a simple object with no modifiers, it is the inserted document. In the other case, the `query` is stripped from all operator recursively, and the `update` is applied to it.
-  * `returnUpdatedDocs` (defaults to `false`, not MongoDB-compatible) if set to true and update is not an upsert, will return the array of documents matched bu the find query and updated. Updated documents will be returned even if the update did not actually modify them
+  * `returnUpdatedDocs` (defaults to `false`, not MongoDB-compatible) if set to true and update is not an upsert, will return the array of documents matched by the find query and updated. Updated documents will be returned even if the update did not actually modify them.
 * `callback` (optional) signature: `(err, numAffected, affectedDocuments, upsert)`. **Warning**: the API was changed between v1.7.4 and v1.8. Please refer to the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log</a> to see the change.
   * For an upsert, `affectedDocuments` contains the inserted document and the `upsert` flag is set to `true`.
   * For a standard update with `returnUpdatedDocs` flag set to `false`, `affectedDocuments` is not set.
