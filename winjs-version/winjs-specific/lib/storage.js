@@ -7,14 +7,11 @@
  * It's essentially fs, mkdirp and crash safe write and read functions
  */
 
-// var fs = require('fs')
-  // , mkdirp = require('mkdirp')
-  // , async = require('async')
-  // , path = require('path')
-  // , storage = {}
-  // ;
 var storage = {};
-  
+
+/**
+ *  variable holding our app's data folder. This is where our nedb database file will be stored
+ */  
 var localFolder = Windows.Storage.ApplicationData.current.localFolder;
 
 /** 
@@ -22,11 +19,16 @@ var localFolder = Windows.Storage.ApplicationData.current.localFolder;
  */
 storage.exists = function (filename, callback) {
 	localFolder.getFileAsync(filename).then(
-		function (file) { /* file exists. return true */ return callback(true); }, 
-		function (err) { /* no file was found. return false */ return callback(false); }
+		function (file) { 
+			/* file exists. return true */ 
+			return callback(true); 
+		}, 
+		function (err) { 
+			/* no file was found. return false */ 
+			return callback(false); 
+		}
 	);
 }
-// storage.exists = fs.exists;
 
 /**
  * rename for WinJS
@@ -45,13 +47,12 @@ storage.rename = function (filename, newFilename, callback) {
 		}
 	);
 }
-// storage.rename = fs.rename;
 
 /**
  * writeFile for WinJS
  */
 storage.writeFile = function (filename, contents, options, callback) {
-	// Options do not matter in browser setup
+	// TODO: add options. for now we just skip, as in the browser version
 	if (typeof options === 'function') { callback = options; } 
   
 	localFolder.createFileAsync(filename, Windows.Storage.CreationCollisionOption.replaceExisting).then(
@@ -70,14 +71,13 @@ storage.writeFile = function (filename, contents, options, callback) {
 		}
 	);
 }
-// storage.writeFile = fs.writeFile;
 
 
 /**
  * appendFile for WinJS
  */
 storage.appendFile = function (filename, contents, options, callback) {
-	// Options do not matter in browser setup
+	// TODO: add options. for now we just skip, as in the browser version
 	if (typeof options === 'function') { callback = options; }
   
 	localFolder.getFileAsync(filename).then(
@@ -96,40 +96,43 @@ storage.appendFile = function (filename, contents, options, callback) {
 		}
 	); 
 }
-// storage.appendFile = fs.appendFile;
 
 
 /**
  * appendFile for WinJS
  */
 storage.mkdirp = function (dir, callback) {
-  // keep it flat for now... 
+  // there's no mkdrip for winJS, but we store everything in the localFolder
+  // users should only supply a database name for now, no path
   return callback();
 }
-// storage.mkdirp = mkdirp;
+
 
 /** 
  * readFile for WinJS
  */
 storage.readFile = function(filename, options, callback)
 {
+	// TODO: add options. for now we just skip, as in the browser version
     if (typeof options === 'function') { callback = options; }
   
-	localFolder.getFileAsync(filename).then(function (file) {
-		// read file
-		Windows.Storage.FileIO.readTextAsync(file).then(
-			function (contents) {
-				return callback(null, contents || '');
-			}, function (err) {
-				return callback(err);
-			}
-		);
-	}, function (err) {
-		//no file was found
-		return callback(err);
-	});
+	localFolder.getFileAsync(filename).then(
+		function (file) {
+			// read file
+			Windows.Storage.FileIO.readTextAsync(file).then(
+				function (contents) {
+					return callback(null, contents || '');
+				}, function (err) {
+					return callback(err);
+				}
+			);
+		}, function (err) {
+			//no file was found
+			return callback(err);
+		}
+	);
 }
-// storage.readFile = fs.readFile;
+
 
 /** 
  * Unlink for WinJS
@@ -138,8 +141,14 @@ storage.unlink = function (filename, callback) {
 	localFolder.getFileAsync(filename).then(
 		function (file) {
 			file.deleteAsync().then(
-				function (){ /* file found and deleted */ return callback(true); }, 
-				function (err){ /* error */ return callback(err); }
+				function (){ 
+					/* file found and deleted */ 
+					return callback(true); 
+				}, 
+				function (err){ 
+					/* error */ 
+					return callback(err); 
+				}
 			);
 		}, 
 		function (err){ 
@@ -148,7 +157,6 @@ storage.unlink = function (filename, callback) {
 		}
 	);
 }
-// storage.unlink = fs.unlink;
 
 /**
  * Explicit name ...
@@ -170,6 +178,8 @@ storage.ensureFileDoesntExist = function (filename, callback) {
  * If options is a string, it is assumed that the flush of the file (not dir) called options was requested
  */
 storage.flushToStorage = function (options, callback) {
+	// as in the case outlined below, there's no fsync in windows. 
+	// and because it's winJS, we know we're in windows. 	
 	return callback(null); 
 	
   // var filename, flags;
@@ -209,7 +219,8 @@ storage.flushToStorage = function (options, callback) {
  * @param {String} data
  * @param {Function} cb Optional callback, signature: err
  */
-storage.crashSafeWriteFile = storage.writeFile; // skip for now, too complex
+storage.crashSafeWriteFile = storage.writeFile; 
+// I'm skipping this for now because I'm not a very good coder. 
 // storage.crashSafeWriteFile = function (filename, data, cb) {
   // var callback = cb || function () {}
     // , tempFilename = filename + '~';
