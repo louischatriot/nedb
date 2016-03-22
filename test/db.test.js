@@ -89,7 +89,7 @@ describe('Database', function () {
       db = new Datastore({ filename: autoDb, autoload: true, onload: onload })
 
       db.find({}, function (err, docs) {
-        done("Find should not be executed since autoload failed");
+        done(new Error("Find should not be executed since autoload failed"));
       });
     });
 
@@ -390,7 +390,7 @@ describe('Database', function () {
      *
      * Note: maybe using an in-memory only NeDB would give us an easier solution
      */
-    it('If the callback throws an uncaught execption, dont catch it inside findOne, this is userspace concern', function (done) {
+    it('If the callback throws an uncaught exception, do not catch it inside findOne, this is userspace concern', function (done) {
       var tryCount = 0
         , currentUncaughtExceptionHandlers = process.listeners('uncaughtException')
         , i
@@ -399,11 +399,13 @@ describe('Database', function () {
       process.removeAllListeners('uncaughtException');
 
       process.on('uncaughtException', function MINE (ex) {
+        process.removeAllListeners('uncaughtException');
+
         for (i = 0; i < currentUncaughtExceptionHandlers.length; i += 1) {
           process.on('uncaughtException', currentUncaughtExceptionHandlers[i]);
         }
 
-        ex.should.equal('SOME EXCEPTION');
+        ex.message.should.equal('SOME EXCEPTION');
         done();
       });
 
@@ -411,9 +413,9 @@ describe('Database', function () {
         d.findOne({ a : 5}, function (err, doc) {
           if (tryCount === 0) {
             tryCount += 1;
-            throw 'SOME EXCEPTION';
+            throw new Error('SOME EXCEPTION');
           } else {
-            done('Callback was called twice');
+            done(new Error('Callback was called twice'));
           }
         });
       });
@@ -430,16 +432,17 @@ describe('Database', function () {
           d.insert({ tf: 6 }, function () {
             d.insert({ tf: 4, an: 'other' }, function (err, _doc2) {
               d.insert({ tf: 9 }, function () {
-                var data = d.getCandidates({ r: 6, tf: 4 })
-                  , doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
-                  , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
-                  ;
+                d.getCandidates({ r: 6, tf: 4 }, function (err, data) {
+                  var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
+                    , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
+                    ;
 
-                data.length.should.equal(2);
-                assert.deepEqual(doc1, { _id: doc1._id, tf: 4 });
-                assert.deepEqual(doc2, { _id: doc2._id, tf: 4, an: 'other' });
+                  data.length.should.equal(2);
+                  assert.deepEqual(doc1, { _id: doc1._id, tf: 4 });
+                  assert.deepEqual(doc2, { _id: doc2._id, tf: 4, an: 'other' });
 
-                done();
+                  done();
+                });
               });
             });
           });
@@ -453,16 +456,17 @@ describe('Database', function () {
           d.insert({ tf: 6 }, function (err, _doc1) {
             d.insert({ tf: 4, an: 'other' }, function (err) {
               d.insert({ tf: 9 }, function (err, _doc2) {
-                var data = d.getCandidates({ r: 6, tf: { $in: [6, 9, 5] } })
-                  , doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
-                  , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
-                  ;
+                d.getCandidates({ r: 6, tf: { $in: [6, 9, 5] } }, function (err, data) {
+                  var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
+                    , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
+                    ;
 
-                data.length.should.equal(2);
-                assert.deepEqual(doc1, { _id: doc1._id, tf: 6 });
-                assert.deepEqual(doc2, { _id: doc2._id, tf: 9 });
+                  data.length.should.equal(2);
+                  assert.deepEqual(doc1, { _id: doc1._id, tf: 6 });
+                  assert.deepEqual(doc2, { _id: doc2._id, tf: 9 });
 
-                done();
+                  done();
+                });
               });
             });
           });
@@ -476,20 +480,21 @@ describe('Database', function () {
           d.insert({ tf: 6 }, function (err, _doc2) {
             d.insert({ tf: 4, an: 'other' }, function (err, _doc3) {
               d.insert({ tf: 9 }, function (err, _doc4) {
-                var data = d.getCandidates({ r: 6, notf: { $in: [6, 9, 5] } })
-                  , doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
-                  , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
-                  , doc3 = _.find(data, function (d) { return d._id === _doc3._id; })
-                  , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
-                  ;
+                d.getCandidates({ r: 6, notf: { $in: [6, 9, 5] } }, function (err, data) {
+                  var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
+                    , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
+                    , doc3 = _.find(data, function (d) { return d._id === _doc3._id; })
+                    , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
+                    ;
 
-                data.length.should.equal(4);
-                assert.deepEqual(doc1, { _id: doc1._id, tf: 4 });
-                assert.deepEqual(doc2, { _id: doc2._id, tf: 6 });
-                assert.deepEqual(doc3, { _id: doc3._id, tf: 4, an: 'other' });
-                assert.deepEqual(doc4, { _id: doc4._id, tf: 9 });
+                  data.length.should.equal(4);
+                  assert.deepEqual(doc1, { _id: doc1._id, tf: 4 });
+                  assert.deepEqual(doc2, { _id: doc2._id, tf: 6 });
+                  assert.deepEqual(doc3, { _id: doc3._id, tf: 4, an: 'other' });
+                  assert.deepEqual(doc4, { _id: doc4._id, tf: 9 });
 
-                done();
+                  done();
+                });
               });
             });
           });
@@ -503,17 +508,120 @@ describe('Database', function () {
           d.insert({ tf: 6 }, function (err, _doc2) {
             d.insert({ tf: 4, an: 'other' }, function (err, _doc3) {
               d.insert({ tf: 9 }, function (err, _doc4) {
-                var data = d.getCandidates({ r: 6, tf: { $lte: 9, $gte: 6 } })
-                  , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
-                  , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
-                  ;
+                d.getCandidates({ r: 6, tf: { $lte: 9, $gte: 6 } }, function (err, data) {
+                  var doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
+                    , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
+                    ;
 
-                data.length.should.equal(2);
-                assert.deepEqual(doc2, { _id: doc2._id, tf: 6 });
-                assert.deepEqual(doc4, { _id: doc4._id, tf: 9 });
+                  data.length.should.equal(2);
+                  assert.deepEqual(doc2, { _id: doc2._id, tf: 6 });
+                  assert.deepEqual(doc4, { _id: doc4._id, tf: 9 });
 
-                done();
+                  done();
+                });
               });
+            });
+          });
+        });
+      });
+    });
+
+    it("Can set a TTL index that expires documents", function (done) {
+      d.ensureIndex({ fieldName: 'exp', expireAfterSeconds: 0.2 }, function () {
+        d.insert({ hello: 'world', exp: new Date() }, function () {
+          setTimeout(function () {
+            d.findOne({}, function (err, doc) {
+              assert.isNull(err);
+              doc.hello.should.equal('world');
+
+              setTimeout(function () {
+                d.findOne({}, function (err, doc) {
+                  assert.isNull(err);
+                  assert.isNull(doc);
+
+                  d.on('compaction.done', function () {
+                    // After compaction, no more mention of the document, correctly removed
+                    var datafileContents = fs.readFileSync(testDb, 'utf8');
+                    datafileContents.split('\n').length.should.equal(2);
+                    assert.isNull(datafileContents.match(/world/));
+
+                    // New datastore on same datafile is empty
+                    var d2 = new Datastore({ filename: testDb, autoload: true });
+                    d2.findOne({}, function (err, doc) {
+                      assert.isNull(err);
+                      assert.isNull(doc);
+
+                      done();
+                    });
+                  });
+
+                  d.persistence.compactDatafile();
+                });
+              }, 101);
+            });
+          }, 100);
+        });
+      });
+    });
+
+    it("TTL indexes can expire multiple documents and only what needs to be expired", function (done) {
+      d.ensureIndex({ fieldName: 'exp', expireAfterSeconds: 0.2 }, function () {
+        d.insert({ hello: 'world1', exp: new Date() }, function () {
+          d.insert({ hello: 'world2', exp: new Date() }, function () {
+            d.insert({ hello: 'world3', exp: new Date((new Date()).getTime() + 100) }, function () {
+              setTimeout(function () {
+                d.find({}, function (err, docs) {
+                  assert.isNull(err);
+                  docs.length.should.equal(3);
+
+                  setTimeout(function () {
+                    d.find({}, function (err, docs) {
+                      assert.isNull(err);
+                      docs.length.should.equal(1);
+                      docs[0].hello.should.equal('world3');
+
+                      setTimeout(function () {
+                        d.find({}, function (err, docs) {
+                          assert.isNull(err);
+                          docs.length.should.equal(0);
+
+                          done();
+                        });
+                      }, 101);
+                    });
+                  }, 101);
+                });
+              }, 100);
+            });
+          });
+        });
+      });
+    });
+
+    it("Document where indexed field is absent or not a date are ignored", function (done) {
+      d.ensureIndex({ fieldName: 'exp', expireAfterSeconds: 0.2 }, function () {
+        d.insert({ hello: 'world1', exp: new Date() }, function () {
+          d.insert({ hello: 'world2', exp: "not a date" }, function () {
+            d.insert({ hello: 'world3' }, function () {
+              setTimeout(function () {
+                d.find({}, function (err, docs) {
+                  assert.isNull(err);
+                  docs.length.should.equal(3);
+
+                  setTimeout(function () {
+                    d.find({}, function (err, docs) {
+                      assert.isNull(err);
+                      docs.length.should.equal(2);
+
+
+                      docs[0].hello.should.not.equal('world1');
+                      docs[1].hello.should.not.equal('world1');
+
+                      done();
+                    });
+                  }, 101);
+                });
+              }, 100);
             });
           });
         });
@@ -720,7 +828,7 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can use sort, skip and limit if the callback is not passed to find but to exec', function (done) {
       d.insert({ a: 2, hello: 'world' }, function () {
         d.insert({ a: 24, hello: 'earth' }, function () {
@@ -735,7 +843,7 @@ describe('Database', function () {
               });
             });
           });
-        });      
+        });
       });
     });
 
@@ -748,7 +856,7 @@ describe('Database', function () {
               d.findOne({}).sort({ a: 1 }).exec(function (err, doc) {
                 assert.isNull(err);
                 doc.hello.should.equal('world');
-                
+
                 // A query
                 d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).exec(function (err, doc) {
                   assert.isNull(err);
@@ -972,11 +1080,12 @@ describe('Database', function () {
           d.update({ _id: insertedDoc._id }, { $set: { hello: 'mars' } }, {}, function () {
             d.find({ _id: insertedDoc._id }, function (err, docs) {
               docs.length.should.equal(1);
+
               Object.keys(docs[0]).length.should.equal(4);
               docs[0]._id.should.equal(insertedDoc._id);
               docs[0].created.should.equal(insertedDoc.created);
               docs[0].hello.should.equal('mars');
-              assert.isAbove(new Date(docs[0].modified).getTime() - beginning, 99);   // modified modified
+              assert.isAbove(new Date(docs[0].modified).getTime() - beginning, 1);   // modified modified
               assert.isBelow(new Date(docs[0].modified).getTime() - step1, reloadTimeUpperBound);   // modified modified
 
               done();
@@ -1122,13 +1231,13 @@ describe('Database', function () {
               d.find({}, function (err, docs) {
                 docs.length.should.equal(1);   // Default option for upsert is false
                 docs[0].something.should.equal("created ok");
-                
+
                 // Modifying the returned upserted document doesn't modify the database
                 newDoc.newField = true;
                 d.find({}, function (err, docs) {
                   docs[0].something.should.equal("created ok");
                   assert.isUndefined(docs[0].newField);
-                
+
                   done();
                 });
               });
@@ -1136,7 +1245,7 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('If the update query is a normal object with no modifiers, it is the doc that will be upserted', function (done) {
         d.update({ $or: [{ a: 4 }, { a: 5 }] }, { hello: 'world', bloup: 'blap' }, { upsert: true }, function (err) {
           d.find({}, function (err, docs) {
@@ -1150,7 +1259,7 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('If the update query contains modifiers, it is applied to the object resulting from removing all operators from the find query 1', function (done) {
         d.update({ $or: [{ a: 4 }, { a: 5 }] }, { $set: { hello: 'world' }, $inc: { bloup: 3 } }, { upsert: true }, function (err) {
           d.find({ hello: 'world' }, function (err, docs) {
@@ -1164,7 +1273,7 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('If the update query contains modifiers, it is applied to the object resulting from removing all operators from the find query 2', function (done) {
         d.update({ $or: [{ a: 4 }, { a: 5 }], cac: 'rrr' }, { $set: { hello: 'world' }, $inc: { bloup: 3 } }, { upsert: true }, function (err) {
           d.find({ hello: 'world' }, function (err, docs) {
@@ -1179,7 +1288,7 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('Performing upsert with badly formatted fields yields a standard error not an exception', function(done) {
         d.update({_id: '1234'}, { $set: { $$badfield: 5 }}, { upsert: true }, function(err, doc) {
           assert.isDefined(err);
@@ -1396,7 +1505,7 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can update without the options arg (will use defaults then)', function (done) {
       d.insert({ a:1, hello: 'world' }, function (err, doc1) {
         d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
@@ -1409,11 +1518,11 @@ describe('Database', function () {
                   , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
                   , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
                   ;
-                  
+
                 d1.a.should.equal(1);
                 d2.a.should.equal(12);
                 d3.a.should.equal(5);
-                
+
                 done();
               });
             });
@@ -1476,6 +1585,151 @@ describe('Database', function () {
         });
       });
     });
+
+    it("If options.returnUpdatedDocs is true, return all matched docs", function (done) {
+      d.insert([{ a: 4 }, { a: 5 }, { a: 6 }], function (err, docs) {
+        docs.length.should.equal(3);
+
+        d.update({ a: 7 }, { $set: { u: 1 } }, { multi: true, returnUpdatedDocs: true }, function (err, num, updatedDocs) {
+          num.should.equal(0);
+          updatedDocs.length.should.equal(0);
+
+          d.update({ a: 5 }, { $set: { u: 2 } }, { multi: true, returnUpdatedDocs: true }, function (err, num, updatedDocs) {
+            num.should.equal(1);
+            updatedDocs.length.should.equal(1);
+            updatedDocs[0].a.should.equal(5);
+            updatedDocs[0].u.should.equal(2);
+
+            d.update({ a: { $in: [4, 6] } }, { $set: { u: 3 } }, { multi: true, returnUpdatedDocs: true }, function (err, num, updatedDocs) {
+              num.should.equal(2);
+              updatedDocs.length.should.equal(2);
+              updatedDocs[0].u.should.equal(3);
+              updatedDocs[1].u.should.equal(3);
+              if (updatedDocs[0].a === 4) {
+                updatedDocs[0].a.should.equal(4);
+                updatedDocs[1].a.should.equal(6);
+              } else {
+                updatedDocs[0].a.should.equal(6);
+                updatedDocs[1].a.should.equal(4);
+              }
+
+              done();
+            });
+          });
+        });
+      });
+    });
+
+    it("createdAt property is unchanged and updatedAt correct after an update, even a complete document replacement", function (done) {
+      var d2 = new Datastore({ inMemoryOnly: true, timestampData: true });
+      d2.insert({ a: 1 });
+      d2.findOne({ a: 1 }, function (err, doc) {
+        var createdAt = doc.created;
+
+        // Modifying update
+        setTimeout(function () {
+          d2.update({ a: 1 }, { $set: { b: 2 } }, {});
+          d2.findOne({ a: 1 }, function (err, doc) {
+            doc.created.should.equal(createdAt);
+            assert.isBelow(Date.now() - doc.modified, 30);//milliseconds
+
+            // Complete replacement
+            setTimeout(function () {
+              d2.update({ a: 1 }, { c: 3 }, {});
+              d2.findOne({ c: 3 }, function (err, doc) {
+
+                console.log('and??', err, doc);
+                doc.created.should.equal(createdAt);
+                assert.isBelow(Date.now() - doc.modified, 30);//milliseconds
+
+
+                done();
+              });
+            }, 20);
+          });
+        }, 20);
+      });
+    });
+
+
+    describe("Callback signature", function () {
+
+      it("Regular update, multi false", function (done) {
+        d.insert({ a: 1 });
+        d.insert({ a: 2 });
+
+        // returnUpdatedDocs set to false
+        d.update({ a: 1 }, { $set: { b: 20 } }, {}, function (err, numAffected, affectedDocuments, upsert) {
+          assert.isNull(err);
+          numAffected.should.equal(1);
+          assert.isUndefined(affectedDocuments);
+          assert.isUndefined(upsert);
+
+          // returnUpdatedDocs set to true
+          d.update({ a: 1 }, { $set: { b: 21 } }, { returnUpdatedDocs: true }, function (err, numAffected, affectedDocuments, upsert) {
+            assert.isNull(err);
+            numAffected.should.equal(1);
+            affectedDocuments.a.should.equal(1);
+            affectedDocuments.b.should.equal(21);
+            assert.isUndefined(upsert);
+
+            done();
+          });
+        });
+      });
+
+      it("Regular update, multi true", function (done) {
+        d.insert({ a: 1 });
+        d.insert({ a: 2 });
+
+        // returnUpdatedDocs set to false
+        d.update({}, { $set: { b: 20 } }, { multi: true }, function (err, numAffected, affectedDocuments, upsert) {
+          assert.isNull(err);
+          numAffected.should.equal(2);
+          assert.isUndefined(affectedDocuments);
+          assert.isUndefined(upsert);
+
+          // returnUpdatedDocs set to true
+          d.update({}, { $set: { b: 21 } }, { multi: true, returnUpdatedDocs: true }, function (err, numAffected, affectedDocuments, upsert) {
+            assert.isNull(err);
+            numAffected.should.equal(2);
+            affectedDocuments.length.should.equal(2);
+            assert.isUndefined(upsert);
+
+            done();
+          });
+        });
+      });
+
+      it("Upsert", function (done) {
+        d.insert({ a: 1 });
+        d.insert({ a: 2 });
+
+        // Upsert flag not set
+        d.update({ a: 3 }, { $set: { b: 20 } }, {}, function (err, numAffected, affectedDocuments, upsert) {
+          assert.isNull(err);
+          numAffected.should.equal(0);
+          assert.isUndefined(affectedDocuments);
+          assert.isUndefined(upsert);
+
+          // Upsert flag set
+          d.update({ a: 3 }, { $set: { b: 21 } }, { upsert: true }, function (err, numAffected, affectedDocuments, upsert) {
+            assert.isNull(err);
+            numAffected.should.equal(1);
+            affectedDocuments.a.should.equal(3);
+            affectedDocuments.b.should.equal(21);
+            upsert.should.equal(true);
+
+            d.find({}, function (err, docs) {
+              docs.length.should.equal(3);
+              done();
+            });
+          });
+        });
+      });
+
+
+    });   // ==== End of 'Update - Callback signature' ==== //
 
   });   // ==== End of 'Update' ==== //
 
@@ -1625,7 +1879,7 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can remove without the options arg (will use defaults then)', function (done) {
       d.insert({ a:1, hello: 'world' }, function (err, doc1) {
         d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
@@ -1638,11 +1892,11 @@ describe('Database', function () {
                   , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
                   , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
                   ;
-                  
+
                 d1.a.should.equal(1);
                 assert.isUndefined(d2);
                 d3.a.should.equal(5);
-                
+
                 done();
               });
             });
@@ -1686,33 +1940,33 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('ensureIndex can be called twice on the same field, the second call will ahve no effect', function (done) {
         Object.keys(d.indexes).length.should.equal(1);
         Object.keys(d.indexes)[0].should.equal("_id");
-      
+
         d.insert({ planet: "Earth" }, function () {
           d.insert({ planet: "Mars" }, function () {
             d.find({}, function (err, docs) {
               docs.length.should.equal(2);
-              
+
               d.ensureIndex({ fieldName: "planet" }, function (err) {
                 assert.isNull(err);
                 Object.keys(d.indexes).length.should.equal(2);
-                Object.keys(d.indexes)[0].should.equal("_id");   
-                Object.keys(d.indexes)[1].should.equal("planet");   
+                Object.keys(d.indexes)[0].should.equal("_id");
+                Object.keys(d.indexes)[1].should.equal("planet");
 
                 d.indexes.planet.getAll().length.should.equal(2);
-                
+
                 // This second call has no effect, documents don't get inserted twice in the index
                 d.ensureIndex({ fieldName: "planet" }, function (err) {
                   assert.isNull(err);
                   Object.keys(d.indexes).length.should.equal(2);
-                  Object.keys(d.indexes)[0].should.equal("_id");   
-                  Object.keys(d.indexes)[1].should.equal("planet");   
+                  Object.keys(d.indexes)[0].should.equal("_id");
+                  Object.keys(d.indexes)[1].should.equal("planet");
 
-                  d.indexes.planet.getAll().length.should.equal(2);                
-                  
+                  d.indexes.planet.getAll().length.should.equal(2);
+
                   done();
                 });
               });
@@ -1891,19 +2145,19 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('Can remove an index', function (done) {
         d.ensureIndex({ fieldName: 'e' }, function (err) {
           assert.isNull(err);
-          
+
           Object.keys(d.indexes).length.should.equal(2);
           assert.isNotNull(d.indexes.e);
-          
+
           d.removeIndex("e", function (err) {
             assert.isNull(err);
             Object.keys(d.indexes).length.should.equal(1);
-            assert.isUndefined(d.indexes.e); 
- 
+            assert.isUndefined(d.indexes.e);
+
             done();
           });
         });
@@ -1911,7 +2165,7 @@ describe('Database', function () {
 
     });   // ==== End of 'ensureIndex and index initialization in database loading' ==== //
 
-    
+
     describe('Indexing newly inserted documents', function () {
 
       it('Newly inserted documents are indexed', function (done) {
@@ -2565,7 +2819,7 @@ describe('Database', function () {
                   assert.isNull(err);
                   Object.keys(db.indexes).length.should.equal(3);
                   Object.keys(db.indexes)[0].should.equal("_id");
-                  Object.keys(db.indexes)[1].should.equal("planet");  
+                  Object.keys(db.indexes)[1].should.equal("planet");
                   Object.keys(db.indexes)[2].should.equal("another");
                   db.indexes._id.getAll().length.should.equal(2);
                   db.indexes.planet.getAll().length.should.equal(2);
@@ -2613,9 +2867,10 @@ describe('Database', function () {
     it('Results of getMatching should never contain duplicates', function (done) {
       d.ensureIndex({ fieldName: 'bad' });
       d.insert({ bad: ['a', 'b'] }, function () {
-        var res = d.getCandidates({ bad: { $in: ['a', 'b'] } });
-        res.length.should.equal(1);
-        done();
+        d.getCandidates({ bad: { $in: ['a', 'b'] } }, function (err, res) {
+          res.length.should.equal(1);
+          done();
+        });
       });
     });
 

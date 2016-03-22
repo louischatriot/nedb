@@ -97,7 +97,7 @@ describe('Cursor', function () {
       }
       ], done);
     });
-    
+
     it('With an empty collection', function (done) {
       async.waterfall([
         function (cb) {
@@ -113,7 +113,7 @@ describe('Cursor', function () {
         }
       ], done);
     });
-    
+
     it('With a limit', function (done) {
       var cursor = new Cursor(d);
       cursor.limit(3);
@@ -177,7 +177,7 @@ describe('Cursor', function () {
         for (i = 0; i < docs.length - 1; i += 1) {
           assert(docs[i].age < docs[i + 1].age)
         }
-        
+
         cursor.sort({ age: -1 });
         cursor.exec(function (err, docs) {
           assert.isNull(err);
@@ -187,29 +187,54 @@ describe('Cursor', function () {
           }
 
           done();
-        });          
+        });
       });
     });
-    
+
+    it("Sorting strings with custom string comparison function", function (done) {
+      var db = new Datastore({ inMemoryOnly: true, autoload: true
+                             , compareStrings: function (a, b) { return a.length - b.length; }
+                             });
+
+      db.insert({ name: 'alpha' });
+      db.insert({ name: 'charlie' });
+      db.insert({ name: 'zulu' });
+
+      db.find({}).sort({ name: 1 }).exec(function (err, docs) {
+        _.pluck(docs, 'name')[0].should.equal('zulu');
+        _.pluck(docs, 'name')[1].should.equal('alpha');
+        _.pluck(docs, 'name')[2].should.equal('charlie');
+
+        delete db.compareStrings;
+        db.find({}).sort({ name: 1 }).exec(function (err, docs) {
+          _.pluck(docs, 'name')[0].should.equal('alpha');
+          _.pluck(docs, 'name')[1].should.equal('charlie');
+          _.pluck(docs, 'name')[2].should.equal('zulu');
+
+          done();
+        });
+      });
+    });
+
     it('With an empty collection', function (done) {
       async.waterfall([
         function (cb) {
           d.remove({}, { multi: true }, function(err) { return cb(err); })
         }
       , function (cb) {
-          var cursor = new Cursor(d);
-          cursor.sort({ age: 1 });
-          cursor.exec(function (err, docs) {
-            assert.isNull(err);
-            docs.length.should.equal(0);
-            cb();
-          });
-        }
+    var cursor = new Cursor(d);
+    cursor.sort({ age: 1 });
+    cursor.exec(function (err, docs) {
+      assert.isNull(err);
+      docs.length.should.equal(0);
+      cb();
+    });
+      }
       ], done);
     });
-    
+
     it('Ability to chain sorting and exec', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -223,21 +248,21 @@ describe('Cursor', function () {
           });
         }
       , function (cb) {
-          var cursor = new Cursor(d);
-          cursor.sort({ age: -1 }).exec(function (err, docs) {
-            assert.isNull(err);
-            // Results are in descending order
-            for (i = 0; i < docs.length - 1; i += 1) {
-              assert(docs[i].age > docs[i + 1].age)
-            }
-            cb();
-          });
-        }
+    var cursor = new Cursor(d);
+    cursor.sort({ age: -1 }).exec(function (err, docs) {
+      assert.isNull(err);
+      // Results are in descending order
+      for (i = 0; i < docs.length - 1; i += 1) {
+        assert(docs[i].age > docs[i + 1].age)
+      }
+      cb();
+    });
+      }
       ], done);
     });
 
     it('Using limit and sort', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -251,20 +276,20 @@ describe('Cursor', function () {
           });
         }
       , function (cb) {
-          var cursor = new Cursor(d);
-          cursor.sort({ age: -1 }).limit(2).exec(function (err, docs) {
-            assert.isNull(err);
-            docs.length.should.equal(2);
-            docs[0].age.should.equal(89);
-            docs[1].age.should.equal(57);
-            cb();
-          });
-        }
+    var cursor = new Cursor(d);
+    cursor.sort({ age: -1 }).limit(2).exec(function (err, docs) {
+      assert.isNull(err);
+      docs.length.should.equal(2);
+      docs[0].age.should.equal(89);
+      docs[1].age.should.equal(57);
+      cb();
+    });
+      }
       ], done);
     });
 
     it('Using a limit higher than total number of docs shouldnt cause an error', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -283,7 +308,7 @@ describe('Cursor', function () {
     });
 
     it('Using limit and skip with sort', function (done) {
-      var i;    
+      var i;
       async.waterfall([
         function (cb) {
           var cursor = new Cursor(d);
@@ -659,11 +684,11 @@ describe('Cursor', function () {
 
     beforeEach(function (done) {
       // We don't know the order in which docs wil be inserted but we ensure correctness by testing both sort orders
-      d.insert({ age: 5, name: 'Jo', planet: 'B' }, function (err, _doc0) {
+      d.insert({ age: 5, name: 'Jo', planet: 'B', toys: { bebe: true, ballon: 'much' } }, function (err, _doc0) {
         doc0 = _doc0;
-        d.insert({ age: 57, name: 'Louis', planet: 'R' }, function (err, _doc1) {
+        d.insert({ age: 57, name: 'Louis', planet: 'R', toys: { ballon: 'yeah', bebe: false } }, function (err, _doc1) {
           doc1 = _doc1;
-          d.insert({ age: 52, name: 'Grafitti', planet: 'C' }, function (err, _doc2) {
+          d.insert({ age: 52, name: 'Grafitti', planet: 'C', toys: { bebe: 'kind of' } }, function (err, _doc2) {
             doc2 = _doc2;
             d.insert({ age: 23, name: 'LM', planet: 'S' }, function (err, _doc3) {
               doc3 = _doc3;
@@ -741,20 +766,20 @@ describe('Cursor', function () {
         assert.isNull(err);
         docs.length.should.equal(5);
         // Takes the _id by default
-        assert.deepEqual(docs[0], { planet: 'B', _id: doc0._id });
+        assert.deepEqual(docs[0], { planet: 'B', _id: doc0._id, toys: { bebe: true, ballon: 'much' } });
         assert.deepEqual(docs[1], { planet: 'S', _id: doc3._id });
-        assert.deepEqual(docs[2], { planet: 'C', _id: doc2._id });
-        assert.deepEqual(docs[3], { planet: 'R', _id: doc1._id });
+        assert.deepEqual(docs[2], { planet: 'C', _id: doc2._id, toys: { bebe: 'kind of' } });
+        assert.deepEqual(docs[3], { planet: 'R', _id: doc1._id, toys: { bebe: false, ballon: 'yeah' } });
         assert.deepEqual(docs[4], { planet: 'Earth', _id: doc4._id });
 
         cursor.projection({ age: 0, name: 0, _id: 0 });
         cursor.exec(function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(5);
-          assert.deepEqual(docs[0], { planet: 'B' });
+          assert.deepEqual(docs[0], { planet: 'B', toys: { bebe: true, ballon: 'much' } });
           assert.deepEqual(docs[1], { planet: 'S' });
-          assert.deepEqual(docs[2], { planet: 'C' });
-          assert.deepEqual(docs[3], { planet: 'R' });
+          assert.deepEqual(docs[2], { planet: 'C', toys: { bebe: 'kind of' } });
+          assert.deepEqual(docs[3], { planet: 'R', toys: { bebe: false, ballon: 'yeah' } });
           assert.deepEqual(docs[4], { planet: 'Earth' });
 
           done();
@@ -769,6 +794,57 @@ describe('Cursor', function () {
       cursor.exec(function (err, docs) {
         assert.isNotNull(err);
         assert.isUndefined(docs);
+
+        cursor.projection({ age: 1, _id: 0 });
+        cursor.exec(function (err, docs) {
+          assert.isNull(err);
+          assert.deepEqual(docs[0], { age: 5 });
+          assert.deepEqual(docs[1], { age: 23 });
+          assert.deepEqual(docs[2], { age: 52 });
+          assert.deepEqual(docs[3], { age: 57 });
+          assert.deepEqual(docs[4], { age: 89 });
+
+          cursor.projection({ age: 0, toys: 0, planet: 0, _id: 1 });
+          cursor.exec(function (err, docs) {
+            assert.isNull(err);
+            assert.deepEqual(docs[0], { name: 'Jo', _id: doc0._id });
+            assert.deepEqual(docs[1], { name: 'LM', _id: doc3._id });
+            assert.deepEqual(docs[2], { name: 'Grafitti', _id: doc2._id });
+            assert.deepEqual(docs[3], { name: 'Louis', _id: doc1._id });
+            assert.deepEqual(docs[4], { _id: doc4._id });
+
+            done();
+          });
+        });
+      });
+    });
+
+    it("Projections on embedded documents - omit type", function (done) {
+      var cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });   // For easier finding
+      cursor.projection({ name: 0, planet: 0, 'toys.bebe': 0, _id: 0 });
+      cursor.exec(function (err, docs) {
+        assert.deepEqual(docs[0], { age: 5, toys: { ballon: 'much' } });
+        assert.deepEqual(docs[1], { age: 23 });
+        assert.deepEqual(docs[2], { age: 52, toys: {} });
+        assert.deepEqual(docs[3], { age: 57, toys: { ballon: 'yeah' } });
+        assert.deepEqual(docs[4], { age: 89 });
+
+        done();
+      });
+    });
+
+    it("Projections on embedded documents - pick type", function (done) {
+      var cursor = new Cursor(d, {});
+      cursor.sort({ age: 1 });   // For easier finding
+      cursor.projection({ name: 1, 'toys.ballon': 1, _id: 0 });
+      cursor.exec(function (err, docs) {
+        assert.deepEqual(docs[0], { name: 'Jo', toys: { ballon: 'much' } });
+        assert.deepEqual(docs[1], { name: 'LM' });
+        assert.deepEqual(docs[2], { name: 'Grafitti' });
+        assert.deepEqual(docs[3], { name: 'Louis', toys: { ballon: 'yeah' } });
+        assert.deepEqual(docs[4], {});
+
         done();
       });
     });

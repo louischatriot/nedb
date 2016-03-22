@@ -144,7 +144,7 @@ describe('Persistence', function () {
     treatedData.length.should.equal(2);
     _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
     _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
-  });  
+  });
 
   it('Compact database on load', function (done) {
     d.insert({ a: 2 }, function () {
@@ -297,6 +297,15 @@ describe('Persistence', function () {
         });
       });
     });
+  });
+
+  it("Can listen to compaction events", function (done) {
+    d.on('compaction.done', function () {
+      d.removeAllListeners('compaction.done');   // Tidy up for next tests
+      done();
+    });
+
+    d.persistence.compactDatafile();
   });
 
 
@@ -670,7 +679,7 @@ describe('Persistence', function () {
             fs.existsSync(testDb).should.equal(true);
             fs.existsSync(testDb + '~').should.equal(false);
             if (!contents.match(/^{"hello":"world","_id":"[0-9a-zA-Z]{16}"}\n$/)) {
-              throw "Datafile contents not as expected";
+              throw new Error("Datafile contents not as expected");
             }
             done();
           });
@@ -697,7 +706,7 @@ describe('Persistence', function () {
             fs.existsSync(testDb).should.equal(true);
             fs.existsSync(testDb + '~').should.equal(false);
             if (!contents.match(/^{"hello":"world","_id":"[0-9a-zA-Z]{16}"}\n$/)) {
-              throw "Datafile contents not as expected";
+              throw new Error("Datafile contents not as expected");
             }
             done();
           });
@@ -721,7 +730,7 @@ describe('Persistence', function () {
             fs.existsSync(testDb).should.equal(true);
             fs.existsSync(testDb + '~').should.equal(false);
             if (!contents.match(/^{"hello":"world","_id":"[0-9a-zA-Z]{16}"}\n$/)) {
-              throw "Datafile contents not as expected";
+              throw new Error("Datafile contents not as expected");
             }
             done();
           });
@@ -743,7 +752,7 @@ describe('Persistence', function () {
         fs.existsSync(dbFile).should.equal(true);
         fs.existsSync(dbFile + '~').should.equal(false);
         if (contents != "") {
-          throw "Datafile contents not as expected";
+          throw new Error("Datafile contents not as expected");
         }
         done();
       });

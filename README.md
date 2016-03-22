@@ -6,6 +6,18 @@ This is a fork of the nedb database created by Louise Chatriot, the actual repo 
 
 **Embedded persistent or in memory database for Node.js, nw.js, Electron and browsers, 100% JavaScript, no binary dependency**. API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
 
+**IMPORTANT NOTE**: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment. Also, please follow the <a href="#bug-reporting-guidelines">bug reporting guidelines</a> and check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log</a> before submitting an already fixed bug :)
+
+## Support NeDB development
+No time to <a href="#pull-requests">help out</a>? You can support NeDB development by sending money or bitcoins!
+
+Money: [![Donate to author](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=louis%2echatriot%40gmail%2ecom&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
+
+Bitcoin address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
+>>>>>>> nedb/master
+
+**Embedded persistent or in memory database for Node.js, nw.js, Electron and browsers, 100% JavaScript, no binary dependency**. API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
+
 ## Installation, tests
 Module name on npm and bower is `nedb`.
 
@@ -45,6 +57,11 @@ You can use NeDB as an in-memory only datastore or as a persistent datastore. On
 * `afterSerialization` (optional): hook you can use to transform data after it was serialized and before it is written to disk. Can be used for example to encrypt data before writing database to disk. This function takes a string as parameter (one line of an NeDB data file) and outputs the transformed string, **which must absolutely not contain a `\n` character** (or data will be lost).
 * `beforeDeserialization` (optional): inverse of `afterSerialization`. Make sure to include both and not just one or you risk data loss. For the same reason, make sure both functions are inverses of one another. Some failsafe mechanisms are in place to prevent data loss if you misuse the serialization hooks: NeDB checks that never one is declared without the other, and checks that they are reverse of one another by testing on random strings of various lengths. In addition, if too much data is detected as corrupt, NeDB will refuse to start as it could mean you're not using the deserialization hook corresponding to the serialization hook used before (see below).
 * `corruptAlertThreshold` (optional): between 0 and 1, defaults to 10%. NeDB will refuse to start if more than this percentage of the datafile is corrupt. 0 means you don't tolerate any corruption, 1 means you don't care.
+* `compareStrings` (optional): function compareStrings(a, b) compares
+  strings a and b and return -1, 0 or 1. If specified, it overrides
+default string comparison which is not well adapted to non-US characters
+in particular accented letters. Native `localCompare` will most of the
+time be the right choice
 * `nodeWebkitAppName` (optional, **DEPRECATED**): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows. Now that you can use `require('nw.gui').App.dataPath` in Node Webkit to get the path to the data directory for your application, you should not use this option anymore and it will be removed.
 
 If you use a persistent datastore without the `autoload` option, you need to call `loadDatabase` manually.
@@ -95,7 +112,7 @@ db.robots.loadDatabase();
 ### Persistence
 Under the hood, NeDB's persistence uses an append-only format, meaning that all updates and deletes actually result in lines added at the end of the datafile, for performance reasons. The database is automatically compacted (i.e. put back in the one-line-per-document format) every time you load each database within your application.
 
-You can manually call the compaction function with `yourDatabase.persistence.compactDatafile` which takes no argument. It queues a compaction of the datafile in the executor, to be executed sequentially after all pending operations.
+You can manually call the compaction function with `yourDatabase.persistence.compactDatafile` which takes no argument. It queues a compaction of the datafile in the executor, to be executed sequentially after all pending operations. The datastore will fire a `compaction.done` event once compaction is finished.
 
 You can also set automatic compaction at regular intervals with `yourDatabase.persistence.setAutocompactionInterval(interval)`, `interval` in milliseconds (a minimum of 5s is enforced), and stop automatic compaction with `yourDatabase.persistence.stopAutocompaction()`.
 
@@ -108,7 +125,7 @@ Durability works similarly to major databases: compaction forces the OS to physi
 
 ### Inserting documents
 The native types are `String`, `Number`, `Boolean`, `Date` and `null`. You can also use
-arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from 
+arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from
 MongoDB which transforms `undefined` in `null`, something I find counter-intuitive).
 
 If the document does not contain an `_id` field, NeDB will automatically generated one for you (a 16-characters alphanumerical string). The `_id` of a document, once set, cannot be modified.
@@ -221,7 +238,7 @@ db.findOne({ _id: 'id1' }, function (err, doc) {
 ```
 
 #### Operators ($lt, $lte, $gt, $gte, $in, $nin, $ne, $exists, $regex)
-The syntax is `{ field: { $op: value } }` where `$op` is any comparison operator:  
+The syntax is `{ field: { $op: value } }` where `$op` is any comparison operator:
 
 * `$lt`, `$lte`: less than, less than or equal
 * `$gt`, `$gte`: greater than, greater than or equal
@@ -258,11 +275,35 @@ db.find({ planet: { $regex: /ar/, $nin: ['Jupiter', 'Earth'] } }, function (err,
 ```
 
 #### Array fields
-When a field in a document is an array, NeDB first tries to see if there is an array-specific comparison function (for now there is only `$size`) being used
-and tries it first. If there isn't, the query is treated as a query on every element and there is a match if at least one element matches.
+When a field in a document is an array, NeDB first tries to see if the query value is an array to perform an exact match, then whether there is an array-specific comparison function (for now there is only `$size` and `$elemMatch`) being used. If not, the query is treated as a query on every element and there is a match if at least one element matches.
+
+* `$size`: match on the size of the array
+* `$elemMatch`: matches if at least one array element matches the query entirely
 
 ```javascript
+// Exact match
+db.find({ satellites: ['Phobos', 'Deimos'] }, function (err, docs) {
+  // docs contains Mars
+})
+db.find({ satellites: ['Deimos', 'Phobos'] }, function (err, docs) {
+  // docs is empty
+})
+
 // Using an array-specific comparison function
+// $elemMatch operator will provide match for a document, if an element from the array field satisfies all the conditions specified with the `$elemMatch` operator
+db.find({ completeData: { planets: { $elemMatch: { name: 'Earth', number: 3 } } } }, function (err, docs) {
+  // docs contains documents with id 5 (completeData)
+});
+
+db.find({ completeData: { planets: { $elemMatch: { name: 'Earth', number: 5 } } } }, function (err, docs) {
+  // docs is empty
+});
+
+// You can use inside #elemMatch query any known document query operator
+db.find({ completeData: { planets: { $elemMatch: { name: 'Earth', number: { $gt: 2 } } } } }, function (err, docs) {
+  // docs contains documents with id 5 (completeData)
+});
+
 // Note: you can't use nested comparison functions, e.g. { $size: { $lt: 5 } } will throw an error
 db.find({ satellites: { $size: 2 } }, function (err, docs) {
   // docs contains Mars
@@ -289,7 +330,7 @@ db.find({ satellites: { $in: ['Moon', 'Deimos'] } }, function (err, docs) {
 ```
 
 #### Logical operators $or, $and, $not, $where
-You can combine queries using logical operators:  
+You can combine queries using logical operators:
 
 * For `$or` and `$and`, the syntax is `{ $op: [query1, query2, ...] }`.
 * For `$not`, the syntax is `{ $not: query }`
@@ -340,7 +381,7 @@ db.find({}).sort({ firstField: 1, secondField: -1 }) ...   // You understand how
 ```
 
 #### Projections
-You can give `find` and `findOne` an optional second argument, `projections`. The syntax is the same as MongoDB: `{ a: 1, b: 1 }` to return only the `a` and `b` fields, `{ a: 0, b: 0 }` to omit these two fields. You cannot use both modes at the time, except for `_id` which is by default always returned and which you can choose to omit.
+You can give `find` and `findOne` an optional second argument, `projections`. The syntax is the same as MongoDB: `{ a: 1, b: 1 }` to return only the `a` and `b` fields, `{ a: 0, b: 0 }` to omit these two fields. You cannot use both modes at the time, except for `_id` which is by default always returned and which you can choose to omit. You can project on nested documents.
 
 ```javascript
 // Same database as above
@@ -366,9 +407,13 @@ db.find({ planet: 'Mars' }, { planet: 0, system: 1 }, function (err, docs) {
 });
 
 // You can also use it in a Cursor way but this syntax is not compatible with MongoDB
-// If upstream compatibility is important don't use this method
 db.find({ planet: 'Mars' }).projection({ planet: 1, system: 1 }).exec(function (err, docs) {
   // docs is [{ planet: 'Mars', system: 'solar', _id: 'id1' }]
+});
+
+// Project on a nested document
+db.findOne({ planet: 'Earth' }).projection({ planet: 1, 'humans.genders': 1 }).exec(function (err, doc) {
+  // doc is { planet: 'Earth', _id: 'id2', humans: { genders: 2 } }
 });
 ```
 
@@ -391,17 +436,20 @@ db.count({}, function (err, count) {
 
 
 ### Updating documents
-`db.update(query, update, options, callback)` will update all documents matching `query` according to the `update` rules:  
+`db.update(query, update, options, callback)` will update all documents matching `query` according to the `update` rules:
 * `query` is the same kind of finding query you use with `find` and `findOne`
 * `update` specifies how the documents should be modified. It is either a new document or a set of modifiers (you cannot use both together, it doesn't make sense!)
   * A new document will replace the matched docs
-  * The modifiers create the fields they need to modify if they don't exist, and you can apply them to subdocs. Available field modifiers are `$set` to change a field's value, `$unset` to delete a field and `$inc` to increment a field's value. To work on arrays, you have `$push`, `$pop`, `$addToSet`, `$pull`, and the special `$each`. See examples below for the syntax.
+  * The modifiers create the fields they need to modify if they don't exist, and you can apply them to subdocs. Available field modifiers are `$set` to change a field's value, `$unset` to delete a field, `$inc` to increment a field's value and `$min`/`$max` to change field's value, only if provided value is less/greater than current value. To work on arrays, you have `$push`, `$pop`, `$addToSet`, `$pull`, and the special `$each` and `$slice`. See examples below for the syntax.
 * `options` is an object with two possible parameters
   * `multi` (defaults to `false`) which allows the modification of several documents if set to true
   * `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything. If your `update` is a simple object with no modifiers, it is the inserted document. In the other case, the `query` is stripped from all operator recursively, and the `update` is applied to it.
-* `callback` (optional) signature: `err`, `numReplaced`, `newDoc`
-  * `numReplaced` is the number of documents replaced
-  * `newDoc` is the created document if the upsert mode was chosen and a document was inserted
+  * `returnUpdatedDocs` (defaults to `false`, not MongoDB-compatible) if set to true and update is not an upsert, will return the array of documents matched by the find query and updated. Updated documents will be returned even if the update did not actually modify them.
+* `callback` (optional) signature: `(err, numAffected, affectedDocuments, upsert)`. **Warning**: the API was changed between v1.7.4 and v1.8. Please refer to the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log</a> to see the change.
+  * For an upsert, `affectedDocuments` contains the inserted document and the `upsert` flag is set to `true`.
+  * For a standard update with `returnUpdatedDocs` flag set to `false`, `affectedDocuments` is not set.
+  * For a standard update with `returnUpdatedDocs` flag set to `true` and `multi` to `false`, `affectedDocuments` is the updated document.
+  * For a standard update with `returnUpdatedDocs` flag set to `true` and `multi` to `true`, `affectedDocuments` is the array of updated documents.
 
 **Note**: you can't change a document's _id.
 
@@ -456,7 +504,7 @@ db.update({ planet: 'Pluton' }, { planet: 'Pluton', inhabited: false }, { upsert
 // If you upsert with a modifier, the upserted doc is the query modified by the modifier
 // This is simpler than it sounds :)
 db.update({ planet: 'Pluton' }, { $inc: { distance: 38 } }, { upsert: true }, function () {
-  // A new document { _id: 'id5', planet: 'Pluton', distance: 38 } has been added to the collection  
+  // A new document { _id: 'id5', planet: 'Pluton', distance: 38 } has been added to the collection
 });
 
 // If we insert a new document { _id: 'id6', fruits: ['apple', 'orange', 'pear'] } in the collection,
@@ -489,17 +537,34 @@ db.update({ _id: 'id6' }, { $pull: { fruits: $in: ['apple', 'pear'] } }, {}, fun
   // Now the fruits array is ['orange']
 });
 
-
-
 // $each can be used to $push or $addToSet multiple values at once
 // This example works the same way with $addToSet
-db.update({ _id: 'id6' }, { $push: { fruits: {$each: ['banana', 'orange'] } } }, {}, function () {
+db.update({ _id: 'id6' }, { $push: { fruits: { $each: ['banana', 'orange'] } } }, {}, function () {
   // Now the fruits array is ['apple', 'orange', 'pear', 'banana', 'orange']
+});
+
+// $slice can be used in cunjunction with $push and $each to limit the size of the resulting array.
+// A value of 0 will update the array to an empty array. A positive value n will keep only the n first elements
+// A negative value -n will keep only the last n elements.
+// If $slice is specified but not $each, $each is set to []
+db.update({ _id: 'id6' }, { $push: { fruits: { $each: ['banana'], $slice: 2 } } }, {}, function () {
+  // Now the fruits array is ['apple', 'orange']
+});
+
+// $min/$max to update only if provided value is less/greater than current value
+// Let's say the database contains this document
+// doc = { _id: 'id', name: 'Name', value: 5 }
+db.update({ _id: 'id1' }, { $min: { value: 2 } }, {}, function () {
+  // The document will be updated to { _id: 'id', name: 'Name', value: 2 }
+});
+
+db.update({ _id: 'id1' }, { $min: { value: 8 } }, {}, function () {
+  // The document will not be modified
 });
 ```
 
 ### Removing documents
-`db.remove(query, options, callback)` will remove all documents matching `query` according to `options`  
+`db.remove(query, options, callback)` will remove all documents matching `query` according to `options`
 * `query` is the same as the ones used for finding and updating
 * `options` only one option for now: `multi` which allows the removal of multiple documents if set to true. Default is false
 * `callback` is optional, signature: err, numRemoved
@@ -522,16 +587,21 @@ db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
   // numRemoved = 3
   // All planets from the solar system were removed
 });
+
+// Removing all documents with the 'match-all' query
+db.remove({}, { multi: true }, function (err, numRemoved) {
+});
 ```
 
 ### Indexing
 NeDB supports indexing. It gives a very nice speed boost and can be used to enforce a unique constraint on a field. You can index any field, including fields in nested documents using the dot notation. For now, indexes are only used to speed up basic queries and queries using `$in`, `$lt`, `$lte`, `$gt` and `$gte`. The indexed values cannot be of type array of object.
 
-To create an index, use `datastore.ensureIndex(options, cb)`, where callback is optional and get passed an error if any (usually a unique constraint that was violated). `ensureIndex` can be called when you want, even after some data was inserted, though it's best to call it at application startup. The options are:  
+To create an index, use `datastore.ensureIndex(options, cb)`, where callback is optional and get passed an error if any (usually a unique constraint that was violated). `ensureIndex` can be called when you want, even after some data was inserted, though it's best to call it at application startup. The options are:
 
 * **fieldName** (required): name of the field to index. Use the dot notation to index a field in a nested document.
 * **unique** (optional, defaults to `false`): enforce field uniqueness. Note that a unique index will raise an error if you try to index two documents for which the field is not defined.
 * **sparse** (optional, defaults to `false`): don't index documents for which the field is not defined. Use this option along with "unique" if you want to accept multiple documents for which it is not defined.
+* **expireAfterSeconds** (number of seconds, optional): if set, the created index is a TTL (time to live) index, that will automatically remove documents when the system date becomes larger than the date on the indexed field plus `expireAfterSeconds`. Documents where the indexed field is not specified or not a `Date` object are ignored
 
 Note: the `_id` is automatically indexed with a unique constraint, no need to call `ensureIndex` on it.
 
@@ -566,6 +636,18 @@ db.insert({ somefield: 'nedb' }, function (err) {
 // Remove index on field somefield
 db.removeIndex('somefield', function (err) {
 });
+
+// Example of using expireAfterSeconds to remove documents 1 hour
+// after their creation (db's timestampData option is true here)
+db.ensureIndex({ fieldName: 'createdAt', expireAfterSeconds: 3600 }, function (err) {
+});
+
+// You can also use the option to set an expiration date like so
+db.ensureIndex({ fieldName: 'expirationDate', expireAfterSeconds: 0 }, function (err) {
+  // Now all documents will expire when system time reaches the date in their
+  // expirationDate field
+});
+
 ```
 
 **Note:** the `ensureIndex` function creates the index synchronously, so it's best to use it at application startup. It's quite fast so it doesn't increase startup time much (35 ms for a collection containing 10,000 documents).
@@ -578,7 +660,7 @@ The browser version and its minified counterpart are in the `browser-version/out
 <script src="nedb.min.js"></script>
 <script>
   var db = new Nedb();   // Create an in-memory only datastore
-  
+
   db.insert({ planet: 'Earth' }, function (err) {
    db.find({}, function (err, docs) {
      // docs contains the two planets Earth and Mars
@@ -596,11 +678,11 @@ If you fork and modify nedb, you can build the browser version from the sources,
 
 ## Performance
 ### Speed
-NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On a typical, not-so-fast dev machine, for a collection containing 10,000 documents, with indexing:  
+NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On a typical, not-so-fast dev machine, for a collection containing 10,000 documents, with indexing:
 * Insert: **10,680 ops/s**
 * Find: **43,290 ops/s**
 * Update: **8,000 ops/s**
-* Remove: **11,750 ops/s**  
+* Remove: **11,750 ops/s**
 
 You can run these simple benchmarks by executing the scripts in the `benchmarks` folder. Run them with the `--help` flag to see how they work.
 
@@ -616,6 +698,16 @@ Connect and Express, backed by nedb
 * If you've outgrown NeDB, switching to MongoDB won't be too hard as it is the same API. Use <a href="https://github.com/louischatriot/nedb-to-mongodb" target="_blank">this utility</a> to transfer the data from a NeDB database to a MongoDB collection
 * An ODM for NeDB: <a href="https://github.com/scottwrobinson/camo" target="_blank">Camo</a>
 
+## Pull requests
+If you submit a pull request, thanks! There are a couple rules to follow though to make it manageable:
+* The pull request should be atomic, i.e. contain only one feature. If it contains more, please submit multiple pull requests. Reviewing massive, 1000 loc+ pull requests is extremely hard.
+* Likewise, if for one unique feature the pull request grows too large (more than 200 loc tests not included), please get in touch first.
+* Please stick to the current coding style. It's important that the code uses a coherent style for readability.
+* Do not include sylistic improvements ("housekeeping"). If you think one part deserves lots of housekeeping, use a separate pull request so as not to pollute the code.
+* Don't forget tests for your new feature. Also don't forget to run the whole test suite before submitting to make sure you didn't introduce regressions.
+* Do not build the browser version in your branch, I'll take care of it once the code is merged.
+* Update the readme accordingly.
+* Last but not least: keep in mind what NeDB's mindset is! The goal is not to be a replacement for MongoDB, but to have a pure JS database, easy to use, cross platform, fast and expressive enough for the target projects (small and self contained apps on server/desktop/browser/mobile). Sometimes it's better to shoot for simplicity than for API completeness with regards to MongoDB.
 
 ## Bug reporting guidelines
 If you report a bug, thank you! That said for the process to be manageable please strictly adhere to the following guidelines. I'll not be able to handle bug reports that don't:
@@ -623,11 +715,12 @@ If you report a bug, thank you! That said for the process to be manageable pleas
 * It should use assertions to showcase the expected vs actual behavior and be hysteresis-proof. It's quite simple in fact, see this example: https://gist.github.com/louischatriot/220cf6bd29c7de06a486
 * Simplify as much as you can. Strip all your application-specific code. Most of the time you will see that there is no bug but an error in your code :)
 * 50 lines max. If you need more, read the above point and rework your bug report. If you're **really** convinced you need more, please explain precisely in the issue.
+* The code should be Javascript, not Coffeescript.
 
 ### Bitcoins
 You don't have time? You can support NeDB by sending bitcoins to this address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
 
-## License 
+## License
 
 See [License](LICENSE)
