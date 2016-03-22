@@ -1,8 +1,6 @@
 {
   "name": "happn-nedb",
   "version": "1.8.0",
-  "name": "nedb",
-  "version": "1.8.0",
   "author": {
     "name": "Simon Bishop",
     "email": "simon@tenacious.digital"
