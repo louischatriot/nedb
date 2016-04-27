@@ -21,13 +21,13 @@ describe('Database', function () {
     db.closeDatabase();
     
     db.insert({ somedata: 'ok' }, function(err) {
-      err.message.should.equal("Attempting operation on closed database.")
+      err.message.should.equal("Attempting operation on closed database.");
     });
     
     try {
       db.insert({ somedata: 'ok' });
     } catch (e) {
-      
+      e.message.should.equal("Attempting operation on closed database.");
     }    
   });
 });
