@@ -16,6 +16,8 @@ workspace
 node_modules
 .vscode
 
+jsconfig.json
+
 browser-version/src
 browser-version/node_modules
 
