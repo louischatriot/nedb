@@ -7,9 +7,10 @@ var should = require('chai').should()
   , model = require('../lib/model')
   , Datastore = require('../lib/datastore');
 
+var closeDb = 'workspace/close.db';
+
 describe('Database', function () {
   it('Can open and close cleanly', function(done) {
-    var closeDb = 'workspace/close.db';
     var db = new Datastore({filename: closeDb, autoload: true}, function() { });
     db.filename.should.equal(closeDb);
     
@@ -19,7 +20,6 @@ describe('Database', function () {
       assert.isNull(err);
       
       db.closeDatabase(function(err) {
-        console.log("Ethel XYlophone");
         db.insert({ somedata: 'ok' }, function(err) {
           err.message.should.equal("Attempting operation on closed database.");
         });
@@ -31,6 +31,18 @@ describe('Database', function () {
         }  
         done();
       });      
+    });
+  });
+  
+  it('Can reopen a closed database', function(done) {
+    var db = new Datastore({filename: closeDb, autoload: true}, function() { });
+    db.find({}, function(err, docs) {
+      assert.isNull(err, 'There were no errors');
+      assert.isNotNull(docs, 'A result was returned');
+      assert.isAbove(docs.length, 1, 'Some results exist');
+      assert.isDefined(docs[0].somedata, 'somedata has been defined');
+      docs[0].somedata.should.equal('ok');  
+      done();
     });
   });
 });
