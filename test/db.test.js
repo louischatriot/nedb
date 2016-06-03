@@ -1217,6 +1217,7 @@ describe('Database', function () {
         d.update({ impossible: 'db is empty anyway' }, { newDoc: true }, {}, function (err, nr, upsert) {
           assert.isNull(err);
           nr.should.equal(0);
+          console.log('upsert:::', upsert);
           assert.isUndefined(upsert);
 
           d.find({}, function (err, docs) {
