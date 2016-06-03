@@ -164,7 +164,7 @@ db.insert([{ a: 5 }, { a: 42 }, { a: 5 }], function (err) {
 ```
 
 ### Finding documents
-Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and`, `$not` and `$where`. See below for the syntax.
+Use `find` to look for multiple documents matching your query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and`, `$not` and `$where`. See below for the syntax.
 
 You can use regular expressions in two ways: in basic querying in place of a string, or with the `$regex` operator.
 
