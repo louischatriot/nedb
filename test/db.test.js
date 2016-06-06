@@ -1217,7 +1217,7 @@ describe('Database', function () {
         d.update({ impossible: 'db is empty anyway' }, { newDoc: true }, {}, function (err, nr, upsert) {
           assert.isNull(err);
           nr.should.equal(0);
-          console.log('upsert:::', upsert);
+
           assert.isUndefined(upsert);
 
           d.find({}, function (err, docs) {
@@ -1638,8 +1638,7 @@ describe('Database', function () {
             setTimeout(function () {
               d2.update({ a: 1 }, { c: 3 }, {});
               d2.findOne({ c: 3 }, function (err, doc) {
-
-                console.log('and??', err, doc);
+                
                 doc.created.should.equal(createdAt);
                 assert.isBelow(Date.now() - doc.modified, 30);//milliseconds
 
@@ -1656,23 +1655,44 @@ describe('Database', function () {
     describe("Callback signature", function () {
 
       it("Regular update, multi false", function (done) {
+
+        d.timestampData = true;
+
         d.insert({ a: 1 });
         d.insert({ a: 2 });
 
         // returnUpdatedDocs set to false
-        d.update({ a: 1 }, { $set: { b: 20 } }, {}, function (err, numAffected, affectedDocuments, upsert) {
+        d.update({ a: 1 }, { $set: { b: 20 } }, {}, function (err, numAffected, affectedDocuments, upsert, meta) {
           assert.isNull(err);
           numAffected.should.equal(1);
           assert.isUndefined(affectedDocuments);
           assert.isUndefined(upsert);
 
+          meta.created.should.not.equal(undefined);
+          meta.created.should.not.equal(null);
+
+          meta.modified.should.not.equal(undefined);
+          meta.modified.should.not.equal(null);
+
+          meta._id.should.not.equal(undefined);
+          meta._id.should.not.equal(null);
+
           // returnUpdatedDocs set to true
-          d.update({ a: 1 }, { $set: { b: 21 } }, { returnUpdatedDocs: true }, function (err, numAffected, affectedDocuments, upsert) {
+          d.update({ a: 1 }, { $set: { b: 21 } }, { returnUpdatedDocs: true }, function (err, numAffected, affectedDocuments, upsert, meta) {
             assert.isNull(err);
             numAffected.should.equal(1);
             affectedDocuments.a.should.equal(1);
             affectedDocuments.b.should.equal(21);
             assert.isUndefined(upsert);
+
+            meta.created.should.not.equal(undefined);
+            meta.created.should.not.equal(null);
+
+            meta.modified.should.not.equal(undefined);
+            meta.modified.should.not.equal(null);
+
+            meta._id.should.not.equal(undefined);
+            meta._id.should.not.equal(null);
 
             done();
           });
@@ -1680,22 +1700,38 @@ describe('Database', function () {
       });
 
       it("Regular update, multi true", function (done) {
+
+        d.timestampData = true;
+
         d.insert({ a: 1 });
         d.insert({ a: 2 });
 
         // returnUpdatedDocs set to false
-        d.update({}, { $set: { b: 20 } }, { multi: true }, function (err, numAffected, affectedDocuments, upsert) {
+        d.update({}, { $set: { b: 20 } }, { multi: true }, function (err, numAffected, affectedDocuments, upsert, meta) {
           assert.isNull(err);
           numAffected.should.equal(2);
           assert.isUndefined(affectedDocuments);
           assert.isUndefined(upsert);
 
+          meta.should.not.equal(undefined);
+          meta.should.not.equal(null);
+
           // returnUpdatedDocs set to true
-          d.update({}, { $set: { b: 21 } }, { multi: true, returnUpdatedDocs: true }, function (err, numAffected, affectedDocuments, upsert) {
+          d.update({}, { $set: { b: 21 } }, { multi: true, returnUpdatedDocs: true }, function (err, numAffected, affectedDocuments, upsert, meta) {
             assert.isNull(err);
             numAffected.should.equal(2);
             affectedDocuments.length.should.equal(2);
             assert.isUndefined(upsert);
+
+            meta[0].created.should.not.equal(undefined);
+            meta[0].created.should.not.equal(null);
+
+            meta[0].modified.should.not.equal(undefined);
+            meta[0].modified.should.not.equal(null);
+
+            meta[0].created.should.not.equal(undefined);
+            meta[0].created.should.not.equal(null);
+
 
             done();
           });
