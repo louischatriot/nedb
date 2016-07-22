@@ -814,6 +814,48 @@ describe('Model', function () {
       });
     });// End of '$min modifier'
 
+    describe('$ (update) operator', function () {
+      it('Can change already set fields without modifying the underlying object', function () {
+        var obj = { some: 'thing', bloup: [ { a: 'a', b: 'b', c: 'c' }, { a: 'aa', b: 'bb', c: 'cc' }, { a: 'aaa', b: 'bbb', c: 'ccc' } ] }
+          , query = { 'bloup.b': 'bb'}
+          , updateQuery = { $set: { 'bloup.$.a': 'new' } }
+          , modified = model.modify(obj, updateQuery, query);
+
+        Object.keys(modified).length.should.equal(2);
+        modified.some.should.equal('thing');
+        modified.bloup.should.have.length(3);
+        modified.bloup[0].should.deep.equal( { a: 'a', b: 'b', c: 'c' } );
+        modified.bloup[1].should.deep.equal( { a: 'new', b: 'bb', c: 'cc' } );
+        modified.bloup[2].should.deep.equal( { a: 'aaa', b: 'bbb', c: 'ccc' } );
+
+        Object.keys(obj).length.should.equal(2);
+        obj.some.should.equal('thing');
+        obj.bloup[0].should.deep.equal( { a: 'a', b: 'b', c: 'c' } );
+        obj.bloup[1].should.deep.equal( { a: 'aa', b: 'bb', c: 'cc' } );
+        obj.bloup[2].should.deep.equal( { a: 'aaa', b: 'bbb', c: 'ccc' } );
+      });
+
+      it('Throw an error if the relevant array field is missing from query', function () {
+        var obj = { foo: [ { a: 'a', b: 'b' }, { a: 'aa', b: 'bb' } ], bar: [ { a: 'a', b: 'b' }, { a: 'aa', b: 'bb' } ] }
+          , query = { 'foo.a': 'a' }
+          , updateQuery = { $set: { 'bar.$.a': 'new' } }
+
+          expect(function () {
+            model.modify(obj, updateQuery, query);
+          }).to.throw("You must include the relevant array field in query when using the positional ($) operator");
+      });
+
+      it('Throw an error if using positional ($) operator on a non-array field', function () {
+        var obj = { some: 'thing', bloup: [ { a: 'a', b: 'b', c: 'c' }, { a: 'aa', b: 'bb', c: 'cc' }, { a: 'aaa', b: 'bbb', c: 'ccc' } ] }
+          , query = { some: 'thing' }
+          , updateQuery = { $set: { 'some.$': 'thing else'} };
+
+          expect(function () {
+            model.modify(obj, updateQuery, query);
+          }).to.throw("You cannot apply the positional ($) operator to a non-array field");
+      });
+    }); // End of '$ (update) operator'
+
   });   // ==== End of 'Modifying documents' ==== //
 
 
