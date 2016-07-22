@@ -550,6 +550,12 @@ db.update({ _id: 'id6' }, { $push: { fruits: { $each: ['banana'], $slice: 2 } } 
   // Now the fruits array is ['apple', 'orange']
 });
 
+// $ positional operator can be used to update an element in an array without explicitly specifying an index.
+// Note that it does not work with nested arrays since $ is the placeholder for a single element.
+db.update({ fruits: 'orange' }, { $set: { 'fruits.$': 'banana' } }, {}, function () {
+  // Now the fruits array is ['apple', 'banana', 'pear']
+});
+
 // $min/$max to update only if provided value is less/greater than current value
 // Let's say the database contains this document
 // doc = { _id: 'id', name: 'Name', value: 5 }
