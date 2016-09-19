@@ -124,7 +124,7 @@ Durability works similarly to major databases: compaction forces the OS to physi
 
 ### Inserting documents
 The native types are `String`, `Number`, `Boolean`, `Date` and `null`. You can also use
-arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from 
+arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from
 MongoDB which transforms `undefined` in `null`, something I find counter-intuitive).
 
 If the document does not contain an `_id` field, NeDB will automatically generated one for you (a 16-characters alphanumerical string). The `_id` of a document, once set, cannot be modified.
@@ -344,7 +344,7 @@ db.find({ $not: { planet: 'Earth' } }, function (err, docs) {
   // docs contains Mars, Jupiter, Omicron Persei 8
 });
 
-db.find({ $where: function () { return Object.keys(this) > 6; } }, function (err, docs) {
+db.find({ $where: function () { return Object.keys(this).length > 6; } }, function (err, docs) {
   // docs with more than 6 properties
 });
 
@@ -667,7 +667,7 @@ The browser version and its minified counterpart are in the `browser-version/out
 <script src="nedb.min.js"></script>
 <script>
   var db = new Nedb();   // Create an in-memory only datastore
-  
+
   db.insert({ planet: 'Earth' }, function (err) {
    db.find({}, function (err, docs) {
      // docs contains the two planets Earth and Mars
@@ -728,6 +728,6 @@ If you report a bug, thank you! That said for the process to be manageable pleas
 You don't have time? You can support NeDB by sending bitcoins to this address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
 
-## License 
+## License
 
 See [License](LICENSE)
