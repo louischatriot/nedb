@@ -22,6 +22,7 @@
   "dependencies": {
     "async": "0.2.10",
     "binary-search-tree": "0.2.5",
+    "byline": "5.0.0",
     "localforage": "^1.3.0",
     "mkdirp": "~0.5.1",
     "underscore": "~1.4.4"

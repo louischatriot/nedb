@@ -11,6 +11,7 @@ var should = require('chai').should()
   , Persistence = require('../lib/persistence')
   , storage = require('../lib/storage')
   , child_process = require('child_process')
+  , Readable = require('stream').Readable
 ;
 
 
@@ -42,108 +43,158 @@ describe('Persistence', function () {
     ], done);
   });
 
-  it('Every line represents a document', function () {
+  it('Every line represents a document', function (done) {
     var now = new Date()
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
     model.serialize({ _id: "2", hello: 'world' }) + '\n' +
     model.serialize({ _id: "3", nested: { today: now } })
-      , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
-    treatedData.sort(function (a, b) { return a._id - b._id; });
-    treatedData.length.should.equal(3);
-    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
-    _.isEqual(treatedData[2], { _id: "3", nested: { today: now } }).should.equal(true);
+    var stream = new Readable();
+    stream.push(rawData);
+    stream.push(null);
+
+    d.persistence.treatRawStream(stream, function (err, result) {
+      var treatedData = result.data;
+      treatedData.sort(function (a, b) { return a._id - b._id; });
+      treatedData.length.should.equal(3);
+      _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
+      _.isEqual(treatedData[2], { _id: "3", nested: { today: now } }).should.equal(true);
+      done();
+    });
   });
 
-  it('Badly formatted lines have no impact on the treated data', function () {
+  it('Badly formatted lines have no impact on the treated data', function (done) {
     var now = new Date()
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
     'garbage\n' +
     model.serialize({ _id: "3", nested: { today: now } })
-      , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
-    treatedData.sort(function (a, b) { return a._id - b._id; });
-    treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "3", nested: { today: now } }).should.equal(true);
+    var stream = new Readable();
+    stream.push(rawData);
+    stream.push(null);
+
+    d.persistence.treatRawStream(stream, function (err, result) {
+      console.log(err);
+      var treatedData = result.data;
+      treatedData.sort(function (a, b) { return a._id - b._id; });
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "3", nested: { today: now } }).should.equal(true);
+      done();
+    });
   });
 
-  it('Well formatted lines that have no _id are not included in the data', function () {
+  it('Well formatted lines that have no _id are not included in the data', function (done) {
     var now = new Date()
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
     model.serialize({ _id: "2", hello: 'world' }) + '\n' +
     model.serialize({ nested: { today: now } })
-      , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
-    treatedData.sort(function (a, b) { return a._id - b._id; });
-    treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
+    var stream = new Readable();
+    stream.push(rawData);
+    stream.push(null);
+
+    d.persistence.treatRawStream(stream, function (err, result) {
+      var treatedData = result.data;
+      treatedData.sort(function (a, b) { return a._id - b._id; });
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
+      done();
+    });
   });
 
-  it('If two lines concern the same doc (= same _id), the last one is the good version', function () {
+  it('If two lines concern the same doc (= same _id), the last one is the good version', function (done) {
     var now = new Date()
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
     model.serialize({ _id: "2", hello: 'world' }) + '\n' +
     model.serialize({ _id: "1", nested: { today: now } })
-      , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
-    treatedData.sort(function (a, b) { return a._id - b._id; });
-    treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "1", nested: { today: now } }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
+    var stream = new Readable();
+    stream.push(rawData);
+    stream.push(null);
+
+    d.persistence.treatRawStream(stream, function (err, result) {
+      var treatedData = result.data;
+      treatedData.sort(function (a, b) { return a._id - b._id; });
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { _id: "1", nested: { today: now } }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
+      done();
+    });
   });
 
-  it('If a doc contains $$deleted: true, that means we need to remove it from the data', function () {
+  it('If a doc contains $$deleted: true, that means we need to remove it from the data', function (done) {
     var now = new Date()
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
     model.serialize({ _id: "2", hello: 'world' }) + '\n' +
     model.serialize({ _id: "1", $$deleted: true }) + '\n' +
     model.serialize({ _id: "3", today: now })
-      , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
-    treatedData.sort(function (a, b) { return a._id - b._id; });
-    treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "2", hello: 'world' }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+    var stream = new Readable();
+    stream.push(rawData);
+    stream.push(null);
+
+    d.persistence.treatRawStream(stream, function (err, result) {
+      var treatedData = result.data;
+      treatedData.sort(function (a, b) { return a._id - b._id; });
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { _id: "2", hello: 'world' }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+      done();
+    });
   });
 
-  it('If a doc contains $$deleted: true, no error is thrown if the doc wasnt in the list before', function () {
+  it('If a doc contains $$deleted: true, no error is thrown if the doc wasnt in the list before', function (done) {
     var now = new Date()
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
     model.serialize({ _id: "2", $$deleted: true }) + '\n' +
     model.serialize({ _id: "3", today: now })
-      , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
-    treatedData.sort(function (a, b) { return a._id - b._id; });
-    treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+    var stream = new Readable();
+    stream.push(rawData);
+    stream.push(null);
+
+    d.persistence.treatRawStream(stream, function (err, result) {
+      var treatedData = result.data;
+      treatedData.sort(function (a, b) { return a._id - b._id; });
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+      done();
+    });
   });
 
-  it('If a doc contains $$indexCreated, no error is thrown during treatRawData and we can get the index options', function () {
+  it('If a doc contains $$indexCreated, no error is thrown during treatRawData and we can get the index options', function (done) {
     var now = new Date()
       , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
     model.serialize({ $$indexCreated: { fieldName: "test", unique: true } }) + '\n' +
     model.serialize({ _id: "3", today: now })
-      , treatedData = d.persistence.treatRawData(rawData).data
-      , indexes = d.persistence.treatRawData(rawData).indexes
     ;
 
-    Object.keys(indexes).length.should.equal(1);
-    assert.deepEqual(indexes.test, { fieldName: "test", unique: true });
+    var stream = new Readable();
+    stream.push(rawData);
+    stream.push(null);
 
-    treatedData.sort(function (a, b) { return a._id - b._id; });
-    treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+    d.persistence.treatRawStream(stream, function (err, result) {
+      var treatedData = result.data;
+      var indexes = result.indexes;
+      Object.keys(indexes).length.should.equal(1);
+      assert.deepEqual(indexes.test, { fieldName: "test", unique: true });
+
+      treatedData.sort(function (a, b) { return a._id - b._id; });
+      treatedData.length.should.equal(2);
+      _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
+      _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+      done();
+    });
   });
 
   it('Compact database on load', function (done) {
@@ -275,7 +326,6 @@ describe('Persistence', function () {
       , d
     ;
     fs.writeFileSync(corruptTestFilename, fakeData, "utf8");
-
     // Default corruptAlertThreshold
     d = new Datastore({ filename: corruptTestFilename });
     d.loadDatabase(function (err) {
