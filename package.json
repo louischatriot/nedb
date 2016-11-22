@@ -19,6 +19,7 @@
     "type": "git",
     "url": "git@github.com:louischatriot/nedb.git"
   },
+  "browser": "index-browserify.js",
   "dependencies": {
     "async": "0.2.10",
     "binary-search-tree": "0.2.5",
