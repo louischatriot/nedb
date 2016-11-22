@@ -591,6 +591,17 @@ db.remove({ system: 'solar' }, { multi: true }, function (err, numRemoved) {
 db.remove({}, { multi: true }, function (err, numRemoved) {
 });
 ```
+#### Dropping database
+There is no one command for that. You should use this method (proposed by [@szwacz](https://github.com/szwacz) in [#84](https://github.com/louischatriot/nedb/issues/84)):
+
+```javascript
+db.remove({ }, { multi: true }, function (err, numRemoved) {
+  db.loadDatabase(function (err) {
+    // done
+  });
+});
+```
+
 
 ### Indexing
 NeDB supports indexing. It gives a very nice speed boost and can be used to enforce a unique constraint on a field. You can index any field, including fields in nested documents using the dot notation. For now, indexes are only used to speed up basic queries and queries using `$in`, `$lt`, `$lte`, `$gt` and `$gte`. The indexed values cannot be of type array of object.
