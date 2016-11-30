@@ -1,29 +1,15 @@
-<img src="http://i.imgur.com/9O1xHFb.png" style="width: 25%; height: 25%; float: left;">
-
+# NeDB 3.0.0
 ## The JavaScript Database
 
 **Embedded persistent or in memory database for Node.js, nw.js, Electron and browsers, 100% JavaScript, no binary dependency**. API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
 
-**IMPORTANT NOTE**: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment. Also, please follow the <a href="#bug-reporting-guidelines">bug reporting guidelines</a> and check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log</a> before submitting an already fixed bug :)
-
-## Support NeDB development
-
-<img src="http://i.imgur.com/mpwi4lf.jpg">
-
-No time to <a href="#pull-requests">help out</a>? You can support NeDB development by sending money or bitcoins!
-
-Money: [![Donate to author](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=louis%2echatriot%40gmail%2ecom&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
-
-Bitcoin address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
-
-
 ## Installation, tests
-Module name on npm and bower is `nedb`.
+Module name on npm is `nedb3`.
 
 ```
-npm install nedb --save    # Put latest version in your package.json
+npm install nedb3 --save   # Put latest version in your package.json
+yarn install nedb3
 npm test                   # You'll need the dev dependencies to launch tests
-bower install nedb         # For the browser versions, which will be in browser-version/out
 ```
 
 ## API
@@ -682,7 +668,6 @@ NeDB is compatible with all major browsers: Chrome, Safari, Firefox, IE9+. Tests
 
 If you fork and modify nedb, you can build the browser version from the sources, the build script is `browser-version/build.js`.
 
-
 ## Performance
 ### Speed
 NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On a typical, not-so-fast dev machine, for a collection containing 10,000 documents, with indexing:  
@@ -723,9 +708,6 @@ If you report a bug, thank you! That said for the process to be manageable pleas
 * Simplify as much as you can. Strip all your application-specific code. Most of the time you will see that there is no bug but an error in your code :)
 * 50 lines max. If you need more, read the above point and rework your bug report. If you're **really** convinced you need more, please explain precisely in the issue.
 * The code should be Javascript, not Coffeescript.
-
-### Bitcoins
-You don't have time? You can support NeDB by sending bitcoins to this address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
 
 ## License
