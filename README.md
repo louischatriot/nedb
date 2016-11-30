@@ -1,16 +1,16 @@
-# NeDB.3 - The JavaScript Database   
-[![Build Status](http://img.shields.io/travis/nedb3/nedb3.svg)](https://travis-ci.org/nedb3/nedb3)
+# NeDB - The JavaScript Database   
+[![Build Status](http://img.shields.io/travis/nedbhq/nedbhq.svg)](https://travis-ci.org/nedbhq/nedbhq)
 
 **Embedded persistent or in memory database for Node.js, nw.js, Electron and browsers, 100% JavaScript, no binary dependency**. API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
 
-[![NPM](https://nodei.co/npm/nedb3.png?downloads=true&downloadRank=true&stars=true)](https://npmjs.com/nedb3/)
+[![NPM](https://nodei.co/npm/nedbhq.png?downloads=true&downloadRank=true&stars=true)](https://npmjs.com/nedbhq/)
 
 ## Installation, tests
-Module name on npm is `nedb3`.
+Module name on npm is `nedbhq`.
 
 ```
-npm install nedb3 --save   # Put latest version in your package.json
-yarn add nedb3             # Or if you prefer yarnpkg
+npm install nedbhq --save   # Put latest version in your package.json
+yarn add nedbhq             # Or if you prefer yarnpkg
 npm test                   # You'll need the dev dependencies to launch tests
 ```
 
