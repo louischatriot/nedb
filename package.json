@@ -1,5 +1,5 @@
 {
-  "name": "nedbhq",
+  "name": "nedb-core",
   "version": "3.0.0",
   "author": {
     "name": "Louis Chatriot",
