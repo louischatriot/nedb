@@ -1,6 +1,9 @@
-# NeDB3
-The JavaScript Database   
+# NeDB.3 - The JavaScript Database   
+[![Build Status](http://img.shields.io/travis/nedb3/nedb3.svg)](https://travis-ci.org/nedb3/nedb3)
+
 **Embedded persistent or in memory database for Node.js, nw.js, Electron and browsers, 100% JavaScript, no binary dependency**. API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
+
+[![NPM](https://nodei.co/npm/nedb3.png?downloads=true&downloadRank=true&stars=true)](https://npmjs.com/nedb3/)
 
 ## Installation, tests
 Module name on npm is `nedb3`.
