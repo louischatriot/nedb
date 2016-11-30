@@ -1,6 +1,5 @@
-# NeDB 3.0.0
-## The JavaScript Database
-
+# NeDB3
+The JavaScript Database   
 **Embedded persistent or in memory database for Node.js, nw.js, Electron and browsers, 100% JavaScript, no binary dependency**. API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
 
 ## Installation, tests
@@ -8,7 +7,7 @@ Module name on npm is `nedb3`.
 
 ```
 npm install nedb3 --save   # Put latest version in your package.json
-yarn install nedb3
+yarn add nedb3             # Or if you prefer yarnpkg
 npm test                   # You'll need the dev dependencies to launch tests
 ```
 
