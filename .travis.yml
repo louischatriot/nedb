@@ -1,19 +1,17 @@
-sudo: false
-
 language: node_js
-
 node_js:
   - 6
-  - 5
-  - 4
+
+before_install:
+  - curl -o- -L https://yarnpkg.com/install.sh | bash
 
 cache:
   directories:
     - node_modules
+    - $HOME/.yarn-cache
 
 install:
-  - npm i -g npm
-  - npm install
+  - NODE_ENV=dev yarn install
 
 script:
-  - npm run test
+  - yarn run test
