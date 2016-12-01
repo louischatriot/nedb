@@ -1,12 +1,13 @@
 {
   "name": "nedb-core",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "author": {
     "name": "Louis Chatriot",
     "email": "louis.chatriot@gmail.com"
   },
   "contributors": [
-    "Louis Chatriot","Pooya Parsa <pooya@pi0.ir>"
+    "Louis Chatriot",
+    "Pooya Parsa <pooya@pi0.ir>"
   ],
   "description": "File-based embedded data store for node.js",
   "keywords": [
