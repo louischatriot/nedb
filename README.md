@@ -1,5 +1,5 @@
 # NeDB - The JavaScript Database   
-[![Build Status](http://img.shields.io/travis/nedb-core/nedb-core.svg)](https://travis-ci.org/nedb-core/nedb-core)
+[![Build Status](http://img.shields.io/travis/nedbhq/nedb-core.svg)](https://travis-ci.org/nedbhq/nedb-core)
 
 **Embedded persistent or in memory database for Node.js, nw.js, Electron and browsers, 100% JavaScript, no binary dependency**. API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
 
