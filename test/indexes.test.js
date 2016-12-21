@@ -1,5 +1,5 @@
 var Index = require('../lib/indexes')
-  , customUtils = require('../lib/customUtils')
+  , customUtils = require('../lib/custom-utils')
   , should = require('chai').should()
   , assert = require('chai').assert
   , _ = require('underscore')

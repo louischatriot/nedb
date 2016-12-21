@@ -1,6 +1,6 @@
 var should = require('chai').should()
   , assert = require('chai').assert
-  , customUtils = require('../lib/customUtils')
+  , customUtils = require('../lib/custom-utils')
   , fs = require('fs')
   ;
 

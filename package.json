@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "async": "latest",
-    "binary-search-tree": "latest",
     "localforage": "latest",
     "mkdirp": "latest",
     "underscore": "latest",
@@ -37,7 +36,7 @@
     "commander": "latest"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha --reporter spec --timeout 10000"
+    "test": "mocha --reporter spec --timeout 10000"
   },
   "main": "index",
   "browser": {
