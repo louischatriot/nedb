@@ -25,7 +25,8 @@
     "binary-search-tree": "latest",
     "localforage": "latest",
     "mkdirp": "latest",
-    "underscore": "latest"
+    "underscore": "latest",
+	"is": "latest"
   },
   "devDependencies": {
     "chai": "latest",
