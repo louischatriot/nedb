@@ -1,6 +1,6 @@
 {
   "name": "nedb-core",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "author": {
     "name": "Louis Chatriot",
     "email": "louis.chatriot@gmail.com"
@@ -26,7 +26,7 @@
     "localforage": "latest",
     "mkdirp": "latest",
     "underscore": "latest",
-	"is": "latest"
+    "is": "latest"
   },
   "devDependencies": {
     "chai": "latest",
