@@ -40,6 +40,15 @@ describe('Database', function () {
     ], done);
   });
 
+  it('Can open and close cleanly', function() {
+    var closeDb = 'workspace/close.db';
+    var db = new Datastore({filename: closeDb, autoload: true}, function() {
+      db.closeDatabase();
+    });
+    db.filename.should.equal(closeDb);
+    db.inMemoryOnly.should.equal(false); 
+  });
+  
   it('Constructor compatibility with v0.6-', function () {
     var dbef = new Datastore('somefile');
     dbef.filename.should.equal('somefile');
