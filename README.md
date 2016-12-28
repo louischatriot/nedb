@@ -1,29 +1,17 @@
-<img src="http://i.imgur.com/9O1xHFb.png" style="width: 25%; height: 25%; float: left;">
-
-## The JavaScript Database
+# NeDB - The JavaScript Database   
+[![Build Status](http://img.shields.io/travis/nedbhq/nedb-core.svg)](https://travis-ci.org/nedbhq/nedb-core)
 
 **Embedded persistent or in memory database for Node.js, nw.js, Electron and browsers, 100% JavaScript, no binary dependency**. API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
 
-**IMPORTANT NOTE**: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment. Also, please follow the <a href="#bug-reporting-guidelines">bug reporting guidelines</a> and check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log</a> before submitting an already fixed bug :)
-
-## Support NeDB development
-
-<img src="http://i.imgur.com/mpwi4lf.jpg">
-
-No time to <a href="#pull-requests">help out</a>? You can support NeDB development by sending money or bitcoins!
-
-Money: [![Donate to author](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=louis%2echatriot%40gmail%2ecom&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
-
-Bitcoin address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
-
+[![NPM](https://nodei.co/npm/nedb-core.png?downloads=true&downloadRank=true&stars=true)](https://npmjs.com/nedb-core/)
 
 ## Installation, tests
-Module name on npm and bower is `nedb`.
+Module name on npm is `nedb-core`.
 
 ```
-npm install nedb --save    # Put latest version in your package.json
+npm install nedb-core --save   # Put latest version in your package.json
+yarn add nedb-core             # Or if you prefer yarnpkg
 npm test                   # You'll need the dev dependencies to launch tests
-bower install nedb         # For the browser versions, which will be in browser-version/out
 ```
 
 ## API
@@ -124,7 +112,7 @@ Durability works similarly to major databases: compaction forces the OS to physi
 
 ### Inserting documents
 The native types are `String`, `Number`, `Boolean`, `Date` and `null`. You can also use
-arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from 
+arrays and subdocuments (objects). If a field is `undefined`, it will not be saved (this is different from
 MongoDB which transforms `undefined` in `null`, something I find counter-intuitive).
 
 If the document does not contain an `_id` field, NeDB will automatically generated one for you (a 16-characters alphanumerical string). The `_id` of a document, once set, cannot be modified.
@@ -164,7 +152,7 @@ db.insert([{ a: 5 }, { a: 42 }, { a: 5 }], function (err) {
 ```
 
 ### Finding documents
-Use `find` to look for multiple documents matching you query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and`, `$not` and `$where`. See below for the syntax.
+Use `find` to look for multiple documents matching your query, or `findOne` to look for one specific document. You can select documents based on field equality or use comparison operators (`$lt`, `$lte`, `$gt`, `$gte`, `$in`, `$nin`, `$ne`). You can also use logical operators `$or`, `$and`, `$not` and `$where`. See below for the syntax.
 
 You can use regular expressions in two ways: in basic querying in place of a string, or with the `$regex` operator.
 
@@ -344,7 +332,7 @@ db.find({ $not: { planet: 'Earth' } }, function (err, docs) {
   // docs contains Mars, Jupiter, Omicron Persei 8
 });
 
-db.find({ $where: function () { return Object.keys(this) > 6; } }, function (err, docs) {
+db.find({ $where: function () { return Object.keys(this).length > 6; } }, function (err, docs) {
   // docs with more than 6 properties
 });
 
@@ -550,6 +538,14 @@ db.update({ _id: 'id6' }, { $push: { fruits: { $each: ['banana'], $slice: 2 } } 
   // Now the fruits array is ['apple', 'orange']
 });
 
+// $ positional operator can be used to update an element in an array without explicitly specifying an index.
+// Note that it does not work with nested arrays since $ is the placeholder for a single element.
+// Let's say the database contains this document
+// doc = { _id: 'id7', baskets: [{ 'apples': 4, 'bananas': 10 }, { 'apples': 8, 'bananas': 2 }] }
+db.update({ baskets.apples: 4' }, { $set: { 'baskets.$.bananas': 5 } }, {}, function () {
+  // Now document will be updated to { _id: 'id7', baskets: [{ 'apples': 4, 'bananas': 5 }, { 'apples': 8, 'bananas': 2 }] }
+});
+
 // $min/$max to update only if provided value is less/greater than current value
 // Let's say the database contains this document
 // doc = { _id: 'id', name: 'Name', value: 5 }
@@ -659,7 +655,7 @@ The browser version and its minified counterpart are in the `browser-version/out
 <script src="nedb.min.js"></script>
 <script>
   var db = new Nedb();   // Create an in-memory only datastore
-  
+
   db.insert({ planet: 'Earth' }, function (err) {
    db.find({}, function (err, docs) {
      // docs contains the two planets Earth and Mars
@@ -673,7 +669,6 @@ If you specify a `filename`, the database will be persistent, and automatically 
 NeDB is compatible with all major browsers: Chrome, Safari, Firefox, IE9+. Tests are in the `browser-version/test` directory (files `index.html` and `testPersistence.html`).
 
 If you fork and modify nedb, you can build the browser version from the sources, the build script is `browser-version/build.js`.
-
 
 ## Performance
 ### Speed
@@ -702,7 +697,7 @@ If you submit a pull request, thanks! There are a couple rules to follow though 
 * The pull request should be atomic, i.e. contain only one feature. If it contains more, please submit multiple pull requests. Reviewing massive, 1000 loc+ pull requests is extremely hard.
 * Likewise, if for one unique feature the pull request grows too large (more than 200 loc tests not included), please get in touch first.
 * Please stick to the current coding style. It's important that the code uses a coherent style for readability.
-* Do not include sylistic improvements ("housekeeping"). If you think one part deserves lots of housekeeping, use a separate pull request so as not to pollute the code.
+* Do not include stylistic improvements ("housekeeping"). If you think one part deserves lots of housekeeping, use a separate pull request so as not to pollute the code.
 * Don't forget tests for your new feature. Also don't forget to run the whole test suite before submitting to make sure you didn't introduce regressions.
 * Do not build the browser version in your branch, I'll take care of it once the code is merged.
 * Update the readme accordingly.
@@ -716,10 +711,7 @@ If you report a bug, thank you! That said for the process to be manageable pleas
 * 50 lines max. If you need more, read the above point and rework your bug report. If you're **really** convinced you need more, please explain precisely in the issue.
 * The code should be Javascript, not Coffeescript.
 
-### Bitcoins
-You don't have time? You can support NeDB by sending bitcoins to this address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
-
-## License 
+## License
 
 See [License](LICENSE)

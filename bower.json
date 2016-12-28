@@ -2,5 +2,5 @@
 "name": "nedb",
 "description": "The Javascript Database for Node, nwjs, Electron and the browser",
 "ignore": ["benchmarks", "lib", "test", "test_lac"],
-"main": ["browser-version/nedb.js", "browser-version/nedb.min.js"]
+"main": ["browser-version/out/nedb.js", "browser-version/out/nedb.min.js"]
 }
