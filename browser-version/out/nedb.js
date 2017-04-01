@@ -1379,7 +1379,7 @@ Datastore.prototype.getCandidates = function (query, dontExpireStaleDocs, callba
     docs.forEach(function (doc) {
       var valid = true;
       ttlIndexesFieldNames.forEach(function (i) {
-        if (doc[i] !== undefined && util.isDate(doc[i]) && Date.now() > doc[i].getTime() + self.ttlIndexes[i] * 1000) {
+        if (doc[i] !== undefined && util.isDate(doc[i]) && Date.now() > doc[i].getTime() + self.ttlIndexes[i] * 1000) {
           valid = false;
         }
       });
@@ -2549,7 +2549,7 @@ lastStepModifierFunctions.$max = function (obj, field, value) {
  * Updates the value of the field, only if specified field is smaller than the current value of the field
  */
 lastStepModifierFunctions.$min = function (obj, field, value) {
-  if (typeof obj[field] === 'undefined') { 
+  if (typeof obj[field] === 'undefined') { 
     obj[field] = value;
   } else if (value < obj[field]) {
     obj[field] = value;
