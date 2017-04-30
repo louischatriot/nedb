@@ -1,13 +1,13 @@
 {
   "name": "nedb-jollof",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "author": {
     "name": "Louis Chatriot",
     "email": "louis.chatriot@gmail.com"
   },
   "contributors": [
     "Louis Chatriot",
-      "Iyobo Eki"
+    "Iyobo Eki"
   ],
   "description": "File-based embedded data store for node.js",
   "keywords": [
