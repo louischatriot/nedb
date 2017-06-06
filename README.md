@@ -24,6 +24,7 @@ Module name on npm and bower is `nedb`.
 npm install nedb --save    # Put latest version in your package.json
 npm test                   # You'll need the dev dependencies to launch tests
 bower install nedb         # For the browser versions, which will be in browser-version/out
+yarn add nedb              # Or you can install NeDB through yarn
 ```
 
 ## API
