@@ -49,6 +49,7 @@ It is a subset of MongoDB's API (the most used operations).
 You can use NeDB as an in-memory only datastore or as a persistent datastore. One datastore is the equivalent of a MongoDB collection. The constructor is used as follows `new Datastore(options)` where `options` is an object with the following fields:
 
 * `filename` (optional): path to the file where the data is persisted. If left blank, the datastore is automatically considered in-memory only. It cannot end with a `~` which is used in the temporary files NeDB uses to perform crash-safe writes.
+* `fileMode` (optional): file access mode for newly created files. Should be specified as number, as ex: 0o640. If not set, NodeJS default behaviour is used.
 * `inMemoryOnly` (optional, defaults to `false`): as the name implies.
 * `timestampData` (optional, defaults to `false`): timestamp the insertion and last update of all documents, with the fields `createdAt` and `updatedAt`. User-specified values override automatic generation, usually useful for testing.
 * `autoload` (optional, defaults to `false`): if used, the database will automatically be loaded from the datafile upon creation (you don't need to call `loadDatabase`). Any command issued before load is finished is buffered and will be executed when load is done.
@@ -106,6 +107,10 @@ db.robots = new Datastore('path/to/robots.db');
 // You need to load each database (here we do it asynchronously)
 db.users.loadDatabase();
 db.robots.loadDatabase();
+
+// Type 5: Specifying file access mode
+var Datastore = require('nedb')
+  , db = new Datastore({ filename: 'path/to/datafile', fileMode: 0o600 });
 ```
 
 ### Persistence
