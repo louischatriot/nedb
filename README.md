@@ -698,6 +698,8 @@ Connect and Express, backed by nedb
 * An ODM for NeDB: <a href="https://github.com/scottwrobinson/camo" target="_blank">Camo</a>
 
 ## Pull requests
+**Important: I consider NeDB to be feature-complete, i.e. it does everything I think it should and nothing more. As a general rule I will not accept pull requests anymore, except for bugfixes (of course) or if I get convinced I overlook a strong usecase. Please make sure to open an issue before spending time on any PR.**
+
 If you submit a pull request, thanks! There are a couple rules to follow though to make it manageable:
 * The pull request should be atomic, i.e. contain only one feature. If it contains more, please submit multiple pull requests. Reviewing massive, 1000 loc+ pull requests is extremely hard.
 * Likewise, if for one unique feature the pull request grows too large (more than 200 loc tests not included), please get in touch first.
