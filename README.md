@@ -662,7 +662,7 @@ The browser version and its minified counterpart are in the `browser-version/out
   
   db.insert({ planet: 'Earth' }, function (err) {
    db.find({}, function (err, docs) {
-     // docs contains the two planets Earth and Mars
+     // docs contains planet Earth
    });
   });
 </script>
