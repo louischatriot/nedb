@@ -1329,6 +1329,20 @@ describe('Model', function () {
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $elemMatch: { name: "Dewey", age: { $gt: 6, $lt: 7 } } } }).should.equal(false);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens": { $elemMatch: { name: "Louie", age: { $gt: 6, $lte: 7 } } } }).should.equal(false);
       });
+
+      it('$exists', function () {
+        model.match({ a: [5, 6] }, { a: { $exists: true } }).should.equal(true);
+
+        model.match({ a: [5] }, { a: { $exists: true } }).should.equal(true);
+        model.match({ a: [5] }, { b: { $exists: false } }).should.equal(true);
+
+        model.match({ a: [0] }, { a: { $exists: true } }).should.equal(true);
+        model.match({ a: [null] }, { a: { $exists: true } }).should.equal(true);
+        model.match({ a: [undefined] }, { a: { $exists: true } }).should.equal(true);
+
+        model.match({ a: [] }, { a: { $exists: false } }).should.equal(false);
+        model.match({ a: [] }, { a: { $exists: true } }).should.equal(true);
+      });
     });
 
 
