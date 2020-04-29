@@ -1,14 +1,6 @@
 {
   "name": "happn-nedb",
-  "version": "1.9.0",
-  "author": {
-    "name": "Simon Bishop",
-    "email": "simon@tenacious.digital"
-  },
-  "contributors": [
-    "Simon Bishop",
-    "Richard Emslie"
-  ],
+  "version": "1.9.1",
   "description": "File-based embedded data store for node.js",
   "keywords": [
     "database",
@@ -20,8 +12,32 @@
     "type": "git",
     "url": "git@github.com:happner/nedb.git"
   },
+  "license": "SEE LICENSE IN LICENSE",
+  "author": {
+    "name": "Simon Bishop",
+    "email": "simon@tenacious.digital"
+  },
+  "contributors": [
+    "Simon Bishop",
+    "Richard Emslie"
+  ],
+  "main": "index",
+  "browser": {
+    "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
+    "./lib/storage.js": "./browser-version/browser-specific/lib/storage.js"
+  },
+  "scripts": {
+    "coverage": "npm run test-cover && npm run report",
+    "coveralls": "npm run test-cover && nyc report --reporter=text-lcov | coveralls",
+    "lint": "eslint '**/*.js'",
+    "lint-fix": "eslint '**/*.js' --fix",
+    "postpublish": "npm access grant read-write smc:smc-developers happn-nedb & npm access grant read-only smc:smc-read-only happn-nedb",
+    "report": "nyc report --reporter=text --reporter=lcov --reporter=text-summary && nyc report --reporter=text --reporter=text-summary > coverage.txt",
+    "test": "npm run lint && mocha --opts mocha.opts",
+    "test-cover": "env LOG_LEVEL=off nyc --reporter=none mocha --opts mocha.opts"
+  },
   "dependencies": {
-    "async": "0.2.10",
+    "async": "^3.2.0",
     "binary-search-tree": "0.2.5",
     "localforage": "^1.3.0",
     "mkdirp": "~0.5.1",
@@ -29,20 +45,17 @@
     "underscore.deep": "^0.5.1"
   },
   "devDependencies": {
-    "chai": "^3.2.0",
-    "mocha": "1.4.x",
-    "request": "2.9.x",
-    "sinon": "1.3.x",
+    "chai": "^3.5.0",
+    "commander": "1.1.1",
+    "coveralls": "^3.1.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-prettier": "^3.1.3",
     "exec-time": "0.0.2",
-    "commander": "1.1.1"
-  },
-  "scripts": {
-    "test": "./node_modules/.bin/mocha --reporter spec --timeout 10000"
-  },
-  "main": "index",
-  "browser": {
-    "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
-    "./lib/storage.js": "./browser-version/browser-specific/lib/storage.js"
-  },
-  "license": "SEE LICENSE IN LICENSE"
+    "mocha": "^7.1.2",
+    "nyc": "^15.0.1",
+    "prettier": "^1.19.1",
+    "request": "2.9.x",
+    "sinon": "1.3.x"
+  }
 }

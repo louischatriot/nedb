@@ -1,0 +1,26 @@
+os:
+  - linux
+
+language: node_js
+node_js:
+  - '12'
+  - '14'
+
+branches:
+  only:
+    - master
+
+install:
+  - $ROBUST_CMD npm ci
+
+script:
+  - npm run lint
+
+  # first test against locked dependencies
+  - npm run coveralls
+
+  # test against the latest dependencies
+  - rm -f package-lock.json
+  - git clean -xfd
+  - npm i
+  - npm test

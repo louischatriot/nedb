@@ -1,0 +1,5 @@
+coverage/
+variants/
+__*/
+workspace
+browser-version

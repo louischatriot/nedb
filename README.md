@@ -1,3 +1,8 @@
+[![Build Status](https://travis-ci.com/FieldServer/nedb.svg?token=HPAyz8BhzPLszVxys36G&branch=master)](https://travis-ci.com/FieldServer/nedb)  
+NOTE on Coveralls Badge: get the badge markdown from the Coveralls page for this repo, then delete this line.
+  [![Coverage Status](https://coveralls.io/repos/github/FieldServer/npm_module_init/badge.svg?t=9dsZHa)](https://coveralls.io/github/FieldServer/npm_module_init)
+
+
 <img src="http://i.imgur.com/9O1xHFb.png" style="width: 25%; height: 25%; float: left;">
 
 ## The JavaScript Database
