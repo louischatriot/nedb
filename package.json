@@ -1,10 +1,7 @@
 {
-  "name": "nedb",
-  "version": "1.8.0",
-  "author": {
-    "name": "Louis Chatriot",
-    "email": "louis.chatriot@gmail.com"
-  },
+  "name": "@nlt-public/nedb",
+  "version": "1.8.4",
+  "author": "Louis Chatriot <louis.chatriot@gmail.com>",
   "contributors": [
     "Louis Chatriot"
   ],
@@ -14,10 +11,10 @@
     "datastore",
     "embedded"
   ],
-  "homepage": "https://github.com/louischatriot/nedb",
+  "homepage": "https://github.com/Next-Level-Timing/nedb",
   "repository": {
     "type": "git",
-    "url": "git@github.com:louischatriot/nedb.git"
+    "url": "git+ssh://git@github.com:Next-Level-Timing/nedb.git"
   },
   "dependencies": {
     "async": "0.2.10",
