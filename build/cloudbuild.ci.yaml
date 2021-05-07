@@ -1,0 +1,20 @@
+steps:
+  - name: gcr.io/${PROJECT_ID}/buildtool.npm
+    volumes:
+      - name: root
+        path: /root
+    args:
+      - ci
+  - name: gcr.io/${PROJECT_ID}/buildtool.npm
+    volumes:
+      - name: root
+        path: /root
+    args:
+      - audit
+      - --audit-level=critical
+  - name: gcr.io/${PROJECT_ID}/buildtool.npm
+    volumes:
+      - name: root
+        path: /root
+    args:
+      - test
