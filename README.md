@@ -344,7 +344,7 @@ db.find({ $not: { planet: 'Earth' } }, function (err, docs) {
   // docs contains Mars, Jupiter, Omicron Persei 8
 });
 
-db.find({ $where: function () { return Object.keys(this) > 6; } }, function (err, docs) {
+db.find({ $where: function () { return Object.keys(this).length > 6; } }, function (err, docs) {
   // docs with more than 6 properties
 });
 
