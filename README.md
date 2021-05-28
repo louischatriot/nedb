@@ -613,6 +613,9 @@ db.ensureIndex({ fieldName: 'somefield' }, function (err) {
   // If there was an error, err is not null
 });
 
+db.ensureIndex({ fieldName: ["field1", "field2"] }, function (err) {
+});
+
 // Using a unique constraint with the index
 db.ensureIndex({ fieldName: 'somefield', unique: true }, function (err) {
 });
