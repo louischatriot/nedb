@@ -1,6 +1,6 @@
 {
-  "name": "nedb",
-  "version": "1.9.0-beta.0",
+  "name": "@rmanibus/nedb",
+  "version": "1.9.0-beta.1",
   "author": {
     "name": "Louis Chatriot",
     "email": "louis.chatriot@gmail.com"
@@ -14,10 +14,10 @@
     "datastore",
     "embedded"
   ],
-  "homepage": "https://github.com/louischatriot/nedb",
+  "homepage": "https://github.com/rmanibus/nedb",
   "repository": {
     "type": "git",
-    "url": "git@github.com:louischatriot/nedb.git"
+    "url": "git@github.com:rmanibus/nedb.git"
   },
   "dependencies": {
     "@rmanibus/binary-search-tree": "^0.3.0",

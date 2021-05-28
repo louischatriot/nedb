@@ -21,9 +21,9 @@ Bitcoin address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 Module name on npm and bower is `nedb`.
 
 ```
-npm install nedb --save    # Put latest version in your package.json
-npm test                   # You'll need the dev dependencies to launch tests
-bower install nedb         # For the browser versions, which will be in browser-version/out
+npm install @rmanibus/nedb --save    # Put latest version in your package.json
+npm test                             # You'll need the dev dependencies to launch tests
+bower install @rmanibus/nedb         # For the browser versions, which will be in browser-version/out
 ```
 
 ## API
