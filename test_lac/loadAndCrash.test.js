@@ -104,7 +104,7 @@ fs.writeFile = function(path, data, options, callback_) {
   });
 
   function writeFd(fd, isUserFd) {
-    var buffer = (data instanceof Buffer) ? data : new Buffer('' + data,
+    var buffer = (data instanceof Buffer) ? data : new Buffer.from('' + data,
         options.encoding || 'utf8');
     var position = /a/.test(flag) ? null : 0;
 
