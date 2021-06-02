@@ -1,6 +1,6 @@
 {
   "name": "@rmanibus/nedb",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "author": {
     "name": "Louis Chatriot",
     "email": "louis.chatriot@gmail.com"
@@ -20,7 +20,7 @@
     "url": "git@github.com:rmanibus/nedb.git"
   },
   "dependencies": {
-    "@rmanibus/binary-search-tree": "^0.3.0",
+    "@rmanibus/binary-search-tree": "^0.3.1",
     "async": "^1.5.2",
     "localforage": "^1.9.0",
     "mkdirp": "^1.0.4",
