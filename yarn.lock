@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@rmanibus/binary-search-tree@^0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@rmanibus/binary-search-tree/-/binary-search-tree-0.3.0.tgz#4750d7a98ee4e9ff11e7e85ad65db15733d4696e"
-  integrity sha512-IG7tXI+gs4sR18ZCgi+1pYpVBaIkdNjXRjV9IODZvMvwUXvo2oSl+JiVMf4c9EeRN+fBolnnpmSjLNvFg2fAFg==
+"@rmanibus/binary-search-tree@^0.3.1":
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/@rmanibus/binary-search-tree/-/binary-search-tree-0.3.1.tgz#4aee4b3c66f13515019d1d9d518a8399bcfed181"
+  integrity sha512-BahvnQQVwfNMtza4opEsgC8bq/ml29eGcz5TOGL/KrCCPZLE/Xakjzt3jdtasb3IZg9mVq/LbQ7fjUsD3dt9rA==
   dependencies:
     underscore "^1.13"
 
