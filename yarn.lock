@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@rmanibus/binary-search-tree@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@rmanibus/binary-search-tree/-/binary-search-tree-0.3.1.tgz#4aee4b3c66f13515019d1d9d518a8399bcfed181"
-  integrity sha512-BahvnQQVwfNMtza4opEsgC8bq/ml29eGcz5TOGL/KrCCPZLE/Xakjzt3jdtasb3IZg9mVq/LbQ7fjUsD3dt9rA==
+"@rmanibus/binary-search-tree@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@rmanibus/binary-search-tree/-/binary-search-tree-0.3.2.tgz#f0615fc33f0991ea6aa19d9c6d7446396100698e"
+  integrity sha512-kyrD+gz8CO2FpoKDTCIcD3rrER/Rf66PSvHM9RL3tjbYK4U5ahPJtLfkw4U+KZgQUZ4UzlDYA/3qbzXU0EQZ5Q==
   dependencies:
     underscore "^1.13"
 
@@ -17,9 +17,9 @@
     type-detect "4.0.8"
 
 "@sinonjs/fake-timers@^7.0.4", "@sinonjs/fake-timers@^7.1.0":
-  version "7.1.1"
-  resolved "https://registry.yarnpkg.com/@sinonjs/fake-timers/-/fake-timers-7.1.1.tgz#7a6ac09ed4c3fe1854a2002e08db15be6c8570b8"
-  integrity sha512-am34LJf0N2nON/PT9G7pauA+xjcwX9P6x31m4hBgfUeSXYRZBRv/R6EcdWs8iV4XJjPO++NTsrj7ua/cN2s6ZA==
+  version "7.1.2"
+  resolved "https://registry.yarnpkg.com/@sinonjs/fake-timers/-/fake-timers-7.1.2.tgz#2524eae70c4910edccf99b2f4e6efc5894aff7b5"
+  integrity sha512-iQADsW4LBMISqZ6Ci1dupJL9pprqwcVFTcOsEmQOEhW+KLCVn/Y4Jrvg2k19fIHCp+iFprriYPTdRcQR8NbUPg==
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
