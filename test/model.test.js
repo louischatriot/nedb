@@ -1014,27 +1014,27 @@ describe('Model', function () {
         assert.isUndefined(model.getDotValue({ hello: 'world' }, 'helloo'));
         assert.isUndefined(model.getDotValue({ hello: 'world', type: { planet: true } }, 'type.plane'));
       });
-      
+
       it("Can navigate inside arrays with dot notation, and return the array of values in that case", function () {
         var dv;
-        
+
         // Simple array of subdocuments
         dv = model.getDotValue({ planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] }, 'planets.name');
         assert.deepEqual(dv, ['Earth', 'Mars', 'Pluton']);
-        
+
         // Nested array of subdocuments
         dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] } }, 'data.planets.number');
         assert.deepEqual(dv, [3, 2, 9]);
-        
+
         // Nested array in a subdocument of an array (yay, inception!)
         // TODO: make sure MongoDB doesn't flatten the array (it wouldn't make sense)
         dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', numbers: [ 1, 3 ] }, { name: 'Mars', numbers: [ 7 ] }, { name: 'Pluton', numbers: [ 9, 5, 1 ] } ] } }, 'data.planets.numbers');
         assert.deepEqual(dv, [[ 1, 3 ], [ 7 ], [ 9, 5, 1 ]]);
       });
-      
+
       it("Can get a single value out of an array using its index", function () {
         var dv;
-        
+
         // Simple index in dot notation
         dv = model.getDotValue({ planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] }, 'planets.1');
         assert.deepEqual(dv, { name: 'Mars', number: 2 });
@@ -1046,7 +1046,7 @@ describe('Model', function () {
         // Index in nested array
         dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] } }, 'data.planets.2');
         assert.deepEqual(dv, { name: 'Pluton', number: 9 });
-        
+
         // Dot notation with index in the middle
         dv = model.getDotValue({ nedb: true, data: { planets: [ { name: 'Earth', number: 3 }, { name: 'Mars', number: 2 }, { name: 'Pluton', number: 9 } ] } }, 'data.planets.0.name');
         dv.should.equal('Earth');
@@ -1082,7 +1082,7 @@ describe('Model', function () {
         model.match({ a: { b: 5 } }, { a: { b: { $lt: 10 } } }).should.equal(false);
         (function () { model.match({ a: { b: 5 } }, { a: { $or: [ { b: 10 }, { b: 5 } ] } }) }).should.throw();
       });
-      
+
       it("Can match for field equality inside an array with the dot notation", function () {
         model.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'node' }).should.equal(false);
         model.match({ a: true, b: [ 'node', 'embedded', 'database' ] }, { 'b.1': 'embedded' }).should.equal(true);
@@ -1100,7 +1100,6 @@ describe('Model', function () {
 
         model.match({ test: true }, { test: /true/ }).should.equal(false);
         model.match({ test: null }, { test: /null/ }).should.equal(false);
-        model.match({ test: 42 }, { test: /42/ }).should.equal(false);
         model.match({ test: d }, { test: r }).should.equal(false);
       });
 
@@ -1109,6 +1108,15 @@ describe('Model', function () {
         model.match({ test: 'babaaaar' }, { test: /aba+r/ }).should.equal(true);
         model.match({ test: 'babaaaar' }, { test: /^aba+r/ }).should.equal(false);
         model.match({ test: 'true' }, { test: /t[ru]e/ }).should.equal(false);
+      });
+
+      it('Can match number using basic querying', function () {
+        model.match({ test: 42 }, { test: /42/ }).should.equal(true);
+        model.match({ test: 42 }, { test: /\d+/ }).should.equal(true);
+        model.match({ test: 4259 }, { test: /2\d+/ }).should.equal(true);
+        model.match({ test: 4259 }, { test: /^2\d+/ }).should.equal(false);
+        model.match({ test: 4259 }, { test: /4\d{2}9/ }).should.equal(true);
+        model.match({ test: 4259 }, { test: /^4\d{2}9/ }).should.equal(true);
       });
 
       it('Can match strings using the $regex operator', function () {
@@ -1387,7 +1395,7 @@ describe('Model', function () {
       it('Should throw an error if the $where function returns a non-boolean', function () {
         (function () { model.match({ a: 4 }, { $where: function () { return 'not a boolean'; } }); }).should.throw();
       });
-      
+
       it('Should be able to do the complex matching it must be used for', function () {
         var checkEmail = function() {
           if (!this.firstName || !this.lastName) { return false; }
@@ -1441,23 +1449,23 @@ describe('Model', function () {
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 4 } }).should.equal(true);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 8 } }).should.equal(true);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.age": { $lt: 13 } }).should.equal(true);
-        
+
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.name": 'Louis' }).should.equal(false);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.name": 'Louie' }).should.equal(true);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.name": 'Lewi' }).should.equal(false);
       });
-      
+
       it('Can query for a specific element inside arrays thanks to dot notation', function () {
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.0.name": 'Louie' }).should.equal(false);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.1.name": 'Louie' }).should.equal(false);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.2.name": 'Louie' }).should.equal(true);
         model.match({ childrens: [ { name: "Huey", age: 3 }, { name: "Dewey", age: 7 }, { name: "Louie", age: 12 } ] }, { "childrens.3.name": 'Louie' }).should.equal(false);
       });
-      
+
       it('A single array-specific operator and the query is treated as array specific', function () {
         (function () { model.match({ childrens: [ 'Riri', 'Fifi', 'Loulou' ] }, { "childrens": { "Fifi": true, $size: 3 } })}).should.throw();
       });
-      
+
       it('Can mix queries on array fields and non array filds with array specific operators', function () {
         model.match({ uncle: 'Donald', nephews: [ 'Riri', 'Fifi', 'Loulou' ] }, { nephews: { $size: 2 }, uncle: 'Donald' }).should.equal(false);
         model.match({ uncle: 'Donald', nephews: [ 'Riri', 'Fifi', 'Loulou' ] }, { nephews: { $size: 3 }, uncle: 'Donald' }).should.equal(true);
@@ -1467,7 +1475,7 @@ describe('Model', function () {
         model.match({ uncle: 'Donald', nephews: [ 'Riri', 'Fifi', 'Loulou' ] }, { nephews: { $size: 3 }, uncle: 'Donald' }).should.equal(true);
         model.match({ uncle: 'Donald', nephews: [ 'Riri', 'Fifi', 'Loulou' ] }, { nephews: { $size: 3 }, uncle: 'Daisy' }).should.equal(false);
       });
-      
+
     });
 
   });   // ==== End of 'Querying' ==== //
