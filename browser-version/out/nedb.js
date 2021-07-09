@@ -3382,6 +3382,11 @@ function ensureDatafileIntegrity (filename, callback) {
   return callback(null);
 }
 
+// Nothing to do, no data corruption possible in the brower
+function waitForLock (filename, callback) {
+  return callback(null);
+}
+
 
 // Interface
 module.exports.exists = exists;
@@ -3393,6 +3398,7 @@ module.exports.readFile = readFile;
 module.exports.unlink = unlink;
 module.exports.mkdirp = mkdirp;
 module.exports.ensureDatafileIntegrity = ensureDatafileIntegrity;
+module.exports.waitForLock = waitForLock;
 
 
 },{"localforage":18}],13:[function(require,module,exports){
