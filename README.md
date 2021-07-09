@@ -721,6 +721,12 @@ If you report a bug, thank you! That said for the process to be manageable pleas
 * 50 lines max. If you need more, read the above point and rework your bug report. If you're **really** convinced you need more, please explain precisely in the issue.
 * The code should be Javascript, not Coffeescript.
 
+## Example
+* <a href="https://glitch.com/edit/#!/ne-db?path=README.md:1:0"
+  target="_blank">Code</a>
+* <a href="https://ne-db.glitch.me/"
+  target="_blank">Demo</a>
+
 ### Bitcoins
 You don't have time? You can support NeDB by sending bitcoins to this address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
 
