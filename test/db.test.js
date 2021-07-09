@@ -828,7 +828,7 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can use sort, skip and limit if the callback is not passed to find but to exec', function (done) {
       d.insert({ a: 2, hello: 'world' }, function () {
         d.insert({ a: 24, hello: 'earth' }, function () {
@@ -843,7 +843,7 @@ describe('Database', function () {
               });
             });
           });
-        });      
+        });
       });
     });
 
@@ -856,7 +856,7 @@ describe('Database', function () {
               d.findOne({}).sort({ a: 1 }).exec(function (err, doc) {
                 assert.isNull(err);
                 doc.hello.should.equal('world');
-                
+
                 // A query
                 d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).exec(function (err, doc) {
                   assert.isNull(err);
@@ -1230,13 +1230,13 @@ describe('Database', function () {
               d.find({}, function (err, docs) {
                 docs.length.should.equal(1);   // Default option for upsert is false
                 docs[0].something.should.equal("created ok");
-                
+
                 // Modifying the returned upserted document doesn't modify the database
                 newDoc.newField = true;
                 d.find({}, function (err, docs) {
                   docs[0].something.should.equal("created ok");
                   assert.isUndefined(docs[0].newField);
-                
+
                   done();
                 });
               });
@@ -1244,7 +1244,7 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('If the update query is a normal object with no modifiers, it is the doc that will be upserted', function (done) {
         d.update({ $or: [{ a: 4 }, { a: 5 }] }, { hello: 'world', bloup: 'blap' }, { upsert: true }, function (err) {
           d.find({}, function (err, docs) {
@@ -1258,7 +1258,7 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('If the update query contains modifiers, it is applied to the object resulting from removing all operators from the find query 1', function (done) {
         d.update({ $or: [{ a: 4 }, { a: 5 }] }, { $set: { hello: 'world' }, $inc: { bloup: 3 } }, { upsert: true }, function (err) {
           d.find({ hello: 'world' }, function (err, docs) {
@@ -1272,7 +1272,7 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('If the update query contains modifiers, it is applied to the object resulting from removing all operators from the find query 2', function (done) {
         d.update({ $or: [{ a: 4 }, { a: 5 }], cac: 'rrr' }, { $set: { hello: 'world' }, $inc: { bloup: 3 } }, { upsert: true }, function (err) {
           d.find({ hello: 'world' }, function (err, docs) {
@@ -1287,7 +1287,7 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('Performing upsert with badly formatted fields yields a standard error not an exception', function(done) {
         d.update({_id: '1234'}, { $set: { $$badfield: 5 }}, { upsert: true }, function(err, doc) {
           assert.isDefined(err);
@@ -1504,7 +1504,7 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can update without the options arg (will use defaults then)', function (done) {
       d.insert({ a:1, hello: 'world' }, function (err, doc1) {
         d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
@@ -1517,11 +1517,11 @@ describe('Database', function () {
                   , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
                   , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
                   ;
-                  
+
                 d1.a.should.equal(1);
                 d2.a.should.equal(12);
                 d3.a.should.equal(5);
-                
+
                 done();
               });
             });
@@ -1875,7 +1875,7 @@ describe('Database', function () {
         });
       });
     });
-    
+
     it('Can remove without the options arg (will use defaults then)', function (done) {
       d.insert({ a:1, hello: 'world' }, function (err, doc1) {
         d.insert({ a:2, hello: 'earth' }, function (err, doc2) {
@@ -1888,11 +1888,11 @@ describe('Database', function () {
                   , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
                   , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
                   ;
-                  
+
                 d1.a.should.equal(1);
                 assert.isUndefined(d2);
                 d3.a.should.equal(5);
-                
+
                 done();
               });
             });
@@ -1936,33 +1936,33 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('ensureIndex can be called twice on the same field, the second call will ahve no effect', function (done) {
         Object.keys(d.indexes).length.should.equal(1);
         Object.keys(d.indexes)[0].should.equal("_id");
-      
+
         d.insert({ planet: "Earth" }, function () {
           d.insert({ planet: "Mars" }, function () {
             d.find({}, function (err, docs) {
               docs.length.should.equal(2);
-              
+
               d.ensureIndex({ fieldName: "planet" }, function (err) {
                 assert.isNull(err);
                 Object.keys(d.indexes).length.should.equal(2);
-                Object.keys(d.indexes)[0].should.equal("_id");   
-                Object.keys(d.indexes)[1].should.equal("planet");   
+                Object.keys(d.indexes)[0].should.equal("_id");
+                Object.keys(d.indexes)[1].should.equal("planet");
 
                 d.indexes.planet.getAll().length.should.equal(2);
-                
+
                 // This second call has no effect, documents don't get inserted twice in the index
                 d.ensureIndex({ fieldName: "planet" }, function (err) {
                   assert.isNull(err);
                   Object.keys(d.indexes).length.should.equal(2);
-                  Object.keys(d.indexes)[0].should.equal("_id");   
-                  Object.keys(d.indexes)[1].should.equal("planet");   
+                  Object.keys(d.indexes)[0].should.equal("_id");
+                  Object.keys(d.indexes)[1].should.equal("planet");
 
-                  d.indexes.planet.getAll().length.should.equal(2);                
-                  
+                  d.indexes.planet.getAll().length.should.equal(2);
+
                   done();
                 });
               });
@@ -2141,19 +2141,19 @@ describe('Database', function () {
           });
         });
       });
-      
+
       it('Can remove an index', function (done) {
         d.ensureIndex({ fieldName: 'e' }, function (err) {
           assert.isNull(err);
-          
+
           Object.keys(d.indexes).length.should.equal(2);
           assert.isNotNull(d.indexes.e);
-          
+
           d.removeIndex("e", function (err) {
             assert.isNull(err);
             Object.keys(d.indexes).length.should.equal(1);
-            assert.isUndefined(d.indexes.e); 
- 
+            assert.isUndefined(d.indexes.e);
+
             done();
           });
         });
@@ -2161,7 +2161,7 @@ describe('Database', function () {
 
     });   // ==== End of 'ensureIndex and index initialization in database loading' ==== //
 
-    
+
     describe('Indexing newly inserted documents', function () {
 
       it('Newly inserted documents are indexed', function (done) {
@@ -2815,7 +2815,7 @@ describe('Database', function () {
                   assert.isNull(err);
                   Object.keys(db.indexes).length.should.equal(3);
                   Object.keys(db.indexes)[0].should.equal("_id");
-                  Object.keys(db.indexes)[1].should.equal("planet");  
+                  Object.keys(db.indexes)[1].should.equal("planet");
                   Object.keys(db.indexes)[2].should.equal("another");
                   db.indexes._id.getAll().length.should.equal(2);
                   db.indexes.planet.getAll().length.should.equal(2);
