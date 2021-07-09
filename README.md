@@ -284,10 +284,10 @@ When a field in a document is an array, NeDB first tries to see if the query val
 
 ```javascript
 // Exact match
-db.find({ satellites: ['Phobos', 'Deimos'] }, function (err, docs) {
+db.find({ satellites: ['Phobos', 'Deimos'] }, function (err, docs) {
   // docs contains Mars
 })
-db.find({ satellites: ['Deimos', 'Phobos'] }, function (err, docs) {
+db.find({ satellites: ['Deimos', 'Phobos'] }, function (err, docs) {
   // docs is empty
 })
 

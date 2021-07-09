@@ -383,7 +383,7 @@ describe('Model', function () {
 
       it("Doesn't replace a falsy field by an object when recursively following dot notation", function () {
         var obj = { nested: false }
-          , updateQuery = { $set: { "nested.now": 'it is' } }
+          , updateQuery = { $set: { "nested.now": 'it is' } }
           , modified = model.modify(obj, updateQuery);
 
         assert.deepEqual(modified, { nested: false });   // Object not modified as the nested field doesn't exist
@@ -430,7 +430,7 @@ describe('Model', function () {
         assert.deepEqual(modified, { yup: 'yes', nested: {} });
       });
 
-      it("When unsetting nested fields, should not create an empty parent to nested field", function () {
+      it("When unsetting nested fields, should not create an empty parent to nested field", function () {
         var obj = model.modify({ argh: true }, { $unset: { 'bad.worse': true } });
         assert.deepEqual(obj, { argh: true });
 
