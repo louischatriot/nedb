@@ -30,11 +30,11 @@
   "devDependencies": {
     "chai": "^4.3.4",
     "commander": "1.1.1",
-    "exec-time": "0.0.2",
-    "mocha": "^6.2.3",
     "request": "^2.9.203",
-    "sinon": "^2.0.0",
-    "underscore": "^1.13.1"
+    "underscore": "^1.13.1",
+    "exec-time": "0.0.4",
+    "mocha": "^9.1.1",
+    "sinon": "11.1.x"
   },
   "scripts": {
     "test": "mocha \"./test/**/*.test.js\""
