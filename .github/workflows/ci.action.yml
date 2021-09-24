@@ -1,0 +1,26 @@
+name: CI Job
+
+on:
+  pull_request:
+    types: [synchronize, opened, reopened]
+  push:
+    # branches to consider in the event; optional, defaults to all
+    branches:
+      - master
+jobs:
+  pr_job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      - run: npm i
+      - run: npm t
+  automerge:
+    runs-on: ubuntu-latest
+    needs: [pr_job]
+    steps:
+      - uses: fastify/github-action-merge-dependabot@v2.1.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
