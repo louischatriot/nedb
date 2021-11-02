@@ -64,7 +64,7 @@ You can use NeDB as an in-memory only datastore or as a persistent datastore. On
 default string comparison which is not well adapted to non-US characters
 in particular accented letters. Native `localCompare` will most of the
 time be the right choice
-* `nodeWebkitAppName` (optional, **DEPRECATED**): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows. Now that you can use `require('nw.gui').App.dataPath` in Node Webkit to get the path to the data directory for your application, you should not use this option anymore and it will be removed.
+* `nodeWebkitAppName` (optional, **DEPRECATED**): if you are using NeDB from within a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows. Now that you can use `require('nw.gui').App.dataPath` in Node Webkit to get the path to the data directory for your application, you should not use this option anymore and it will be removed.
 
 If you use a persistent datastore without the `autoload` option, you need to call `loadDatabase` manually.
 This function fetches the data from datafile and prepares the database. **Don't forget it!** If you use a
@@ -545,7 +545,7 @@ db.update({ _id: 'id6' }, { $push: { fruits: { $each: ['banana', 'orange'] } } }
   // Now the fruits array is ['apple', 'orange', 'pear', 'banana', 'orange']
 });
 
-// $slice can be used in cunjunction with $push and $each to limit the size of the resulting array.
+// $slice can be used in conjunction with $push and $each to limit the size of the resulting array.
 // A value of 0 will update the array to an empty array. A positive value n will keep only the n first elements
 // A negative value -n will keep only the last n elements.
 // If $slice is specified but not $each, $each is set to []
@@ -707,7 +707,7 @@ If you submit a pull request, thanks! There are a couple rules to follow though 
 * The pull request should be atomic, i.e. contain only one feature. If it contains more, please submit multiple pull requests. Reviewing massive, 1000 loc+ pull requests is extremely hard.
 * Likewise, if for one unique feature the pull request grows too large (more than 200 loc tests not included), please get in touch first.
 * Please stick to the current coding style. It's important that the code uses a coherent style for readability.
-* Do not include sylistic improvements ("housekeeping"). If you think one part deserves lots of housekeeping, use a separate pull request so as not to pollute the code.
+* Do not include stylistic improvements ("housekeeping"). If you think one part deserves lots of housekeeping, use a separate pull request so as not to pollute the code.
 * Don't forget tests for your new feature. Also don't forget to run the whole test suite before submitting to make sure you didn't introduce regressions.
 * Do not build the browser version in your branch, I'll take care of it once the code is merged.
 * Update the readme accordingly.
