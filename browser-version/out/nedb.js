@@ -1616,7 +1616,7 @@ Datastore.prototype.findOne = function (query, projection, callback) {
  *          the callback signature was (err, numAffected, updated) where updated was the updated document in case of an upsert
  *          or the array of updated documents for an update if the returnUpdatedDocs option was true. That meant that the type of
  *          affectedDocuments in a non multi update depended on whether there was an upsert or not, leaving only two ways for the
- *          user to check whether an upsert had occured: checking the type of affectedDocuments or running another find query on
+ *          user to check whether an upsert had occurred: checking the type of affectedDocuments or running another find query on
  *          the whole dataset to check its size. Both options being ugly, the breaking change was necessary.
  *
  * @api private Use Datastore.update which has the same signature
@@ -1801,7 +1801,7 @@ function Executor () {
         lastArg.apply(null, arguments);
       };
     } else if (!lastArg && task.arguments.length !== 0) {
-      // false/undefined/null supplied as callbback
+      // false/undefined/null supplied as callback
       newArguments[newArguments.length - 1] = function () { cb(); };
     } else {
       // Nothing supplied as callback
@@ -3423,7 +3423,7 @@ var process=require("__browserify_process");/*global setImmediate: false, setTim
         }
     }
 
-    //// cross-browser compatiblity functions ////
+    //// cross-browser compatibility functions ////
 
     var _each = function (arr, iterator) {
         if (arr.forEach) {
