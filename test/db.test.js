@@ -2033,28 +2033,29 @@ describe('Database', function () {
 
         d.getAllData().length.should.equal(0);
 
-        d.ensureIndex({ fieldName: 'z' });
-        d.indexes.z.fieldName.should.equal('z');
-        d.indexes.z.unique.should.equal(false);
-        d.indexes.z.sparse.should.equal(false);
-        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
-
-        fs.writeFile(testDb, rawData, 'utf8', function () {
-          d.loadDatabase(function () {
-            var doc1 = _.find(d.getAllData(), function (doc) { return doc.z === "1"; })
-              , doc2 = _.find(d.getAllData(), function (doc) { return doc.z === "2"; })
-              , doc3 = _.find(d.getAllData(), function (doc) { return doc.z === "3"; })
-              ;
-
-            d.getAllData().length.should.equal(3);
-
-            d.indexes.z.tree.getNumberOfKeys().should.equal(3);
-            d.indexes.z.tree.search('1')[0].should.equal(doc1);
-            d.indexes.z.tree.search('2')[0].should.equal(doc2);
-            d.indexes.z.tree.search('3')[0].should.equal(doc3);
-
-            done();
-          });
+        d.ensureIndex({ fieldName: 'z' }, function () {
+          d.indexes.z.fieldName.should.equal('z');
+          d.indexes.z.unique.should.equal(false);
+          d.indexes.z.sparse.should.equal(false);
+          d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+  
+          fs.writeFile(testDb, rawData, 'utf8', function () {
+            d.loadDatabase(function () {
+              var doc1 = _.find(d.getAllData(), function (doc) { return doc.z === "1"; })
+                , doc2 = _.find(d.getAllData(), function (doc) { return doc.z === "2"; })
+                , doc3 = _.find(d.getAllData(), function (doc) { return doc.z === "3"; })
+                ;
+  
+              d.getAllData().length.should.equal(3);
+  
+              d.indexes.z.tree.getNumberOfKeys().should.equal(3);
+              d.indexes.z.tree.search('1')[0].should.equal(doc1);
+              d.indexes.z.tree.search('2')[0].should.equal(doc2);
+              d.indexes.z.tree.search('3')[0].should.equal(doc3);
+  
+              done();
+            });
+          });  
         });
       });
 
@@ -2108,18 +2109,19 @@ describe('Database', function () {
 
         d.getAllData().length.should.equal(0);
 
-        d.ensureIndex({ fieldName: 'z', unique: true });
-        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+        d.ensureIndex({ fieldName: 'z', unique: true }, function () {
+          d.indexes.z.tree.getNumberOfKeys().should.equal(0);
 
-        fs.writeFile(testDb, rawData, 'utf8', function () {
-          d.loadDatabase(function (err) {
-            err.errorType.should.equal('uniqueViolated');
-            err.key.should.equal("1");
-            d.getAllData().length.should.equal(0);
-            d.indexes.z.tree.getNumberOfKeys().should.equal(0);
-
-            done();
-          });
+          fs.writeFile(testDb, rawData, 'utf8', function () {
+            d.loadDatabase(function (err) {
+              err.errorType.should.equal('uniqueViolated');
+              err.key.should.equal("1");
+              d.getAllData().length.should.equal(0);
+              d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+  
+              done();
+            });
+          });  
         });
       });
 
