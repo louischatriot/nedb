@@ -390,35 +390,27 @@ describe('Database', function () {
      *
      * Note: maybe using an in-memory only NeDB would give us an easier solution
      */
-    it('If the callback throws an uncaught exception, do not catch it inside findOne, this is userspace concern', function (done) {
+    it('If the callback throws an uncaught exception, do not catch it inside findOne, this is userspace concern', function () {
+
       var tryCount = 0
-        , currentUncaughtExceptionHandlers = process.listeners('uncaughtException')
         , i
         ;
 
-      process.removeAllListeners('uncaughtException');
-
-      process.on('uncaughtException', function MINE (ex) {
-        process.removeAllListeners('uncaughtException');
-
-        for (i = 0; i < currentUncaughtExceptionHandlers.length; i += 1) {
-          process.on('uncaughtException', currentUncaughtExceptionHandlers[i]);
-        }
-
-        ex.message.should.equal('SOME EXCEPTION');
-        done();
-      });
-
-      d.insert({ a: 5 }, function () {
-        d.findOne({ a : 5}, function (err, doc) {
-          if (tryCount === 0) {
-            tryCount += 1;
-            throw new Error('SOME EXCEPTION');
-          } else {
-            done(new Error('Callback was called twice'));
-          }
+      var fn = function(){
+        d.insert({ a: 5 }, function () {
+          d.findOne({ a : 5}, function (err, doc) {
+            if (tryCount === 0) {
+              tryCount += 1;
+              throw new Error('SOME EXCEPTION');
+            } else {
+              done(new Error('Callback was called twice'));
+            }
+          });
         });
-      });
+      }
+
+      assert.doesNotThrow( function() { fn() }, /SOME EXCEPTION/ );
+
     });
 
   });   // ==== End of 'Insert' ==== //

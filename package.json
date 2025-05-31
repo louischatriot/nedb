@@ -1,10 +1,7 @@
 {
-  "name": "nedb",
-  "version": "1.8.0",
-  "author": {
-    "name": "Louis Chatriot",
-    "email": "louis.chatriot@gmail.com"
-  },
+  "name": "@nlt-public/nedb",
+  "version": "1.8.6",
+  "author": "Louis Chatriot <louis.chatriot@gmail.com>",
   "contributors": [
     "Louis Chatriot"
   ],
@@ -14,33 +11,37 @@
     "datastore",
     "embedded"
   ],
-  "homepage": "https://github.com/louischatriot/nedb",
+  "homepage": "https://github.com/Next-Level-Timing/nedb",
   "repository": {
     "type": "git",
-    "url": "git@github.com:louischatriot/nedb.git"
+    "url": "git+ssh://git@github.com:Next-Level-Timing/nedb.git"
   },
   "dependencies": {
-    "async": "0.2.10",
-    "binary-search-tree": "0.2.5",
-    "localforage": "^1.3.0",
-    "mkdirp": "~0.5.1",
-    "underscore": "~1.4.4"
+    "async": "^3.2.0",
+    "@yetzt/binary-search-tree": "^0.2.6",
+    "localforage": "^1.9.0",
+    "mkdirp": "^1.0.4",
+    "underscore": "^1.13.1"
   },
   "devDependencies": {
-    "chai": "^3.2.0",
-    "mocha": "1.4.x",
-    "request": "2.9.x",
-    "sinon": "1.3.x",
-    "exec-time": "0.0.2",
-    "commander": "1.1.1"
+    "chai": "^4.3.4",
+    "commander": "^7.2.0",
+    "exec-time": "^0.0.4",
+    "mocha": "^8.4.0",
+    "request": "^2.88.2",
+    "sinon": "^10.0.0"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha --reporter spec --timeout 10000"
+    "test": "mocha --reporter spec --timeout 1000"
   },
   "main": "index",
   "browser": {
     "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
     "./lib/storage.js": "./browser-version/browser-specific/lib/storage.js"
   },
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "MIT",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  }
 }
