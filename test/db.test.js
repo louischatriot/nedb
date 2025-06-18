@@ -1364,7 +1364,7 @@ describe('Database', function () {
 
     it('When using modifiers, the only way to update subdocs is with the dot-notation', function (done) {
       d.insert({ bloup: { blip: "blap", other: true } }, function () {
-        // Correct methos
+        // Correct method
         d.update({}, { $set: { "bloup.blip": "hello" } }, {}, function () {
           d.findOne({}, function (err, doc) {
             doc.bloup.blip.should.equal("hello");

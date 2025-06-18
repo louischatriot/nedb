@@ -61,13 +61,13 @@ require.helper.semVerSort = function(a, b) {
 
  * @param {String} name - module name: `user~repo`
  * @param {Boolean} returnPath - returns the canonical require path if true, 
- *                               otherwise it returns the epxorted module
+ *                               otherwise it returns the exported module
  */
 require.latest = function (name, returnPath) {
   function showError(name) {
     throw new Error('failed to find latest module of "' + name + '"');
   }
-  // only remotes with semvers, ignore local files conataining a '/'
+  // only remotes with semvers, ignore local files containing a '/'
   var versionRegexp = /(.*)~(.*)@v?(\d+\.\d+\.\d+[^\/]*)$/;
   var remoteRegexp = /(.*)~(.*)/;
   if (!remoteRegexp.test(name)) showError(name);
@@ -97,7 +97,7 @@ require.latest = function (name, returnPath) {
     return require(module);
   }
   // if the build contains more than one branch of the same module
-  // you should not use this funciton
+  // you should not use this function
   var module = otherCandidates.sort(function(a, b) {return a.name > b.name})[0].name;
   if (returnPath === true) {
     return module;
